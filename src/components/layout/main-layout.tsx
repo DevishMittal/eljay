@@ -1,40 +1,34 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/utils';
-import { BaseComponentProps } from '@/types';
 import Header from './header';
-import Footer from './footer';
+import Sidebar from './sidebar';
 
-interface MainLayoutProps extends BaseComponentProps {
-  transparentHeader?: boolean;
-  showFooter?: boolean;
-  showNewsletter?: boolean;
+interface MainLayoutProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   children,
   className,
-  transparentHeader = false,
-  showFooter = true,
-  showNewsletter = true,
 }) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header transparent={transparentHeader} />
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <Sidebar />
       
-      <motion.main
-        className={cn('flex-1', className)}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-      >
-        {children}
-      </motion.main>
-      
-      {showFooter && <Footer showNewsletter={showNewsletter} />}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <Header />
+        
+        {/* Main Content */}
+        <main className={cn('flex-1 bg-muted/30 p-6', className)}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

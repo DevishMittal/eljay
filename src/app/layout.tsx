@@ -1,24 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: {
-    default: "Eljay - Modern Multi-Page Website",
+    default: "Eljay - Hearing Care Management",
     template: "%s | Eljay"
   },
-  description: "A modern, high-performance multi-page website built with Next.js and Tailwind CSS",
-  keywords: ["Next.js", "React", "Tailwind CSS", "Modern Web", "Performance"],
+  description: "Modern hearing care management system for audiologists and healthcare professionals",
+  keywords: ["hearing care", "audiologist", "healthcare", "management", "appointments"],
   authors: [{ name: "Eljay Team" }],
   creator: "Eljay",
   publisher: "Eljay",
@@ -35,14 +24,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://eljay.com',
-    title: 'Eljay - Modern Multi-Page Website',
-    description: 'A modern, high-performance multi-page website built with Next.js and Tailwind CSS',
+    title: 'Eljay - Hearing Care Management',
+    description: 'Modern hearing care management system for audiologists and healthcare professionals',
     siteName: 'Eljay',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Eljay - Modern Multi-Page Website',
-    description: 'A modern, high-performance multi-page website built with Next.js and Tailwind CSS',
+    title: 'Eljay - Hearing Care Management',
+    description: 'Modern hearing care management system for audiologists and healthcare professionals',
   },
   robots: {
     index: true,
@@ -65,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
+        className="antialiased min-h-screen bg-background text-foreground"
       >
         {children}
       </body>

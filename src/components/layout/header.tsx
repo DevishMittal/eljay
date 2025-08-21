@@ -1,162 +1,80 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
 import { cn } from '@/utils';
-import { HeaderProps, NavItem } from '@/types';
-import { navigationConfig } from '@/data/navigation';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
-const Header: React.FC<HeaderProps> = ({ 
-  className, 
-  transparent = false, 
-  sticky = true 
-}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const pathname = usePathname();
+interface HeaderProps {
+  className?: string;
+}
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
-    }
-    return pathname.startsWith(href);
-  };
-
-  const headerClasses = cn(
-    'w-full transition-all duration-300 z-50',
-    sticky && 'sticky top-0',
-    transparent && !isScrolled && 'bg-transparent',
-    !transparent || isScrolled ? 'bg-background/95 backdrop-blur-sm border-b border-border' : '',
-    className
-  );
+const Header: React.FC<HeaderProps> = ({ className }) => {
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <header className={headerClasses}>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">E</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">Eljay</span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigationConfig.mainNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href || '#'}
-                className={cn(
-                  'text-sm font-medium transition-colors hover:text-primary relative',
-                  isActive(item.href || '')
-                    ? 'text-primary'
-                    : 'text-muted-foreground'
-                )}
+    <header className={cn('w-full bg-white border-b border-border px-6 py-4', className)}>
+      <div className="flex items-center justify-between">
+        {/* Search Bar */}
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg 
+                className="h-5 w-5 text-search-placeholder" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
               >
-                {item.title}
-                {isActive(item.href || '') && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-            <Button size="sm">
-              Get Started
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <div className="w-6 h-6 flex flex-col justify-center items-center">
-              <span
-                className={cn(
-                  'block w-5 h-0.5 bg-current transition-all duration-300',
-                  isMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'
-                )}
-              />
-              <span
-                className={cn(
-                  'block w-5 h-0.5 bg-current transition-all duration-300',
-                  isMenuOpen ? 'opacity-0' : 'opacity-100'
-                )}
-              />
-              <span
-                className={cn(
-                  'block w-5 h-0.5 bg-current transition-all duration-300',
-                  isMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'
-                )}
-              />
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                />
+              </svg>
             </div>
-          </button>
+            <input
+              type="text"
+              placeholder="Search audiologists, patients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-sm text-[#4A5565] placeholder:text-search-placeholder"
+            />
+          </div>
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="md:hidden border-t border-border bg-background/95 backdrop-blur-sm"
-            >
-              <nav className="py-4 space-y-2">
-                {navigationConfig.mainNav.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href || '#'}
-                    className={cn(
-                      'block px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground rounded-md',
-                      isActive(item.href || '')
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-muted-foreground'
-                    )}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.title}
-                  </Link>
-                ))}
-                <div className="px-4 pt-4 space-y-2">
-                  <Button variant="ghost" className="w-full justify-start">
-                    Sign In
-                  </Button>
-                  <Button className="w-full justify-start">
-                    Get Started
-                  </Button>
-                </div>
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Right Side - Notifications and Profile */}
+        <div className="flex items-center space-x-4">
+          {/* Bell Icon with Notification Badge */}
+          <div className="relative">
+            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
+              <Image
+                src="/bell-icon.svg"
+                alt="Notifications"
+                width={15}
+                height={15}
+                className="w-6 h-6"
+              />
+              {/* Notification Badge */}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                9+
+              </span>
+            </button>
+          </div>
+
+          {/* Profile Section */}
+          <div className="flex items-center space-x-3">
+            {/* Profile Avatar */}
+            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-foreground">SJ</span>
+            </div>
+            
+            {/* Profile Info */}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-[#101828]">Dr. Sarah Johnson</span>
+              <span className="text-xs text-[#667085]">Lead Audiologist</span>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
