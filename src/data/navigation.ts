@@ -3,24 +3,16 @@ import { NavigationConfig } from '@/types';
 export const navigationConfig: NavigationConfig = {
   mainNav: [
     {
-      title: 'Home',
-      href: '/',
+      title: 'Dashboard',
+      href: '/dashboard',
     },
     {
-      title: 'About',
-      href: '/about',
+      title: 'Appointments',
+      href: '/appointments',
     },
     {
-      title: 'Services',
-      href: '/services',
-    },
-    {
-      title: 'Portfolio',
-      href: '/portfolio',
-    },
-    {
-      title: 'Contact',
-      href: '/contact',
+      title: 'Patients',
+      href: '/patients',
     },
   ],
   footerNav: [
