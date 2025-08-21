@@ -8,11 +8,13 @@ import Sidebar from './sidebar';
 interface MainLayoutProps {
   children: React.ReactNode;
   className?: string;
+  showTasksSidebar?: boolean;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   children,
   className,
+  showTasksSidebar = false,
 }) => {
   return (
     <div className="min-h-screen flex">
@@ -25,7 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         <Header />
         
         {/* Main Content */}
-        <main className={cn('flex-1 bg-muted/30 p-6', className)}>
+        <main className={cn('flex-1 bg-muted/30', showTasksSidebar ? '' : 'p-6', className)}>
           {children}
         </main>
       </div>
