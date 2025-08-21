@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/utils';
+import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 
 interface TasksAnalyticsProps {
   className?: string;
 }
 
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className={cn('w-80 bg-white border-l border-border p-6 space-y-6', className)}>
       {/* Header */}
@@ -25,7 +27,10 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
 
       {/* Primary Actions */}
       <div className="space-y-3">
-        <button className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-primary/90 transition-colors"
+        >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -158,6 +163,12 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         </svg>
         <span>Add New Task</span>
       </button>
+
+      {/* Walk-in Appointment Modal */}
+      <WalkInAppointmentModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
