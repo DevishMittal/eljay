@@ -15,7 +15,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Welcome back, Dr. Smith!</h1>
-            <p className="text-muted-foreground">Here's what's happening in your practice today.</p>
+            <p className="text-muted-foreground">Here&apos;s what&apos;s happening in your practice today.</p>
           </div>
           <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
             Add New Patient
