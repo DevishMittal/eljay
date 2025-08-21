@@ -154,46 +154,83 @@ export default function PatientsPage() {
             <p className="text-sm" style={{ color: '#4A5565' }}>{patients.length} of {patients.length} patients</p>
           </div>
           <div className="flex items-center space-x-3">
-                         <button 
-               className="p-2 hover:bg-muted rounded-lg transition-colors"
-               aria-label="Filter patients"
-             >
-               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-               </svg>
-             </button>
-             <button 
-               className="p-2 hover:bg-muted rounded-lg transition-colors"
-               aria-label="Sort patients"
-             >
-               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-               </svg>
-             </button>
-                         <div className="flex items-center space-x-1 bg-white border border-border rounded-lg p-1">
-               <button 
-                 className="p-2 bg-muted rounded-md"
-                 aria-label="List view"
-               >
-                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                 </svg>
-               </button>
-               <button 
-                 className="p-2 hover:bg-muted rounded-md"
-                 aria-label="Grid view"
-               >
-                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                 </svg>
-               </button>
-             </div>
+            <button 
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              aria-label="Filter patients"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+              </svg>
+            </button>
+            <button 
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              aria-label="Sort patients"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+            </button>
+            <div className="flex items-center space-x-1 bg-white border border-border rounded-lg p-1">
+              <button 
+                className="p-2 bg-muted rounded-md"
+                aria-label="List view"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+              <button 
+                className="p-2 hover:bg-muted rounded-md"
+                aria-label="Grid view"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+            </div>
             <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               <span>Add Patient</span>
             </button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg border border-border p-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search patients..."
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                />
+              </div>
+            </div>
+            <select 
+              className="px-3 py-2 border border-border rounded-lg text-sm"
+              style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+              aria-label="Filter by status"
+            >
+              <option value="">All Status</option>
+              <option value="new">New</option>
+              <option value="existing">Existing</option>
+            </select>
+            <select 
+              className="px-3 py-2 border border-border rounded-lg text-sm"
+              style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+              aria-label="Filter by type"
+            >
+              <option value="">All Types</option>
+              <option value="b2c">B2C</option>
+              <option value="b2b">B2B</option>
+            </select>
           </div>
         </div>
 

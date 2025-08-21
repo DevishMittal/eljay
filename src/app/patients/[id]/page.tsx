@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
+'use client';
+
+import { useState } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'Patient Profile',
-  description: 'Patient profile and medical records.',
-  keywords: ['patient', 'profile', 'medical records', 'healthcare'],
-};
+import { usePathname } from 'next/navigation';
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
+  const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
+  const pathname = usePathname();
   const patient = {
     id: 'PAT008',
     name: 'Anna Rodriguez',
@@ -66,7 +65,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
         {/* Patient Navigation */}
         <div className="bg-white rounded-lg border border-border p-4">
           <nav className="flex space-x-8">
-            <button className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border-l-4 border-primary">
+            <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border-l-4 border-primary">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -74,8 +73,8 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
-            <button className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
+            </div>
+            <Link href={`/patients/${patient.id}/emr`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -83,8 +82,8 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
-            <button className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
+            </Link>
+            <Link href={`/patients/${patient.id}/billing`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
@@ -92,24 +91,41 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </Link>
           </nav>
         </div>
 
         {/* Profile Sub-navigation */}
         <div className="bg-white rounded-lg border border-border p-4">
           <nav className="flex space-x-6">
-            <button className="px-3 py-2 bg-blue-50 rounded-lg font-medium" style={{ color: '#101828' }}>
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'information' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'information' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('information')}
+            >
               Patient Information
             </button>
-            <button className="px-3 py-2 hover:bg-muted rounded-lg transition-colors" style={{ color: '#717182' }}>
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'appointments' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'appointments' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('appointments')}
+            >
               Appointment History
             </button>
           </nav>
         </div>
 
-        {/* Patient Information */}
-        <div className="bg-white rounded-lg border border-border p-6">
+        {/* Conditional Content Based on Active Tab */}
+        {activeSubTab === 'information' && (
+          <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,9 +199,10 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             </div>
           </div>
         </div>
+        )}
 
-        {/* Appointment History */}
-        <div className="bg-white rounded-lg border border-border p-6">
+        {activeSubTab === 'appointments' && (
+          <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,6 +235,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             </button>
           </div>
         </div>
+        )}
       </div>
     </MainLayout>
   );

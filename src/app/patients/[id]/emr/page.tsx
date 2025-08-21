@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
+'use client';
+
+import { useState } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'Patient EMR',
-  description: 'Patient electronic medical records and diagnostics.',
-  keywords: ['patient', 'emr', 'diagnostics', 'medical records'],
-};
+import { usePathname } from 'next/navigation';
 
 export default function PatientEMRPage({ params }: { params: { id: string } }) {
+  const [activeSubTab, setActiveSubTab] = useState<'diagnostics' | 'clinical-notes' | 'patient-files' | 'medical-history'>('diagnostics');
+  const pathname = usePathname();
   const patient = {
     id: 'PAT008',
     name: 'Anna Rodriguez',
@@ -237,12 +236,15 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
               </svg>
               <span style={{ color: '#717182' }}>Profile</span>
             </Link>
-            <button className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border-l-4 border-primary">
+            <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border-l-4 border-primary">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span className="font-medium" style={{ color: '#101828' }}>EMR</span>
-            </button>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
             <Link href={`/patients/${patient.id}/billing`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -252,6 +254,59 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
           </nav>
         </div>
 
+        {/* EMR Sub-navigation */}
+        <div className="bg-white rounded-lg border border-border p-4">
+          <nav className="flex space-x-6">
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'diagnostics' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'diagnostics' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('diagnostics')}
+            >
+              Diagnostics
+            </button>
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'clinical-notes' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'clinical-notes' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('clinical-notes')}
+            >
+              Clinical Notes
+            </button>
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'patient-files' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'patient-files' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('patient-files')}
+            >
+              Patient Files
+            </button>
+            <button 
+              className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                activeSubTab === 'medical-history' 
+                  ? 'bg-blue-50' 
+                  : 'hover:bg-muted'
+              }`}
+              style={{ color: activeSubTab === 'medical-history' ? '#101828' : '#717182' }}
+              onClick={() => setActiveSubTab('medical-history')}
+            >
+              Medical History
+            </button>
+          </nav>
+        </div>
+
+        {/* Conditional Content Based on Active Tab */}
+        {activeSubTab === 'diagnostics' && (
+        <div className="space-y-6">
         {/* Diagnostics Section */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex items-center justify-between mb-6">
@@ -315,103 +370,107 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+        </div>
+        )}
 
-        {/* Clinical Notes */}
-        <div className="bg-white rounded-lg border border-border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Clinical Notes</h2>
-            <div className="flex items-center space-x-3">
-              <select className="px-3 py-2 border border-border rounded-lg text-sm" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                <option>All Categories</option>
-                <option>Diagnosis</option>
-                <option>Followup</option>
-                <option>General</option>
-              </select>
+        {activeSubTab === 'clinical-notes' && (
+          <div className="bg-white rounded-lg border border-border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Clinical Notes</h2>
+              <div className="flex items-center space-x-3">
+                <select className="px-3 py-2 border border-border rounded-lg text-sm" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
+                  <option>All Categories</option>
+                  <option>Diagnosis</option>
+                  <option>Followup</option>
+                  <option>General</option>
+                </select>
+                <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>+ Add Note</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {clinicalNotes.map((note, index) => (
+                <div key={index} className="border border-border rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-medium" style={{ color: '#0A0A0A' }}>{note.title}</h3>
+                        <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
+                          {note.category}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-2" style={{ color: '#717182' }}>{note.description}</p>
+                      <p className="text-xs" style={{ color: '#717182' }}>
+                        {note.author} • {note.date}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'patient-files' && (
+          <div className="bg-white rounded-lg border border-border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Patient Files</h2>
               <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <span>+ Add Note</span>
+                <span>Upload Files</span>
+              </button>
+            </div>
+
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2" style={{ color: '#101828' }}>No files uploaded</h3>
+              <p className="text-sm mb-6" style={{ color: '#4A5565' }}>Upload patient files and documents</p>
+              <button className="bg-primary text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-primary/90 transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Upload Files</span>
               </button>
             </div>
           </div>
+        )}
 
-          <div className="space-y-4">
-            {clinicalNotes.map((note, index) => (
-              <div key={index} className="border border-border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-medium" style={{ color: '#0A0A0A' }}>{note.title}</h3>
-                      <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
-                        {note.category}
-                      </span>
-                    </div>
-                    <p className="text-sm mb-2" style={{ color: '#717182' }}>{note.description}</p>
-                    <p className="text-xs" style={{ color: '#717182' }}>
-                      {note.author} • {note.date}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Patient Files */}
-        <div className="bg-white rounded-lg border border-border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Patient Files</h2>
-            <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span>Upload Files</span>
-            </button>
-          </div>
-
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium mb-2" style={{ color: '#101828' }}>No files uploaded</h3>
-            <p className="text-sm mb-6" style={{ color: '#4A5565' }}>Upload patient files and documents</p>
-            <button className="bg-primary text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-primary/90 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span>Upload Files</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Medical History Timeline */}
-        <div className="bg-white rounded-lg border border-border p-6">
-          <h2 className="text-lg font-semibold mb-6" style={{ color: '#101828' }}>Medical History Timeline</h2>
-          
-          <div className="space-y-6">
-            {medicalHistory.map((day, dayIndex) => (
-              <div key={dayIndex}>
+        {activeSubTab === 'medical-history' && (
+          <div className="bg-white rounded-lg border border-border p-6">
+            <h2 className="text-lg font-semibold mb-6" style={{ color: '#101828' }}>Medical History Timeline</h2>
+            
+            <div className="space-y-6">
+              {medicalHistory.map((day, dayIndex) => (
+                <div key={dayIndex}>
                 <h3 className="font-medium mb-4" style={{ color: '#0A0A0A' }}>{day.date}</h3>
                 <div className="space-y-3">
                   {day.entries.map((entry, entryIndex) => (
@@ -482,6 +541,7 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
             ))}
           </div>
         </div>
+        )}
       </div>
     </MainLayout>
   );
