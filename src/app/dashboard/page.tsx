@@ -310,19 +310,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-lg border border-border p-1">
-          <div className="flex space-x-1">
+        <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
+          <div className="flex">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center ${
                   activeTab === tab.id
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-[#0A0A0A] bg-white shadow-sm'
+                    : 'text-[#0A0A0A] hover:bg-white/50'
                 }`}
+                style={{ fontFamily: 'Segoe UI' }}
               >
-                {tab.label}
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
