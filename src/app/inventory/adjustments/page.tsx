@@ -649,52 +649,54 @@ export default function InventoryAdjustmentsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('transaction-history')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-colors',
-              activeTab === 'transaction-history'
-                ? 'bg-[#F3F4F6] border-[#E5E7EB] text-[#101828]'
-                : 'bg-white border-[#E5E7EB] text-[#4A5565] hover:bg-[#F9FAFB]'
-            )}
-            style={{ fontFamily: 'Segoe UI' }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-            Transaction History
-          </button>
-          <button
-            onClick={() => setActiveTab('stock-additions')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-colors',
-              activeTab === 'stock-additions'
-                ? 'bg-[#F3F4F6] border-[#E5E7EB] text-[#101828]'
-                : 'bg-white border-[#E5E7EB] text-[#4A5565] hover:bg-[#F9FAFB]'
-            )}
-            style={{ fontFamily: 'Segoe UI' }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
-            Stock Additions
-          </button>
-          <button
-            onClick={() => setActiveTab('stock-consumptions')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-colors',
-              activeTab === 'stock-consumptions'
-                ? 'bg-[#F3F4F6] border-[#E5E7EB] text-[#101828]'
-                : 'bg-white border-[#E5E7EB] text-[#4A5565] hover:bg-[#F9FAFB]'
-            )}
-            style={{ fontFamily: 'Segoe UI' }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Stock Consumptions
-          </button>
+        <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('transaction-history')}
+              className={cn(
+                'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                activeTab === 'transaction-history'
+                  ? 'text-[#0A0A0A] bg-white shadow-sm'
+                  : 'text-[#0A0A0A] hover:bg-white/50'
+              )}
+              style={{ fontFamily: 'Segoe UI' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span>Transaction History</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('stock-additions')}
+              className={cn(
+                'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                activeTab === 'stock-additions'
+                  ? 'text-[#0A0A0A] bg-white shadow-sm'
+                  : 'text-[#0A0A0A] hover:bg-white/50'
+              )}
+              style={{ fontFamily: 'Segoe UI' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              <span>Stock Additions</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('stock-consumptions')}
+              className={cn(
+                'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                activeTab === 'stock-consumptions'
+                  ? 'text-[#0A0A0A] bg-white shadow-sm'
+                  : 'text-[#0A0A0A] hover:bg-white/50'
+              )}
+              style={{ fontFamily: 'Segoe UI' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Stock Consumptions</span>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
