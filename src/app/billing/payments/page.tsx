@@ -7,73 +7,154 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
 
-// Sample data for payments
+
+// Sample data for payments matching the image
 const paymentData = [
   {
     id: 1,
     date: '22 Jun 2025',
-    paymentNumber: 'PAY-2025-014',
-    type: 'Credit Card',
-    patientOrg: 'Robert Wilson',
-    invoiceNumber: 'EHC-2025-014',
-    amount: '₹30,000',
+    receiptNumber: 'RCP-2025-008',
+    patient: { name: 'Lisa Wang', id: 'PAT008' },
+    type: 'Finance Pr...',
+    amount: '₹6,750',
+    method: 'UPI',
     status: 'Completed',
-    createdBy: 'Dr. Michael Chen'
+    receivedBy: 'Dr. Sarah Johns...'
   },
   {
     id: 2,
-    date: '21 Jun 2025',
-    paymentNumber: 'PAY-2025-013',
-    type: 'Bank Transfer',
-    patientOrg: 'Lisa Wang Finance Pro Group',
-    invoiceNumber: 'EHC-2025-013',
-    amount: '₹45,000',
+    date: '18 Jun 2025',
+    receiptNumber: 'RCP-2025-007',
+    patient: { name: 'James Anderson', id: 'PAT007' },
+    type: 'Direct',
+    amount: '₹4,200',
+    method: 'Card',
     status: 'Completed',
-    createdBy: 'Dr. Sarah Johnson'
+    receivedBy: 'Dr. Jennifer Lee'
   },
   {
     id: 3,
-    date: '20 Jun 2025',
-    paymentNumber: 'PAY-2025-012',
-    type: 'Cash',
-    patientOrg: 'John Smith',
-    invoiceNumber: 'EHC-2025-012',
-    amount: '₹25,000',
-    status: 'Pending',
-    createdBy: 'Dr. Emily Davis'
+    date: '15 Jun 2025',
+    receiptNumber: 'RCP-2025-006',
+    patient: { name: 'Maria Garcia', id: 'PAT006' },
+    type: 'HealthFirs...',
+    amount: '₹8,900',
+    method: 'Cash',
+    status: 'Completed',
+    receivedBy: 'Dr. Michael Chen'
+  },
+  {
+    id: 4,
+    date: '12 Jun 2025',
+    receiptNumber: 'RCP-2025-005',
+    patient: { name: 'David Kim', id: 'PAT005' },
+    type: 'TechCorp S...',
+    amount: '₹12,500',
+    method: 'Transfer',
+    status: 'Completed',
+    receivedBy: 'Dr. Sarah Johns...'
+  },
+  {
+    id: 5,
+    date: '10 Jun 2025',
+    receiptNumber: 'RCP-2025-004',
+    patient: { name: 'Emily Rodriguez', id: 'PAT004' },
+    type: 'Direct',
+    amount: '₹2,250',
+    method: 'Card',
+    status: 'Failed',
+    receivedBy: 'Dr. Michael Chen'
+  },
+  {
+    id: 6,
+    date: '08 Jun 2025',
+    receiptNumber: 'RCP-2025-003',
+    patient: { name: 'Robert Wilson', id: 'PAT003' },
+    type: 'Finance Pr...',
+    amount: '₹15,800',
+    method: 'UPI',
+    status: 'Completed',
+    receivedBy: 'Dr. Jennifer Lee'
+  },
+  {
+    id: 7,
+    date: '05 Jun 2025',
+    receiptNumber: 'RCP-2025-002',
+    patient: { name: 'Sarah Johnson', id: 'PAT002' },
+    type: 'HealthFirs...',
+    amount: '₹9,300',
+    method: 'Cash',
+    status: 'Completed',
+    receivedBy: 'Dr. Sarah Johns...'
+  },
+  {
+    id: 8,
+    date: '03 Jun 2025',
+    receiptNumber: 'RCP-2025-001',
+    patient: { name: 'Michael Chen', id: 'PAT001' },
+    type: 'TechCorp S...',
+    amount: '₹18,200',
+    method: 'Transfer',
+    status: 'Completed',
+    receivedBy: 'Dr. Michael Chen'
   }
 ];
 
 const summaryCards = [
   {
-    title: 'Total Payments',
-    value: '₹2,68,614',
-    icon: '💰',
+    title: 'Total Received',
+    value: '₹85,300',
+    icon: (
+      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+        <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+        </svg>
+      </div>
+    ),
     color: 'text-green-600'
   },
   {
-    title: 'Pending Payments',
-    value: '₹40,516',
-    icon: '⏳',
+    title: 'Pending',
+    value: '1',
+    icon: (
+      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+        <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+      </div>
+    ),
     color: 'text-yellow-600'
   },
   {
-    title: 'Completed Payments',
-    value: '15',
-    icon: '✅',
-    color: 'text-green-600'
+    title: 'Completed',
+    value: '18',
+    icon: (
+      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    ),
+    color: 'text-blue-600'
   },
   {
-    title: 'Failed Payments',
-    value: '2',
-    icon: '❌',
-    color: 'text-red-600'
+    title: 'Average Payment',
+    value: '₹4,538',
+    icon: (
+      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      </div>
+    ),
+    color: 'text-purple-600'
   }
 ];
 
 export default function PaymentsPage() {
   const [selectedPayments, setSelectedPayments] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+
 
   const handleSelectAll = () => {
     if (selectedPayments.length === paymentData.length) {
@@ -104,17 +185,30 @@ export default function PaymentsPage() {
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'Credit Card':
-        return 'bg-blue-100 text-blue-800';
-      case 'Bank Transfer':
-        return 'bg-green-100 text-green-800';
-      case 'Cash':
+  const getMethodColor = (method: string) => {
+    switch (method) {
+      case 'UPI':
         return 'bg-purple-100 text-purple-800';
+      case 'Card':
+        return 'bg-blue-100 text-blue-800';
+      case 'Cash':
+        return 'bg-green-100 text-green-800';
+      case 'Transfer':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getTypeColor = (type: string) => {
+    if (type.includes('Finance') || type.includes('Health') || type.includes('Tech')) {
+      return 'bg-purple-100 text-purple-800';
+    }
+    return 'bg-blue-100 text-blue-800';
+  };
+
+  const handleNewPayment = () => {
+    window.location.href = '/billing/payments/record';
   };
 
   return (
@@ -127,14 +221,14 @@ export default function PaymentsPage() {
               Payments
             </h1>
             <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-              Track and manage payment transactions.
+              Track payment receipts and transactions
             </p>
           </div>
-          <Button className="bg-red-600 hover:bg-red-700 text-white">
+          <Button 
+            onClick={handleNewPayment}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
             + New Payment
-            <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
           </Button>
         </div>
 
@@ -152,7 +246,7 @@ export default function PaymentsPage() {
                       {card.value}
                     </p>
                   </div>
-                  <div className="text-2xl">{card.icon}</div>
+                  {card.icon}
                 </div>
               </CardContent>
             </Card>
@@ -164,14 +258,9 @@ export default function PaymentsPage() {
           <CardContent className="p-6">
             {/* Section Header */}
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                  Payments
-                </h2>
-                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
-                  {paymentData.length}
-                </span>
-              </div>
+              <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                Payments {paymentData.length}
+              </h2>
             </div>
 
             {/* Search and Filter Bar */}
@@ -191,13 +280,28 @@ export default function PaymentsPage() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  All Types
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                  </svg>
+                  All Type
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </Button>
                 <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  All Status
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                  </svg>
+                  All Met
+                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </Button>
+                <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                  </svg>
+                  All Stat
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -219,14 +323,39 @@ export default function PaymentsPage() {
                         aria-label="Select all payments"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Payment #</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                      Date
+                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Receipt #</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                      Patient
+                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Patient/Org</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Invoice #</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Created By</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                      Amount
+                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                      Method
+                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                      Status
+                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Received By</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
@@ -239,30 +368,36 @@ export default function PaymentsPage() {
                           checked={selectedPayments.includes(payment.id)}
                           onChange={() => handleSelectPayment(payment.id)}
                           className="rounded border-gray-300"
-                          aria-label={`Select payment ${payment.paymentNumber}`}
+                          aria-label={`Select payment ${payment.receiptNumber}`}
                         />
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.date}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.paymentNumber}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{payment.receiptNumber}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {payment.patient.name} ID: {payment.patient.id}
+                      </td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(payment.type))}>
                           {payment.type}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.patientOrg}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.invoiceNumber}</td>
                       <td className="py-3 px-4 text-sm font-medium text-gray-900">{payment.amount}</td>
+                      <td className="py-3 px-4">
+                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(payment.method))}>
+                          {payment.method}
+                        </span>
+                      </td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getStatusColor(payment.status))}>
                           {payment.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.createdBy}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{payment.receivedBy}</td>
                       <td className="py-3 px-4">
                         <div className="flex space-x-2">
                           <button 
                             className="text-gray-400 hover:text-gray-600"
-                            aria-label={`View payment ${payment.paymentNumber}`}
+                            aria-label={`View payment ${payment.receiptNumber}`}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -271,7 +406,7 @@ export default function PaymentsPage() {
                           </button>
                           <button 
                             className="text-gray-400 hover:text-gray-600"
-                            aria-label={`Edit payment ${payment.paymentNumber}`}
+                            aria-label={`Edit payment ${payment.receiptNumber}`}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -288,7 +423,7 @@ export default function PaymentsPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Showing 1 to {paymentData.length} of {paymentData.length} payments.
+                Showing 1 to {paymentData.length} of {paymentData.length} payments
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>
@@ -305,6 +440,8 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       </div>
+
+
     </MainLayout>
   );
 }
