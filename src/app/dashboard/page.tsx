@@ -287,14 +287,14 @@ export default function DashboardPage() {
                Welcome back! Here&apos;s what&apos;s happening at your clinic.
              </p>
           </div>
-          <div className="flex items-center space-x-2 px-3 py-2 border border-border rounded-lg bg-white">
+          <div className="flex items-center space-x-2 px-3 py-2 border border-border rounded-lg bg-white relative">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
                          <select 
                value={timeFilter} 
                onChange={(e) => setTimeFilter(e.target.value)}
-               className="text-sm border-none outline-none bg-transparent"
+               className="text-sm border-none outline-none bg-transparent appearance-none pr-6"
                style={{ color: '#101828' }}
                aria-label="Select time period"
              >
@@ -303,7 +303,7 @@ export default function DashboardPage() {
               <option>Last 90 Days</option>
               <option>This Year</option>
             </select>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 absolute right-2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
