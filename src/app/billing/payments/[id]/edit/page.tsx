@@ -1,42 +1,69 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function RecordPaymentPage() {
-  const [receiptNumber, setReceiptNumber] = useState('RCP1751102288121');
-  const [paymentDate, setPaymentDate] = useState('28-06-2025');
-  const [patientName, setPatientName] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState('0.00');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [transactionId, setTransactionId] = useState('');
-  const [receivedBy, setReceivedBy] = useState('');
-  const [paymentType, setPaymentType] = useState('Full Payment');
-  const [notes, setNotes] = useState('');
+// Sample payment data - in real app this would come from API
+const initialPaymentData = {
+  id: 'RCP-2025-008',
+  receiptNumber: 'RCP-2025-008',
+  amount: '6750',
+  paymentMethod: 'UPI',
+  paymentDate: '2025-06-22',
+  status: 'Completed',
+  transactionId: 'UPI345678901',
+  patient: {
+    name: 'Lisa Wang',
+    id: 'PAT008'
+  },
+  receivedBy: 'Dr. Sarah Johnson',
+  createdDate: '22 Jun 2025, 00:00',
+  currency: 'INR',
+  notes: 'Corporate payment for employee hearing screening',
+  paymentType: 'Full Payment'
+};
 
-  const handleSavePayment = () => {
-    // Handle save payment logic here
-    console.log('Saving payment:', {
-      receiptNumber,
-      paymentDate,
+export default function EditPaymentPage() {
+  const params = useParams();
+  const paymentId = params.id;
+
+  const [paymentData, setPaymentData] = useState(initialPaymentData);
+  const [patientName, setPatientName] = useState(paymentData.patient.name);
+  const [paymentAmount, setPaymentAmount] = useState(paymentData.amount);
+  const [paymentMethod, setPaymentMethod] = useState(paymentData.paymentMethod);
+  const [paymentDate, setPaymentDate] = useState(paymentData.paymentDate);
+  const [transactionId, setTransactionId] = useState(paymentData.transactionId);
+  const [receivedBy, setReceivedBy] = useState(paymentData.receivedBy);
+  const [notes, setNotes] = useState(paymentData.notes);
+  const [paymentType, setPaymentType] = useState(paymentData.paymentType);
+
+  const handleBack = () => {
+    window.location.href = `/billing/payments/${paymentId}`;
+  };
+
+  const handleSaveChanges = () => {
+    // Handle save changes logic here
+    console.log('Saving payment changes:', {
+      paymentId,
       patientName,
       paymentAmount,
       paymentMethod,
+      paymentDate,
       transactionId,
       receivedBy,
-      paymentType,
-      notes
+      notes,
+      paymentType
     });
-    // Navigate to the new payment detail page
-    window.location.href = `/billing/payments/${receiptNumber}`;
+    // Navigate back to payment detail page
+    window.location.href = `/billing/payments/${paymentId}`;
   };
 
   const handleCancel = () => {
-    // Navigate back to payments page
-    window.location.href = '/billing/payments';
+    window.location.href = `/billing/payments/${paymentId}`;
   };
 
   return (
@@ -46,7 +73,7 @@ export default function RecordPaymentPage() {
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-3">
             <button
-              onClick={handleCancel}
+              onClick={handleBack}
               className="text-gray-600 hover:text-gray-800"
               aria-label="Go back"
             >
@@ -56,10 +83,10 @@ export default function RecordPaymentPage() {
             </button>
             <div>
               <h1 className="text-2xl font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                Record Payment
+                Edit Payment
               </h1>
               <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                Patient: New Patient
+                Receipt #{paymentData.receiptNumber}
               </p>
             </div>
           </div>
@@ -75,13 +102,13 @@ export default function RecordPaymentPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleSavePayment}
+              onClick={handleSaveChanges}
               className="bg-orange-600 hover:bg-orange-700 text-white"
             >
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Save Payment
+              Save Changes
             </Button>
           </div>
         </div>
@@ -107,8 +134,7 @@ export default function RecordPaymentPage() {
                     Receipt Number *
                   </label>
                   <Input
-                    value={receiptNumber}
-                    onChange={(e) => setReceiptNumber(e.target.value)}
+                    value={paymentData.receiptNumber}
                     className="bg-gray-50 border-gray-300"
                     readOnly
                   />
@@ -133,7 +159,6 @@ export default function RecordPaymentPage() {
                   <Input
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
-                    placeholder="Enter patient name"
                     className="bg-white border-gray-300"
                   />
                 </div>
@@ -149,7 +174,6 @@ export default function RecordPaymentPage() {
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       className="pl-8 bg-white border-gray-300"
-                      placeholder="0.00"
                     />
                   </div>
                 </div>
@@ -164,7 +188,6 @@ export default function RecordPaymentPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     aria-label="Select payment method"
                   >
-                    <option value="">Select payment method</option>
                     <option value="Cash">Cash</option>
                     <option value="Card">Card</option>
                     <option value="UPI">UPI</option>
@@ -180,7 +203,6 @@ export default function RecordPaymentPage() {
                   <Input
                     value={transactionId}
                     onChange={(e) => setTransactionId(e.target.value)}
-                    placeholder="Enter transaction ID (optional)"
                     className="bg-white border-gray-300"
                   />
                 </div>
@@ -192,7 +214,6 @@ export default function RecordPaymentPage() {
                   <Input
                     value={receivedBy}
                     onChange={(e) => setReceivedBy(e.target.value)}
-                    placeholder="Enter staff name"
                     className="bg-white border-gray-300"
                   />
                 </div>
@@ -235,7 +256,6 @@ export default function RecordPaymentPage() {
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any additional notes about this payment..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 h-24 resize-none"
                 />
               </div>
@@ -269,11 +289,11 @@ export default function RecordPaymentPage() {
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Detailed Summary</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Updated Summary</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Receipt Number:</span>
-                      <span className="text-gray-900">{receiptNumber}</span>
+                      <span className="text-gray-900">{paymentData.receiptNumber}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Date:</span>
@@ -281,11 +301,11 @@ export default function RecordPaymentPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Method:</span>
-                      <span className="text-gray-900">{paymentMethod || 'Not selected'}</span>
+                      <span className="text-gray-900">{paymentMethod}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Received By:</span>
-                      <span className="text-gray-900">{receivedBy || 'Not specified'}</span>
+                      <span className="text-gray-900">{receivedBy}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Type:</span>

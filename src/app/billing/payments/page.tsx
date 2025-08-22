@@ -360,17 +360,21 @@ export default function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paymentData.map((payment) => (
-                    <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedPayments.includes(payment.id)}
-                          onChange={() => handleSelectPayment(payment.id)}
-                          className="rounded border-gray-300"
-                          aria-label={`Select payment ${payment.receiptNumber}`}
-                        />
-                      </td>
+                                     {paymentData.map((payment) => (
+                     <tr 
+                       key={payment.id} 
+                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                       onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}`}
+                     >
+                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                         <input
+                           type="checkbox"
+                           checked={selectedPayments.includes(payment.id)}
+                           onChange={() => handleSelectPayment(payment.id)}
+                           className="rounded border-gray-300"
+                           aria-label={`Select payment ${payment.receiptNumber}`}
+                         />
+                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.date}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.receiptNumber}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">
@@ -393,27 +397,29 @@ export default function PaymentsPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.receivedBy}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <button 
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label={`View payment ${payment.receiptNumber}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                          <button 
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label={`Edit payment ${payment.receiptNumber}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
+                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                         <div className="flex space-x-2">
+                           <button 
+                             onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}`}
+                             className="text-gray-400 hover:text-gray-600"
+                             aria-label={`View payment ${payment.receiptNumber}`}
+                           >
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                             </svg>
+                           </button>
+                           <button 
+                             onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}/edit`}
+                             className="text-gray-400 hover:text-gray-600"
+                             aria-label={`Edit payment ${payment.receiptNumber}`}
+                           >
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                             </svg>
+                           </button>
+                         </div>
+                       </td>
                     </tr>
                   ))}
                 </tbody>
