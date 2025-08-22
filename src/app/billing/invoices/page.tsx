@@ -171,10 +171,10 @@ export default function InvoicesPage() {
           </div>
           <div className="relative">
             <Button 
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-[#FF6900] hover:bg-orange-300 text-white"
               onClick={handleNewInvoiceClick}
             >
-              + New Invoice
+              New Invoice
               <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

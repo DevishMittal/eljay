@@ -226,7 +226,7 @@ export default function PaymentsPage() {
           </div>
           <Button 
             onClick={handleNewPayment}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-[#FF6900] hover:bg-orange-300 text-white"
           >
             + New Payment
           </Button>
