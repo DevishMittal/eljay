@@ -128,8 +128,7 @@ export default function InvoicesPage() {
     if (type === 'B2C') {
       window.location.href = '/billing/invoices/create/b2c';
     } else {
-      // TODO: Navigate to B2B invoice creation page
-      console.log(`Creating ${type} invoice`);
+      window.location.href = '/billing/invoices/create/b2b';
     }
   };
 
