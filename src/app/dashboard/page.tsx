@@ -101,6 +101,100 @@ export default function DashboardPage() {
     { month: 'Dec', revenue: 70000, target: 40000 }
   ];
 
+  // Diagnostics Data
+  const testTypesData = [
+    { name: 'PTA/IMP', tests: 140, color: '#3B82F6' },
+    { name: 'OAE/BERA', tests: 100, color: '#10B981' },
+    { name: 'Balance Assessment', tests: 70, color: '#F59E0B' }
+  ];
+
+  const hearingLossDistributionData = [
+    { name: 'Normal', value: 45, color: '#10B981' },
+    { name: 'Mild', value: 25, color: '#F59E0B' },
+    { name: 'Moderate', value: 20, color: '#EF4444' },
+    { name: 'Severe', value: 10, color: '#DC2626' }
+  ];
+
+  const diagnosticsTrendsData = [
+    { month: 'Jul', tests: 280, revenue: 320000, avgTime: 68 },
+    { month: 'Aug', tests: 295, revenue: 340000, avgTime: 66 },
+    { month: 'Sep', tests: 310, revenue: 360000, avgTime: 65 },
+    { month: 'Oct', tests: 290, revenue: 335000, avgTime: 67 },
+    { month: 'Nov', tests: 305, revenue: 355000, avgTime: 64 },
+    { month: 'Dec', tests: 314, revenue: 370000, avgTime: 65 }
+  ];
+
+  const diagnosticsPerformanceData = [
+    { name: 'Dr. Sarah Johnson', tests: 85, accuracy: 98, avgTime: 62 },
+    { name: 'Dr. Michael Brown', tests: 72, accuracy: 96, avgTime: 68 },
+    { name: 'Dr. Jennifer Lee', tests: 68, accuracy: 97, avgTime: 65 },
+    { name: 'Dr. David Chen', tests: 55, accuracy: 95, avgTime: 70 },
+    { name: 'Dr. Emily Davis', tests: 34, accuracy: 99, avgTime: 60 }
+  ];
+
+  const testAccuracyData = [
+    { category: 'PTA/IMP', accuracy: 98, target: 95 },
+    { category: 'OAE/BERA', accuracy: 96, target: 95 },
+    { category: 'Balance Assessment', accuracy: 94, target: 95 }
+  ];
+
+  // Hearing Aid Data
+  const revenueDistributionData = [
+    { name: 'Direct Sales', value: 45, color: '#3B82F6' },
+    { name: 'Referral Sales', value: 35, color: '#10B981' },
+    { name: 'Online Sales', value: 20, color: '#F59E0B' }
+  ];
+
+  const monthlySalesTrendData = [
+    { month: 'Jan', units: 100 },
+    { month: 'Feb', units: 115 },
+    { month: 'Mar', units: 125 },
+    { month: 'Apr', units: 140 },
+    { month: 'May', units: 130 },
+    { month: 'Jun', units: 142 }
+  ];
+
+  const clinicPerformanceData = [
+    { name: 'Bangalore Central', sales: 4.5 },
+    { name: 'Mumbai Andheri', sales: 3.5 },
+    { name: 'Delhi CP', sales: 2.5 },
+    { name: 'Chennai T.Nagar', sales: 2.0 },
+    { name: 'Pune FC Road', sales: 1.0 }
+  ];
+
+  const hearingAidAudiologistData = [
+    { name: 'Dr. Sneha Reddy', units: 30 },
+    { name: 'Dr. Rahul Mehta', units: 28 },
+    { name: 'Dr. Kavita Singh', units: 26 },
+    { name: 'Dr. Arjun Nair', units: 20 },
+    { name: 'Dr. Meera Gupta', units: 23 }
+  ];
+
+  const hatDistributionData = [
+    { name: 'HAT (Technology)', value: 42.5, units: 64, revenue: 2.5, color: '#3B82F6' },
+    { name: 'HAA (Accessories)', value: 36.5, units: 56, revenue: 1.7, color: '#10B981' },
+    { name: 'HAF (Fitting)', value: 21, units: 22, revenue: 0.9, color: '#F59E0B' }
+  ];
+
+  const binauralDistributionData = [
+    { name: 'Binaural', value: 68, units: 97, color: '#3B82F6' },
+    { name: 'Monaural', value: 32, units: 45, color: '#F59E0B' }
+  ];
+
+  const binauralModelsData = [
+    { name: 'Phonak Audéo Paradise', units: 34 },
+    { name: 'Oticon More 1', units: 28 },
+    { name: 'Widex EVOKE 440', units: 22 },
+    { name: 'Signia Pure Charge&Go X', units: 13 }
+  ];
+
+  const monauralModelsData = [
+    { name: 'Phonak Audéo Liffe', units: 18 },
+    { name: 'Oticon Ruby 2', units: 12 },
+    { name: 'Widex MOMENT 220', units: 9 },
+    { name: 'Signia Pure 312 3X', units: 6 }
+  ];
+
   const tabs = [
     { id: 'appointments', label: 'Appointments' },
     { id: 'doctor-referral', label: 'Doctor Referral' },
@@ -108,6 +202,44 @@ export default function DashboardPage() {
     { id: 'hearing-aid', label: 'Hearing Aid' },
     { id: 'billings', label: 'Billings' },
     { id: 'inventory', label: 'Inventory' }
+  ];
+
+  // Billings Data
+  const revenueBreakdownData = [
+    { name: 'Diagnostic Services', revenue: 190, percentage: 50.0, color: '#3B82F6' },
+    { name: 'Hearing Aid Sales', revenue: 140, percentage: 35.0, color: '#10B981' },
+    { name: 'Follow-up Care', revenue: 38.7, percentage: 10.0, color: '#F59E0B' },
+    { name: 'Accessories', revenue: 19.4, percentage: 5.0, color: '#8B5CF6' }
+  ];
+
+  const paymentMethodData = [
+    { name: 'Cash', amount: 163800, percentage: 45, color: '#3B82F6' },
+    { name: 'Card', amount: 127400, percentage: 35, color: '#10B981' },
+    { name: 'UPI', amount: 54600, percentage: 15, color: '#F59E0B' },
+    { name: 'Bank Transfer', amount: 18200, percentage: 5, color: '#8B5CF6' }
+  ];
+
+  const customerAgeData = [
+    { name: '18-30 years', patients: 12, percentage: 7.7, color: '#3B82F6' },
+    { name: '31-45 years', patients: 28, percentage: 17.9, color: '#10B981' },
+    { name: '46-60 years', patients: 45, percentage: 28.8, color: '#F59E0B' },
+    { name: '61-75 years', patients: 52, percentage: 33.3, color: '#8B5CF6' },
+    { name: '75+ years', patients: 19, percentage: 12.2, color: '#EF4444' }
+  ];
+
+  const revenueCollectionTrendData = [
+    { month: 'Jan', revenue: 280, collection: 265 },
+    { month: 'Feb', revenue: 320, collection: 305 },
+    { month: 'Mar', revenue: 350, collection: 335 },
+    { month: 'Apr', revenue: 380, collection: 365 },
+    { month: 'May', revenue: 375, collection: 360 },
+    { month: 'Jun', revenue: 390, collection: 375 }
+  ];
+
+  const collectionTimelineData = [
+    { timeline: 'Same Day', percentage: 85, color: '#10B981' },
+    { timeline: 'Within 7 Days', percentage: 92, color: '#3B82F6' },
+    { timeline: 'Within 30 Days', percentage: 96, color: '#8B5CF6' }
   ];
 
   return (
@@ -592,7 +724,7 @@ export default function DashboardPage() {
               {/* Top Referring Doctors */}
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top Referring Doctors</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>This month's top performers</p>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>This month&apos;s top performers</p>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={topReferringDoctorsData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -762,8 +894,914 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Placeholder for other tabs */}
-        {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && (
+                 {activeTab === 'diagnostics' && (
+           <div className="space-y-6">
+             {/* Key Metrics Row */}
+             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+               {/* Tests Completed */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Tests Completed</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>314</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total tests completed this month.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>93.2% completion rate</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +5.2% vs last month
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-green-500 h-2 rounded-full" style={{ width: '93.2%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">314</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>COMPLETED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">23</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Pending Tests */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Pending Tests</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Awaiting completion</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>23</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Tests awaiting completion.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>6.8% of total tests</span>
+                     <div className="flex items-center text-sm text-orange-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                       </svg>
+                       In progress
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-orange-500 h-2 rounded-full" style={{ width: '6.8%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">15</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>SCHEDULED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-red-600">8</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>OVERDUE</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Average Test Time */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Average Test Time</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Weighted average</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>65 min</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Average time per diagnostic test.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>Target: 60 minutes</span>
+                     <div className="flex items-center text-sm text-blue-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                       </svg>
+                       +5 min vs target
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">65 min</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>CURRENT</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">60 min</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>TARGET</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Total Revenue */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Total Revenue</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>From diagnostics</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹3,70,000</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Revenue generated from diagnostic tests.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>₹1,178 avg per test</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +12.5% vs last month
+                     </div>
+                   </div>
+                   <div className="w-full bg-purple-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹3,45,000</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹25,000</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Charts Row */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Test Types Distribution */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Test Types Distribution</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Hover over bars to see detailed information</p>
+                 <ResponsiveContainer width="100%" height={300}>
+                   <BarChart data={testTypesData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="name" />
+                     <YAxis />
+                     <Tooltip />
+                     <Bar dataKey="tests" fill="#3B82F6" />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+
+               {/* Hearing Loss Distribution */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Loss Distribution</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Patient hearing assessment results</p>
+                 <ResponsiveContainer width="100%" height={300}>
+                   <PieChart>
+                     <Pie
+                       data={hearingLossDistributionData}
+                       cx="50%"
+                       cy="50%"
+                       innerRadius={60}
+                       outerRadius={120}
+                       paddingAngle={5}
+                       dataKey="value"
+                     >
+                       {hearingLossDistributionData.map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={entry.color} />
+                       ))}
+                     </Pie>
+                     <Tooltip />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+           </div>
+         )}
+
+        {activeTab === 'hearing-aid' && (
+          <div className="space-y-6">
+            {/* Key Metrics Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                             {/* Hearing Aids Sold */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Hearing Aids Sold</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>142</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total hearing aids sold this month.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 18% vs last month</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       Trending up
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '87.3%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">125</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>ON TIME DELIVERY</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-red-600">17</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>LATE DELIVERY</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Sales Revenue */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Sales Revenue</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹18,52,500</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total revenue from hearing aid sales.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 22% vs last month</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       Strong growth
+                     </div>
+                   </div>
+                   <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹17,50,000</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹1,02,500</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                   </div>
+                 </div>
+               </div>
+
+                             {/* Average ASP */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Average ASP</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹13,046</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Average selling price per hearing aid.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 3% vs last month</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       Price increase
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹12,650</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>LAST MONTH</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹396</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>INCREASE</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Binaural Ratio */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Binaural Ratio</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>68%</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Percentage of binaural fittings.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>97 binaural vs 45 monaural</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       Target: 70%
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '68%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">97</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>BINAURAL</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">45</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>MONAURAL</div>
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Hearing Aid Sales Trends */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Sales Trends</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly sales performance</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={monthlySalesTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="units" stroke="#3B82F6" strokeDasharray="5 5" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Hearing Aid Distribution */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Distribution</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of hearing aid types</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={hatDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {hatDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Binaural vs Monaural Distribution */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural vs Monaural Distribution</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural vs monaural hearing aids</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={binauralDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {binauralDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Middle Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Binaural Models Distribution */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural Models Distribution</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural hearing aid models</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={binauralModelsData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="units"
+                    >
+                      {binauralModelsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Monaural Models Distribution */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Monaural Models Distribution</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of monaural hearing aid models</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={monauralModelsData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="units"
+                    >
+                      {monauralModelsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Bottom Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Hearing Aid Response Time */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Response Time</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Average time to deliver hearing aids</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Same Day</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Within 24 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-green-600">65%</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>1-2 Days</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Within 48 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">25%</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>3+ Days</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>More than 72 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-orange-600">10%</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                  <div className="text-sm font-medium text-green-800">Average Response Time: 1.2 days</div>
+                  <div className="text-xs text-green-600">Target: 1 day</div>
+                </div>
+              </div>
+
+              {/* Hearing Aid Quality Score */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Quality Score</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Quality assessment of hearing aids</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Excellent (Complete info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '70%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">70%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Good (Partial info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '20%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">20%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Poor (Incomplete info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: '10%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">10%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm font-medium text-blue-800">Overall Quality Score: 8.2/10</div>
+                  <div className="text-xs text-blue-600">Target: 8.5/10</div>
+                </div>
+              </div>
+
+              {/* Hearing Aid Partner Network */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Partner Network Growth</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>New referral partners added</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>This Month</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>New partners added</div>
+                    </div>
+                    <div className="text-lg font-bold text-green-600">+2</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Total Partners</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Active referral network</div>
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">18</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Engagement Rate</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Partners with referrals</div>
+                    </div>
+                    <div className="text-lg font-bold text-purple-600">83%</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                  <div className="text-sm font-medium text-purple-800">Network Growth: +12.5%</div>
+                  <div className="text-xs text-purple-600">Target: +10% monthly</div>
+                </div>
+              </div>
+            </div>
+          </div>
+                 )}
+
+         {activeTab === 'billings' && (
+           <div className="space-y-6">
+             {/* Top Row - Transaction Analytics */}
+             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+               {/* Transaction Analytics */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Transaction Analytics</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>156</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total invoices generated this month.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>Average Invoice: ₹2.5K</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +12% efficiency
+                     </div>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-3 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹69.7K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>GST COLLECTED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">18%</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>DISCOUNT RATE</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-purple-600">₹12.4K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>COMMISSION</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* GST Collected */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>GST Collected</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹69.7K</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>18% of total revenue.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>₹2.5K average per invoice</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +8% vs last month
+                     </div>
+                   </div>
+                   <div className="w-full bg-green-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹65.2K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹4.5K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Commission Paid */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Commission Paid</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹12.4K</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>To referring doctors.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>3.2% of total revenue</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +5% vs last month
+                     </div>
+                   </div>
+                   <div className="w-full bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹11.8K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PAID</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹0.6K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Discount Given */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Discount Given</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>18%</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Average discount rate.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>₹68.4K total discounts</span>
+                     <div className="flex items-center text-sm text-orange-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                       </svg>
+                       Target: 15%
+                     </div>
+                   </div>
+                   <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">₹68.4K</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>TOTAL DISCOUNT</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹438</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>AVG PER INVOICE</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Middle Row - Charts */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Payment Method Distribution */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Payment Method Distribution</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Customer payment preferences analysis</p>
+                 
+                 {/* Summary Box */}
+                 <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                   <div className="text-center">
+                     <div className="text-sm font-medium" style={{ color: '#101828' }}>Cash</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>Most Popular</div>
+                     <div className="text-lg font-bold text-blue-600">45%</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-sm font-medium" style={{ color: '#101828' }}>Digital Payments</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>Card + UPI + Transfer</div>
+                     <div className="text-lg font-bold text-green-600">55%</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-sm font-medium" style={{ color: '#101828' }}>Average Transaction</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>Per payment</div>
+                     <div className="text-lg font-bold text-purple-600">₹2.3K</div>
+                   </div>
+                 </div>
+
+                 <ResponsiveContainer width="100%" height={250}>
+                   <PieChart>
+                     <Pie
+                       data={paymentMethodData}
+                       cx="50%"
+                       cy="50%"
+                       innerRadius={60}
+                       outerRadius={100}
+                       paddingAngle={5}
+                       dataKey="percentage"
+                     >
+                       {paymentMethodData.map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={entry.color} />
+                       ))}
+                     </Pie>
+                     <Tooltip />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+
+                 {/* Payment Details */}
+                 <div className="mt-4 space-y-2">
+                   {paymentMethodData.map((method, index) => (
+                     <div key={index} className="flex justify-between items-center text-sm">
+                       <span style={{ color: '#717182' }}>{method.name}:</span>
+                       <span className="font-medium" style={{ color: '#101828' }}>
+                         ₹{method.amount.toLocaleString()} ({method.percentage}%)
+                       </span>
+                     </div>
+                   ))}
+                 </div>
+
+                 <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                   <div className="text-sm font-medium text-blue-800">
+                     Digital payments represent 55% of transactions, showing growing adoption
+                   </div>
+                   <div className="text-xs text-blue-600">156 Total transactions</div>
+                 </div>
+               </div>
+
+               {/* Revenue Breakdown by Service Categories */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Revenue Breakdown by Service Categories</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Detailed breakdown of revenue by service types</p>
+                 
+                 <ResponsiveContainer width="100%" height={250}>
+                   <BarChart data={revenueBreakdownData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="name" />
+                     <YAxis />
+                     <Tooltip />
+                     <Bar dataKey="revenue" fill="#3B82F6" />
+                   </BarChart>
+                 </ResponsiveContainer>
+
+                 {/* Detailed Breakdown */}
+                 <div className="mt-4 space-y-2">
+                   {revenueBreakdownData.map((service, index) => (
+                     <div key={index} className="flex justify-between items-center text-sm">
+                       <span style={{ color: '#717182' }}>{service.name}:</span>
+                       <span className="font-medium" style={{ color: '#101828' }}>
+                         ₹{service.revenue}L ({service.percentage}%)
+                       </span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             </div>
+
+             {/* Bottom Row - Additional Charts */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Customer Age Distribution */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Customer Age Distribution</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Patient demographics by age groups</p>
+                 
+                 <ResponsiveContainer width="100%" height={250}>
+                   <PieChart>
+                     <Pie
+                       data={customerAgeData}
+                       cx="50%"
+                       cy="50%"
+                       innerRadius={60}
+                       outerRadius={100}
+                       paddingAngle={5}
+                       dataKey="percentage"
+                     >
+                       {customerAgeData.map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={entry.color} />
+                       ))}
+                     </Pie>
+                     <Tooltip />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+
+                 {/* Age Group Details */}
+                 <div className="mt-4 space-y-2">
+                   {customerAgeData.map((age, index) => (
+                     <div key={index} className="flex justify-between items-center text-sm">
+                       <span style={{ color: '#717182' }}>{age.name}:</span>
+                       <span className="font-medium" style={{ color: '#101828' }}>
+                         {age.patients} patients ({age.percentage}%)
+                       </span>
+                     </div>
+                   ))}
+                 </div>
+
+                 <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                   <div className="text-sm font-medium text-purple-800">
+                     45.5% of patients are 61+ years old
+                   </div>
+                   <div className="text-xs text-purple-600">156 Total patients</div>
+                 </div>
+               </div>
+
+               {/* Revenue vs Collection Trend */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Revenue vs Collection Trend</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly revenue and collection performance</p>
+                 
+                 <ResponsiveContainer width="100%" height={250}>
+                   <BarChart data={revenueCollectionTrendData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="month" />
+                     <YAxis />
+                     <Tooltip />
+                     <Legend />
+                     <Bar dataKey="revenue" fill="#3B82F6" name="Revenue" />
+                     <Bar dataKey="collection" fill="#10B981" name="Collection" />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+
+             {/* Collection Timeline Performance */}
+             <div className="bg-white rounded-lg border border-border p-6">
+               <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Collection Timeline Performance</h3>
+               <p className="text-sm mb-4" style={{ color: '#717182' }}>Payment collection efficiency metrics</p>
+               
+               {/* Summary Metrics */}
+               <div className="grid grid-cols-2 gap-4 mb-6">
+                 <div className="p-3 bg-purple-50 rounded-lg">
+                   <div className="text-sm font-medium text-purple-800">Average Days to collect payment</div>
+                   <div className="text-2xl font-bold text-purple-600">2.3 days</div>
+                 </div>
+                 <div className="p-3 bg-green-50 rounded-lg">
+                   <div className="text-sm font-medium text-green-800">Same Day payment rate</div>
+                   <div className="text-2xl font-bold text-green-600">85%</div>
+                 </div>
+               </div>
+
+               {/* Collection Progress Bars */}
+               <div className="space-y-4">
+                 {collectionTimelineData.map((item, index) => (
+                   <div key={index}>
+                     <div className="flex justify-between items-center mb-2">
+                       <span className="text-sm font-medium" style={{ color: '#101828' }}>{item.timeline}</span>
+                       <span className="text-sm font-bold" style={{ color: item.color }}>{item.percentage}%</span>
+                     </div>
+                     <div className="w-full bg-gray-200 rounded-full h-3">
+                       <div 
+                         className="h-3 rounded-full" 
+                         style={{ 
+                           width: `${item.percentage}%`, 
+                           backgroundColor: item.color 
+                         }}
+                       ></div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+
+               <div className="mt-4 flex items-center justify-between">
+                 <span className="text-sm" style={{ color: '#717182' }}>Collection Efficiency</span>
+                 <div className="flex items-center text-sm text-green-600">
+                   <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                   </svg>
+                   +12% improvement
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+
+         {/* Placeholder for other tabs */}
+         {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && (
           <div className="bg-white rounded-lg border border-border p-12 text-center">
             <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>
               {tabs.find(tab => tab.id === activeTab)?.label} Dashboard
