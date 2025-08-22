@@ -242,6 +242,40 @@ export default function DashboardPage() {
     { timeline: 'Within 30 Days', percentage: 96, color: '#8B5CF6' }
   ];
 
+  // Inventory Data
+  const currentStockStatusData = [
+    { name: 'In Stock', value: 75, color: '#10B981' },
+    { name: 'Low Stock', value: 15, color: '#F59E0B' },
+    { name: 'Out of Stock', value: 8, color: '#EF4444' },
+    { name: 'Expiring Soon', value: 2, color: '#8B5CF6' }
+  ];
+
+  const stockLevelTrendData = [
+    { month: 'Jan', accessories: 650, hearingAids: 100 },
+    { month: 'Feb', accessories: 680, hearingAids: 105 },
+    { month: 'Mar', accessories: 720, hearingAids: 110 },
+    { month: 'Apr', accessories: 750, hearingAids: 115 },
+    { month: 'May', accessories: 730, hearingAids: 120 },
+    { month: 'Jun', accessories: 700, hearingAids: 118 }
+  ];
+
+  const bestSellingBrandsData = [
+    { name: 'Phonak', sales: 145, color: '#3B82F6' },
+    { name: 'Oticon', sales: 125, color: '#10B981' },
+    { name: 'Widex', sales: 85, color: '#F59E0B' },
+    { name: 'Signia', sales: 65, color: '#8B5CF6' },
+    { name: 'ReSound', sales: 15, color: '#EF4444' }
+  ];
+
+  const stockoutFrequencyData = [
+    { item: 'Size 312 Batteries', frequency: 8, color: '#F59E0B' },
+    { item: 'BTE Receivers', frequency: 5, color: '#10B981' },
+    { item: 'Wax Guards', frequency: 10, color: '#EF4444' },
+    { item: 'ITE Shells', frequency: 2, color: '#10B981' },
+    { item: 'Cleaning Tools', frequency: 7, color: '#F59E0B' },
+    { item: 'Size 13 Batteries', frequency: 6, color: '#F59E0B' }
+  ];
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -1800,8 +1834,225 @@ export default function DashboardPage() {
            </div>
          )}
 
+                  {activeTab === 'inventory' && (
+           <div className="space-y-6">
+             {/* Top Row - Key Metrics */}
+             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+               {/* Total Inventory Value */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Total Inventory Value</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Current assets</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹2,45,000</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total value of current inventory.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>₹1,850 avg per item</span>
+                     <div className="flex items-center text-sm text-green-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                       </svg>
+                       +8% vs last month
+                     </div>
+                   </div>
+                   <div className="w-full bg-blue-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">₹2,20,000</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>HEARING AIDS</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-blue-600">₹25,000</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>ACCESSORIES</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Low Stock Items */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Low Stock Items</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Reorder recommended</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#F59E0B' }}>2</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Items below reorder level.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>Size 312 Batteries, Wax Guards</span>
+                     <div className="flex items-center text-sm text-orange-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                       </svg>
+                       Action required
+                     </div>
+                   </div>
+                   <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '15%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">2</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>LOW STOCK</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">15</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>IN STOCK</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Out of Stock */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Out of Stock</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Critical shortage</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#EF4444' }}>2</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Items completely out of stock.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>BTE Receivers, Cleaning Tools</span>
+                     <div className="flex items-center text-sm text-red-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                       </svg>
+                       Critical shortage
+                     </div>
+                   </div>
+                   <div className="w-full bg-red-500 h-2 rounded-full" style={{ width: '8%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-red-600">2</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>OUT OF STOCK</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">17</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>IN STOCK</div>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Expiring Soon */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Expiring Soon</h3>
+                   <span className="text-sm" style={{ color: '#717182' }}>Action required</span>
+                 </div>
+                 <div className="mb-4">
+                   <div className="text-3xl font-bold mb-2" style={{ color: '#F59E0B' }}>1</div>
+                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Items expiring within 30 days.</div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-sm font-medium" style={{ color: '#101828' }}>Size 13 Batteries</span>
+                     <div className="flex items-center text-sm text-orange-600">
+                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                       </svg>
+                       Expires in 15 days
+                     </div>
+                   </div>
+                   <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '2%' }}></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-orange-600">1</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>EXPIRING</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-lg font-bold text-green-600">18</div>
+                     <div className="text-xs" style={{ color: '#717182' }}>VALID</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Charts Row */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Current Stock Status */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Current Stock Status</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Quick inventory health overview</p>
+                 
+                 <ResponsiveContainer width="100%" height={300}>
+                   <PieChart>
+                     <Pie
+                       data={currentStockStatusData}
+                       cx="50%"
+                       cy="50%"
+                       innerRadius={60}
+                       outerRadius={120}
+                       paddingAngle={5}
+                       dataKey="value"
+                     >
+                       {currentStockStatusData.map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={entry.color} />
+                       ))}
+                     </Pie>
+                     <Tooltip />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+               </div>
+
+               {/* Stock Level Trend by Category */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Stock Level Trend by Category</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Inventory patterns over time</p>
+                 
+                 <ResponsiveContainer width="100%" height={300}>
+                   <LineChart data={stockLevelTrendData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="month" />
+                     <YAxis />
+                     <Tooltip />
+                     <Legend />
+                     <Line type="monotone" dataKey="accessories" stroke="#F59E0B" name="Accessories" />
+                     <Line type="monotone" dataKey="hearingAids" stroke="#3B82F6" name="Hearing Aids" />
+                   </LineChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+
+             {/* Bottom Row - Additional Charts */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Best Selling Brands */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Best Selling Brands</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Top performing hearing aid brands by sales volume</p>
+                 
+                 <ResponsiveContainer width="100%" height={300}>
+                   <BarChart data={bestSellingBrandsData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="name" />
+                     <YAxis />
+                     <Tooltip />
+                     <Bar dataKey="sales" fill="#3B82F6" />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+
+               {/* Stockout Frequency Analysis */}
+               <div className="bg-white rounded-lg border border-border p-6">
+                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Stockout Frequency Analysis</h3>
+                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Critical for reorder level optimization</p>
+                 
+                 <ResponsiveContainer width="100%" height={300}>
+                   <BarChart data={stockoutFrequencyData}>
+                     <CartesianGrid strokeDasharray="3 3" />
+                     <XAxis dataKey="item" angle={-45} textAnchor="end" height={80} />
+                     <YAxis />
+                     <Tooltip />
+                     <Bar dataKey="frequency" fill="#EF4444" />
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
+             </div>
+           </div>
+         )}
+
          {/* Placeholder for other tabs */}
-         {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && (
+         {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && activeTab !== 'inventory' && (
           <div className="bg-white rounded-lg border border-border p-12 text-center">
             <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>
               {tabs.find(tab => tab.id === activeTab)?.label} Dashboard
