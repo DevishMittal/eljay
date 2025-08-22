@@ -222,7 +222,7 @@ export default function B2CInvoicePage() {
                     onClick={addItem}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
-                    + Add Item
+                    Add Item
                   </Button>
                 </div>
                 

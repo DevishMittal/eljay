@@ -282,7 +282,7 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                     onClick={addItem}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
-                    + Add Item
+                    Add Item
                   </Button>
                 </div>
                 

@@ -241,7 +241,7 @@ export default function InventoryPage() {
                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                </svg>
-               + Add Item
+               Add Item
              </button>
              <button 
                onClick={() => setShowConsumeStockModal(true)}
@@ -275,7 +275,7 @@ export default function InventoryPage() {
                 placeholder="Search items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB] text-[#101828] placeholder-[#717182] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB] text-[#101828] placeholder-[#717182]"
                 style={{ fontFamily: 'Segoe UI' }}
               />
               <svg
@@ -340,7 +340,7 @@ export default function InventoryPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-[#E5E7EB] rounded-lg bg-white text-[#4A5565] text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              className="px-4 py-2 border border-[#E5E7EB] rounded-lg bg-white text-[#4A5565] text-sm"
               style={{ fontFamily: 'Segoe UI' }}
               aria-label="Sort inventory items"
             >
