@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       title: 'Settings',
       href: '/settings',
       icon: '/sidebar/settings.svg',
-      isActive: pathname === '/settings'
+      isActive: pathname.startsWith('/settings')
     }
   ];
 
