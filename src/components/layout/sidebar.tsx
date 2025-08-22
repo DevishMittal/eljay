@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
@@ -67,12 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         }
       ]
     },
-    {
-      title: 'Commissions',
-      href: '/commissions',
-      icon: '/sidebar/commisions.svg',
-      isActive: pathname === '/commissions'
-    },
+
     {
       title: 'Inventory',
       href: '/inventory',
@@ -108,6 +103,20 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
     }
   ];
 
+  // Auto-expand dropdowns when their sub-items are active
+  useEffect(() => {
+    const newExpandedItems: string[] = [];
+    navigationItems.forEach((item) => {
+      if (item.hasSubItems && item.subItems) {
+        const hasActiveSubItem = item.subItems.some(subItem => subItem.isActive);
+        if (hasActiveSubItem) {
+          newExpandedItems.push(item.title);
+        }
+      }
+    });
+    setExpandedItems(newExpandedItems);
+  }, [pathname]);
+
   const toggleExpanded = (title: string) => {
     setExpandedItems(prev => 
       prev.includes(title) 
@@ -120,12 +129,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   return (
     <aside className={cn(
-      'bg-white border-r border-border flex flex-col transition-all duration-300',
+      'bg-white border-custom-r flex flex-col transition-all duration-300',
       isCollapsed ? 'w-16' : 'w-64',
       className
     )}>
       {/* Logo Section */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-custom-b">
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
             <Image
@@ -169,7 +178,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                         alt={`${item.title} icon`}
                         width={15}
                         height={15}
-                        className="w-4 h-4"
+                        className={cn(
+                          'w-4 h-4 transition-colors',
+                          item.isActive ? 'filter brightness-0' : ''
+                        )}
                       />
                     </div>
                     {!isCollapsed && (
@@ -214,7 +226,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                                 alt={`${subItem.title} icon`}
                                 width={15}
                                 height={15}
-                                className="w-4 h-4"
+                                className={cn(
+                                  'w-4 h-4 transition-colors',
+                                  subItem.isActive ? 'filter brightness-0' : ''
+                                )}
                               />
                             </div>
                             <span>{subItem.title}</span>
@@ -242,7 +257,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                       alt={`${item.title} icon`}
                       width={15}
                       height={15}
-                      className="w-4 h-4"
+                      className={cn(
+                        'w-4 h-4 transition-colors',
+                        item.isActive ? 'filter brightness-0' : ''
+                      )}
                     />
                   </div>
                   {!isCollapsed && (
@@ -256,7 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       </nav>
 
       {/* Collapse Button */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-custom-t">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={cn(

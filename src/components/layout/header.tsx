@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <header className={cn('w-full bg-white border-b border-border px-6 py-4', className)}>
+    <header className={cn('w-full bg-white border-custom-b px-6 py-4', className)}>
       <div className="flex items-center justify-between">
         {/* Search Bar */}
         <div className="flex-1 max-w-md">

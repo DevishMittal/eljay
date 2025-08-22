@@ -13,7 +13,8 @@
   --accent-foreground: #ffffff;
   --muted: #f8fafc;
   --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --border: #E5E7EB;
+  
   --input: #e2e8f0;
   --ring: #f97316;
   
@@ -77,17 +78,49 @@
     --accent-foreground: #0f172a;
     --muted: #cfd0d0;
     --muted-foreground: #94a3b8;
-    --border: #334155;
+    --border: #E5E7EB;
     --input: #334155;
     --ring: #f97316;
     --search-bg: #1e293b;
-    --search-border: #334155;
+    --search-border: #E5E7EB;
     --search-placeholder: #94a3b8;
   }
 }
 
 * {
   border-color: var(--border);
+}
+
+/* Override all border classes to use the correct thickness */
+.border,
+.border-t,
+.border-r,
+.border-b,
+.border-l,
+.border-x,
+.border-y {
+  border-width: 0.8px !important;
+}
+
+/* Custom border utility classes */
+.border-custom {
+  border: 0.8px solid #E5E7EB;
+}
+
+.border-custom-t {
+  border-top: 0.8px solid #E5E7EB;
+}
+
+.border-custom-b {
+  border-bottom: 0.8px solid #E5E7EB;
+}
+
+.border-custom-r {
+  border-right: 0.8px solid #E5E7EB;
+}
+
+.border-custom-l {
+  border-left: 0.8px solid #E5E7EB;
 }
 
 body {
