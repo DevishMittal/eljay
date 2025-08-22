@@ -101,6 +101,7 @@ const summaryCards = [
 export default function InvoicesPage() {
   const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showNewInvoiceDropdown, setShowNewInvoiceDropdown] = useState(false);
 
   const handleSelectAll = () => {
     if (selectedInvoices.length === invoiceData.length) {
@@ -116,6 +117,20 @@ export default function InvoicesPage() {
         ? prev.filter(invoiceId => invoiceId !== id)
         : [...prev, id]
     );
+  };
+
+  const handleNewInvoiceClick = () => {
+    setShowNewInvoiceDropdown(!showNewInvoiceDropdown);
+  };
+
+  const handleInvoiceTypeSelect = (type: 'B2C' | 'B2B') => {
+    setShowNewInvoiceDropdown(false);
+    if (type === 'B2C') {
+      window.location.href = '/billing/invoices/create/b2c';
+    } else {
+      // TODO: Navigate to B2B invoice creation page
+      console.log(`Creating ${type} invoice`);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -155,12 +170,54 @@ export default function InvoicesPage() {
               Manage patient invoices and billing records.
             </p>
           </div>
-          <Button className="bg-red-600 hover:bg-red-700 text-white">
-            + New Invoice
-            <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </Button>
+          <div className="relative">
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleNewInvoiceClick}
+            >
+              + New Invoice
+              <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
+            
+            {/* Dropdown Menu */}
+            {showNewInvoiceDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="py-2">
+                  <button
+                    onClick={() => handleInvoiceTypeSelect('B2C')}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start space-x-3"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">B2C Invoice</div>
+                      <div className="text-sm text-gray-500">Individual patient services</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleInvoiceTypeSelect('B2B')}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start space-x-3"
+                  >
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">B2B Invoice</div>
+                      <div className="text-sm text-gray-500">Organization screenings</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -321,27 +378,29 @@ export default function InvoicesPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{invoice.createdBy}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <button 
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label={`View invoice ${invoice.invoiceNumber}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                          <button 
-                            className="text-gray-400 hover:text-gray-600"
-                            aria-label={`Edit invoice ${invoice.invoiceNumber}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
+                                             <td className="py-3 px-4">
+                         <div className="flex space-x-2">
+                           <button 
+                             onClick={() => window.location.href = `/billing/invoices/${invoice.id}`}
+                             className="text-gray-400 hover:text-gray-600"
+                             aria-label={`View invoice ${invoice.invoiceNumber}`}
+                           >
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                             </svg>
+                           </button>
+                           <button 
+                             onClick={() => window.location.href = `/billing/invoices/${invoice.id}/edit`}
+                             className="text-gray-400 hover:text-gray-600"
+                             aria-label={`Edit invoice ${invoice.invoiceNumber}`}
+                           >
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                             </svg>
+                           </button>
+                         </div>
+                       </td>
                     </tr>
                   ))}
                 </tbody>

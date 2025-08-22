@@ -59,6 +59,48 @@ export default function DashboardPage() {
     { range: '15+', count: 14 }
   ];
 
+  // Doctor Referral Data
+  const referralSourceData = [
+    { name: 'ENT Specialists', value: 45, color: '#3B82F6' },
+    { name: 'General Physicians', value: 30, color: '#10B981' },
+    { name: 'Pediatricians', value: 15, color: '#F59E0B' },
+    { name: 'Neurologists', value: 10, color: '#EF4444' }
+  ];
+
+  const referralTrendsData = [
+    { month: 'Jul', referrals: 28, conversions: 22, revenue: 45000 },
+    { month: 'Aug', referrals: 32, conversions: 26, revenue: 52000 },
+    { month: 'Sep', referrals: 35, conversions: 29, revenue: 58000 },
+    { month: 'Oct', referrals: 30, conversions: 25, revenue: 50000 },
+    { month: 'Nov', referrals: 38, conversions: 32, revenue: 64000 },
+    { month: 'Dec', referrals: 42, conversions: 35, revenue: 70000 }
+  ];
+
+  const topReferringDoctorsData = [
+    { name: 'Dr. Rajesh Kumar', referrals: 15, conversions: 12, revenue: 24000 },
+    { name: 'Dr. Priya Sharma', referrals: 12, conversions: 10, revenue: 20000 },
+    { name: 'Dr. Amit Patel', referrals: 10, conversions: 8, revenue: 16000 },
+    { name: 'Dr. Sneha Reddy', referrals: 8, conversions: 7, revenue: 14000 },
+    { name: 'Dr. Karthik Rao', referrals: 6, conversions: 5, revenue: 10000 }
+  ];
+
+  const referralConversionData = [
+    { status: 'Referred', count: 42, color: '#3B82F6' },
+    { status: 'Scheduled', count: 35, color: '#10B981' },
+    { status: 'Completed', count: 32, color: '#22C55E' },
+    { status: 'No Show', count: 3, color: '#F59E0B' },
+    { status: 'Cancelled', count: 7, color: '#EF4444' }
+  ];
+
+  const referralRevenueData = [
+    { month: 'Jul', revenue: 45000, target: 40000 },
+    { month: 'Aug', revenue: 52000, target: 40000 },
+    { month: 'Sep', revenue: 58000, target: 40000 },
+    { month: 'Oct', revenue: 50000, target: 40000 },
+    { month: 'Nov', revenue: 64000, target: 40000 },
+    { month: 'Dec', revenue: 70000, target: 40000 }
+  ];
+
   const tabs = [
     { id: 'appointments', label: 'Appointments' },
     { id: 'doctor-referral', label: 'Doctor Referral' },
@@ -361,8 +403,367 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {activeTab === 'doctor-referral' && (
+          <div className="space-y-6">
+            {/* Key Metrics Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Total Referrals */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Total Referrals</h3>
+                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                </div>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>42</div>
+                  <div className="text-sm mb-2" style={{ color: '#717182' }}>Total referrals received this month.</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" style={{ color: '#101828' }}>83.3% conversion rate</span>
+                    <div className="flex items-center text-sm text-green-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      12.5% vs last month
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '83.3%' }}></div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">35</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>CONVERTED</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">7</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conversion Rate */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Conversion Rate</h3>
+                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                </div>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>83.3%</div>
+                  <div className="text-sm mb-2" style={{ color: '#717182' }}>Referrals converted to appointments.</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" style={{ color: '#101828' }}>35 out of 42 referrals</span>
+                    <div className="flex items-center text-sm text-green-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      +5.2% vs last month
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '83.3%' }}></div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">32</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>COMPLETED</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-orange-600">3</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>NO SHOW</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue Generated */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Revenue Generated</h3>
+                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                </div>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹70,000</div>
+                  <div className="text-sm mb-2" style={{ color: '#717182' }}>Revenue from referral patients.</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" style={{ color: '#101828' }}>₹2,000 avg per patient</span>
+                    <div className="flex items-center text-sm text-green-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      16.7% vs last month
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-orange-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">₹64,000</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">₹6,000</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Referral Partners */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Active Partners</h3>
+                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                </div>
+                <div className="mb-4">
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>18</div>
+                  <div className="text-sm mb-2" style={{ color: '#717182' }}>Active referring doctors.</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" style={{ color: '#101828' }}>2.3 avg referrals per doctor</span>
+                    <div className="flex items-center text-sm text-green-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      +2 new partners
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">15</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>ENT SPECIALISTS</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">3</div>
+                    <div className="text-xs" style={{ color: '#717182' }}>OTHERS</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Referral Sources */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Sources</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of new patients by referral source</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={referralSourceData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {referralSourceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Referral Trends */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Trends</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly performance tracking</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={referralTrendsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="referrals" stroke="#3B82F6" strokeDasharray="5 5" />
+                    <Line type="monotone" dataKey="conversions" stroke="#10B981" />
+                    <Line type="monotone" dataKey="revenue" stroke="#F59E0B" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top Referring Doctors */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top Referring Doctors</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>This month's top performers</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={topReferringDoctorsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="referrals" fill="#3B82F6" />
+                    <Bar dataKey="conversions" fill="#10B981" />
+                    <Bar dataKey="revenue" fill="#F59E0B" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Middle Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Referral Conversion Status */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Conversion Status</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Current month breakdown</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={referralConversionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="count"
+                    >
+                      {referralConversionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Referral Revenue */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Revenue</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly revenue from referrals</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={referralRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" stroke="#F59E0B" name="Revenue" />
+                    <Line type="monotone" dataKey="target" stroke="#EF4444" strokeDasharray="5 5" name="Target" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Bottom Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Referral Response Time */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Response Time</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Average time to respond to referrals</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Same Day</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Within 24 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-green-600">65%</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>1-2 Days</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Within 48 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">25%</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>3+ Days</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>More than 72 hours</div>
+                    </div>
+                    <div className="text-lg font-bold text-orange-600">10%</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                  <div className="text-sm font-medium text-green-800">Average Response Time: 1.2 days</div>
+                  <div className="text-xs text-green-600">Target: 1 day</div>
+                </div>
+              </div>
+
+              {/* Referral Quality Score */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Quality Score</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>Quality assessment of referrals</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Excellent (Complete info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '70%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">70%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Good (Partial info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '20%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">20%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#717182' }}>Poor (Incomplete info)</span>
+                    <div className="flex items-center">
+                      <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: '10%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">10%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm font-medium text-blue-800">Overall Quality Score: 8.2/10</div>
+                  <div className="text-xs text-blue-600">Target: 8.5/10</div>
+                </div>
+              </div>
+
+              {/* Referral Partner Network */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Partner Network Growth</h3>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>New referral partners added</p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>This Month</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>New partners added</div>
+                    </div>
+                    <div className="text-lg font-bold text-green-600">+2</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Total Partners</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Active referral network</div>
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">18</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium" style={{ color: '#101828' }}>Engagement Rate</div>
+                      <div className="text-xs" style={{ color: '#717182' }}>Partners with referrals</div>
+                    </div>
+                    <div className="text-lg font-bold text-purple-600">83%</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                  <div className="text-sm font-medium text-purple-800">Network Growth: +12.5%</div>
+                  <div className="text-xs text-purple-600">Target: +10% monthly</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Placeholder for other tabs */}
-        {activeTab !== 'appointments' && (
+        {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && (
           <div className="bg-white rounded-lg border border-border p-12 text-center">
             <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>
               {tabs.find(tab => tab.id === activeTab)?.label} Dashboard
