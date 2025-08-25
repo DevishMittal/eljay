@@ -11,7 +11,7 @@ interface TasksAnalyticsProps {
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   return (
-    <div className={cn('w-80 bg-white border-l border-border flex flex-col h-full', className)}>
+    <div className={cn('w-80 bg-white border-l border-border flex flex-col h-screen', className)}>
       {/* Scrollable Content */}
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Header */}
@@ -165,10 +165,8 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Fixed Bottom Button */}
-      <div className="flex-shrink-0 p-6 pt-0">
+        {/* Add New Task Button - Now positioned on the left side */}
         <button className="w-full bg-white border border-border text-foreground py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-muted transition-colors">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

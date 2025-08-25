@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   return (
     <aside className={cn(
-      'bg-white border-custom-r flex flex-col transition-all duration-300',
+      'bg-white border-custom-r flex flex-col transition-all duration-300 h-screen',
       isCollapsed ? 'w-16' : 'w-64',
       className
     )}>

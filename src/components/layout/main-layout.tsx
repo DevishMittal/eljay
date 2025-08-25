@@ -17,19 +17,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   showTasksSidebar = false,
 }) => {
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
         <Header />
         
         {/* Main Content */}
         <main className={cn(
           'flex-1 bg-muted/30', 
-          showTasksSidebar ? 'h-[calc(100vh-64px)] overflow-hidden' : 'p-6', 
+          showTasksSidebar ? 'overflow-hidden' : 'p-6', 
           className
         )}>
           {children}
