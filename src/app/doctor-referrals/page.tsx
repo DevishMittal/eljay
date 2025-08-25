@@ -74,28 +74,26 @@ export default function DoctorReferralsPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-lg border border-border">
-          <div className="border-b border-border">
-            <nav className="flex space-x-8 px-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-                    activeTab === tab.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+        <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
+          <div className="flex">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center ${
+                  activeTab === tab.id
+                    ? 'text-[#0A0A0A] bg-white shadow-sm'
+                    : 'text-[#0A0A0A] hover:bg-white/50'
+                }`}
+                style={{ fontFamily: 'Segoe UI' }}
+              >
+                <span>{tab.label}</span>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
+        {/* Tab Content */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 {/* Key Metrics Row */}
@@ -743,8 +741,6 @@ export default function DoctorReferralsPage() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
       </div>
 
       {/* Add Doctor Modal */}
