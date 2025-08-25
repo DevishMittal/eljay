@@ -203,7 +203,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white rounded-lg border border-border p-6">
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top Performing Doctors</h3>
-                      <p className="text-sm" style={{ color: '#717182' }}>This month's leading referrers</p>
+                      <p className="text-sm" style={{ color: '#717182' }}>This month&apos;s leading referrers</p>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
