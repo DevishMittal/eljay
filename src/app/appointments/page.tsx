@@ -111,13 +111,13 @@ export default function AppointmentsPage() {
                     key={index} 
                     className={`p-3 border-r border-border last:border-r-0 ${index === 6 ? '' : ''}`}
                     style={{ 
-                      backgroundColor: '#F9FAFB',
+                      backgroundColor: index === 6 ? '#EFF6FF' : '#F9FAFB',
                       borderRight: index === 6 ? 'none' : '0.8px solid #E5E7EB'
                     }}
                   >
                     <div className="text-center">
-                      <div className="text-sm font-medium" style={{ color: '#6A7282' }}>{day.day}</div>
-                      <div className="text-lg font-bold" style={{ color: '#6A7282' }}>{day.date}</div>
+                      <div className="text-sm font-medium" style={{ color: index === 6 ? '#155DFC' : '#6A7282' }}>{day.day}</div>
+                      <div className="text-lg font-bold" style={{ color: index === 6 ? '#155DFC' : '#6A7282' }}>{day.date}</div>
                     </div>
                   </div>
                 ))}

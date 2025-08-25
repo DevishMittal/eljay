@@ -94,7 +94,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
                 <span className="text-sm text-foreground">TODAY</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div className="w-1/6 h-full bg-red-500 rounded-full"></div>
                 </div>
                 <span className="text-sm text-muted-foreground">1</span>
@@ -107,7 +107,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
                 <span className="text-sm text-foreground">OVERDUE</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div className="w-4/5 h-full bg-orange-500 rounded-full"></div>
                 </div>
                 <span className="text-sm text-muted-foreground">19</span>
@@ -120,7 +120,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
                 <span className="text-sm text-foreground">PENDING</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div className="w-1/3 h-full bg-blue-500 rounded-full"></div>
                 </div>
                 <span className="text-sm text-muted-foreground">5</span>
@@ -133,7 +133,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
                 <span className="text-sm text-foreground">DONE</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div className="w-0 h-full bg-green-500 rounded-full"></div>
                 </div>
                 <span className="text-sm text-muted-foreground">0</span>
