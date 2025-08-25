@@ -159,16 +159,16 @@ export default function PatientsPage() {
           </div>
           <div className="flex items-center space-x-3">
             <button 
-              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Filter patients"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor ">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
               </svg>
               <span>Filter</span>
             </button>
             <button 
-              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Sort patients"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -354,11 +354,11 @@ export default function PatientsPage() {
             </select>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
-              &lt; Previous
+            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-gray-200 transition-colors" style={{ color: 'black', backgroundColor: 'white' }}>
+              &lt; Previous 
             </button>
-            <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded-md">1</button>
-            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
+            <button className="px-3 py-1 text-xs bg-white text-black rounded-md">1</button>
+            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-gray-200 transition-colors" style={{ color: 'black', backgroundColor: 'white' }}>
               Next &gt;
             </button>
           </div>
