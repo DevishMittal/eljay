@@ -139,6 +139,10 @@ export default function PatientsPage() {
     return status === 'New' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
   };
 
+  const getTypeColor = (type: string) => {
+    return type === 'B2B' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+  };
+
   const handlePatientClick = (patientId: string) => {
     // Extract just the ID part (e.g., "PAT008" -> "PAT008")
     router.push(`/patients/${patientId}`);
@@ -155,24 +159,29 @@ export default function PatientsPage() {
           </div>
           <div className="flex items-center space-x-3">
             <button 
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Filter patients"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
               </svg>
+              <span>Filter</span>
             </button>
             <button 
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Sort patients"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
               </svg>
+              <span>Sort</span>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
             </button>
-            <div className="flex items-center space-x-1 bg-white border border-border rounded-lg p-1">
+            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
               <button 
-                className="p-2 bg-muted rounded-md"
+                className="p-2 bg-white rounded-md shadow-sm"
                 aria-label="List view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,7 +189,7 @@ export default function PatientsPage() {
                 </svg>
               </button>
               <button 
-                className="p-2 hover:bg-muted rounded-md"
+                className="p-2 hover:bg-white rounded-md transition-colors"
                 aria-label="Grid view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,7 +197,7 @@ export default function PatientsPage() {
                 </svg>
               </button>
             </div>
-            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
+            <button className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-600 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -197,8 +206,8 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg border border-border p-4">
+        {/* Search and Filters - Commented out as requested */}
+        {/* <div className="bg-white rounded-lg border border-border p-4">
           <div className="flex items-center space-x-4">
             <div className="flex-1">
               <div className="relative">
@@ -232,7 +241,7 @@ export default function PatientsPage() {
               <option value="b2b">B2B</option>
             </select>
           </div>
-        </div>
+        </div> */}
 
         {/* Patients Table */}
         <div className="bg-white rounded-lg border border-border overflow-hidden">
@@ -240,23 +249,23 @@ export default function PatientsPage() {
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
-                                     <th className="px-6 py-3 text-left">
-                                           <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300" 
-                        aria-label="Select all patients"
-                        id="select-all-patients"
-                      />
-                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Patient</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Email</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Phone</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Age</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Gender</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Type</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Last Visit</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium" style={{ color: '#0A0A0A' }}>Actions</th>
+                  <th className="px-4 py-2 text-left">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      aria-label="Select all patients"
+                      id="select-all-patients"
+                    />
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Patient</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Phone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Age</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Gender</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Type</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Last Visit</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -266,7 +275,7 @@ export default function PatientsPage() {
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => handlePatientClick(patient.id)}
                   >
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="checkbox" 
                         className="rounded border-gray-300" 
@@ -274,46 +283,48 @@ export default function PatientsPage() {
                         id={`select-${patient.id}`}
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 font-medium text-xs" style={{ backgroundColor: '#F3F4F6' }}>
                           {getInitials(patient.name)}
                         </div>
                         <div>
-                          <div className="font-medium" style={{ color: '#0A0A0A' }}>{patient.name}</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>{patient.id}</div>
+                          <div className="font-medium text-xs" style={{ color: '#0A0A0A' }}>{patient.name}</div>
+                          <div className="text-xs" style={{ color: '#717182' }}>{patient.id}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.email}</span>
+                    <td className="px-4 py-2">
+                      <span className="text-xs" style={{ color: '#717182' }}>{patient.email}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.phone}</span>
+                    <td className="px-4 py-2">
+                      <span className="text-xs" style={{ color: '#717182' }}>{patient.phone}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.age}</span>
+                    <td className="px-4 py-2">
+                      <span className="text-xs" style={{ color: '#717182' }}>{patient.age}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.gender}</span>
+                    <td className="px-4 py-2">
+                      <span className="text-xs" style={{ color: '#717182' }}>{patient.gender}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.type}</span>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getTypeColor(patient.type)}`}>
+                        {patient.type}
+                      </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(patient.status)}`}>
                         {patient.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span style={{ color: '#717182' }}>{patient.lastVisit}</span>
+                    <td className="px-4 py-2">
+                      <span className="text-xs" style={{ color: '#717182' }}>{patient.lastVisit}</span>
                     </td>
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <button 
                         className="p-1 hover:bg-muted rounded-md transition-colors"
                         aria-label="More options"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                         </svg>
                       </button>
@@ -328,26 +339,26 @@ export default function PatientsPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <span className="text-sm" style={{ color: '#717182' }}>
+            <span className="text-xs" style={{ color: '#717182' }}>
               Showing 1 to {patients.length} of {patients.length} patients
             </span>
-                         <select 
-               className="px-3 py-1 border border-border rounded-md text-sm" 
-               style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
-               aria-label="Items per page"
-               id="items-per-page"
-             >
-               <option value="25">25</option>
-               <option value="50">50</option>
-               <option value="100">100</option>
-             </select>
+            <select 
+              className="px-2 py-1 border border-border rounded-md text-xs" 
+              style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+              aria-label="Items per page"
+              id="items-per-page"
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
+            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
               &lt; Previous
             </button>
-            <button className="px-3 py-1 text-sm bg-primary text-white rounded-md">1</button>
-            <button className="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
+            <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded-md">1</button>
+            <button className="px-3 py-1 text-xs border border-border rounded-md hover:bg-muted transition-colors" style={{ color: '#717182' }}>
               Next &gt;
             </button>
           </div>
