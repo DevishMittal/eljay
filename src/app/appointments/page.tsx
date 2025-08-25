@@ -46,16 +46,16 @@ export default function AppointmentsPage() {
   return (
     <MainLayout showTasksSidebar={true}>
       <div className="flex h-full">
-        {/* Main Calendar Area */}
-        <div className="flex-1 p-6">
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Appointment Calendar</h1>
-            </div>
-
-            {/* Date Navigation */}
+        {/* Main Calendar Area - Fixed width, scrollable content */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 p-6 pb-4">
+            {/* Header with title, date navigation, and filters all on one line */}
             <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-border">
+              {/* Title */}
+              <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Appointment Calendar</h1>
+              
+              {/* Date Navigation - Centered */}
               <div className="flex items-center space-x-4">
                 <button 
                   className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -76,6 +76,7 @@ export default function AppointmentsPage() {
                 </button>
               </div>
               
+              {/* View Filters */}
               <div className="flex items-center space-x-2">
                 <button 
                   className="px-3 py-1 text-sm bg-white border border-border text-black rounded-md"
@@ -83,21 +84,25 @@ export default function AppointmentsPage() {
                 >
                   Today
                 </button>
-                <button className="px-3 py-1 text-sm bg-muted text-black rounded-md">Day</button>
-                <button 
-                  className="px-3 py-1 text-sm bg-white border border-border text-black rounded-md"
-                  style={{ boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
-                >
-                  Week
-                </button>
-                <button className="px-3 py-1 text-sm bg-muted text-black rounded-md">Month</button>
+                <div className="flex bg-gray-100 rounded-md p-1">
+                  <button className="px-3 py-1 text-sm bg-gray-100 text-black rounded-md">Day</button>
+                  <button 
+                    className="px-3 py-1 text-sm bg-white border border-border text-black rounded-md"
+                    style={{ boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
+                  >
+                    Week
+                  </button>
+                  <button className="px-3 py-1 text-sm bg-gray-100 text-black rounded-md">Month</button>
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Calendar Grid */}
+          {/* Scrollable Calendar Grid */}
+          <div className="flex-1 overflow-auto px-6 pb-6">
             <div className="bg-white rounded-lg border border-border overflow-hidden">
               {/* Calendar Header */}
-              <div className="grid grid-cols-8 border-b border-border">
+              <div className="grid grid-cols-8 border-b border-border sticky top-0 z-10 bg-white">
                 <div className="p-3 border-r border-border" style={{ backgroundColor: '#F9FAFB' }}>
                   <span className="text-sm font-medium" style={{ color: '#6A7282' }}>TIME</span>
                 </div>
@@ -123,7 +128,7 @@ export default function AppointmentsPage() {
                 {/* Time Column */}
                 <div className="border-r border-border" style={{ borderRight: '0.8px solid #E5E7EB' }}>
                   {timeSlots.map((time, index) => (
-                    <div key={index} className="h-16 border-b border-border flex items-center justify-center" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
+                    <div key={index} className="h-12 border-b border-border flex items-center justify-center" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
                       <span className="text-sm" style={{ color: '#6A7282' }}>{time}</span>
                     </div>
                   ))}
@@ -145,7 +150,7 @@ export default function AppointmentsPage() {
                       );
                       
                       return (
-                        <div key={timeIndex} className="h-16 border-b border-border relative" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
+                        <div key={timeIndex} className="h-12 border-b border-border relative" style={{ borderBottom: '0.8px solid #E5E7EB' }}>
                           {appointment && (
                             <div 
                               className="absolute inset-1 rounded-md p-2 text-xs overflow-hidden"
@@ -177,8 +182,10 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        {/* Tasks & Analytics Sidebar */}
-        <TasksAnalytics />
+        {/* Tasks & Analytics Sidebar - Fixed width, no scroll */}
+        <div className="flex-shrink-0">
+          <TasksAnalytics />
+        </div>
       </div>
     </MainLayout>
   );

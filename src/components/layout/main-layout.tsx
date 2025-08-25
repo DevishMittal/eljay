@@ -27,7 +27,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         <Header />
         
         {/* Main Content */}
-        <main className={cn('flex-1 bg-muted/30', showTasksSidebar ? '' : 'p-6', className)}>
+        <main className={cn(
+          'flex-1 bg-muted/30', 
+          showTasksSidebar ? 'h-[calc(100vh-64px)] overflow-hidden' : 'p-6', 
+          className
+        )}>
           {children}
         </main>
       </div>
