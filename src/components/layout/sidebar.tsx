@@ -168,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                       isCollapsed ? 'justify-center' : 'space-x-3',
                       item.isActive
                         ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                        : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-muted'
+                        : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
                     )}
                     style={{ fontFamily: 'Segoe UI' }}
                   >
@@ -216,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                               'flex items-center px-4 py-2 text-sm transition-colors space-x-3',
                               subItem.isActive
                                 ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                                : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-muted'
+                                : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
                             )}
                             style={{ fontFamily: 'Segoe UI' }}
                           >
@@ -247,7 +247,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                     isCollapsed ? 'justify-center' : 'space-x-3',
                     item.isActive
                       ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                      : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-muted'
+                      : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
                   )}
                   style={{ fontFamily: 'Segoe UI' }}
                 >

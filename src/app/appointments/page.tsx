@@ -51,9 +51,9 @@ export default function AppointmentsPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 p-6 pb-4">
             {/* Header with title, date navigation, and filters all on one line */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-border">
+            <div className="flex items-center justify-between bg-white  ">
               {/* Title */}
-              <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Appointment Calendar</h1>
+              <h1 className="text-xl font-bold" style={{ color: '#101828' }}>Appointment Calendar</h1>
               
               {/* Date Navigation - Centered */}
               <div className="flex items-center space-x-4">
@@ -65,7 +65,7 @@ export default function AppointmentsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-lg font-medium text-black">Jun 22 - 28, 2025</span>
+                <span className="text-md font-medium text-black">Jun 22 - 28, 2025</span>
                 <button 
                   className="p-2 hover:bg-muted rounded-lg transition-colors"
                   aria-label="Next week"
