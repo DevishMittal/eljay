@@ -11,7 +11,7 @@ interface TasksAnalyticsProps {
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   return (
-    <div className={cn('w-80 bg-white border-l border-border flex flex-col h-screen', className)}>
+    <div className={cn('w-80 bg-white border-l border-border flex flex-col h-full', className)}>
       {/* Scrollable Content */}
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Header */}
