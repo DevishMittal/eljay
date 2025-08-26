@@ -100,7 +100,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          {/* Scrollable Calendar Grid */}
+          {/* Calendar Grid */}
           <div className="flex-1 overflow-hidden pb-4">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full" style={{ borderWidth: '0.5px' }}>
               {/* Calendar Header */}
@@ -125,8 +125,8 @@ export default function AppointmentsPage() {
                 ))}
               </div>
 
-              {/* Calendar Body - Scrollable */}
-              <div className="grid grid-cols-8 flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 200px)' }}>
+              {/* Calendar Body - Scrollable with hidden scrollbar */}
+              <div className="grid grid-cols-8 overflow-y-auto scrollbar-hide" style={{ height: 'calc(100vh - 200px)' }}>
                 {/* Time Column */}
                 <div className=" border-gray-200" style={{ borderRightWidth: '0.5px' }}>
                   {timeSlots.map((time, index) => (
