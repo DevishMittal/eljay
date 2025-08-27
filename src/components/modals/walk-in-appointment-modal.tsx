@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/utils';
 
 interface WalkInAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedDate?: Date;
+  selectedTime?: string;
 }
 
 type FormStage = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -30,6 +32,8 @@ interface FormData {
 const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   isOpen,
   onClose,
+  selectedDate,
+  selectedTime,
 }) => {
   const [currentStage, setCurrentStage] = useState<FormStage>(1);
   const [formData, setFormData] = useState<FormData>({
@@ -48,6 +52,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     appointmentTime: '',
     notes: '',
   });
+
+  // Update form data when selectedDate or selectedTime changes
+  useEffect(() => {
+    if (selectedDate) {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      setFormData(prev => ({ ...prev, appointmentDate: dateString }));
+    }
+    if (selectedTime) {
+      setFormData(prev => ({ ...prev, appointmentTime: selectedTime }));
+    }
+  }, [selectedDate, selectedTime]);
 
   const audiologists = [
     'Dr. Sarah Johnson',
