@@ -1,31 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Patient } from '@/types';
+import { patientService } from '@/services/patientService';
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
+export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
-  const patient = {
-    id: 'PAT008',
-    name: 'Anna Rodriguez',
-    email: 'anna.rodriguez@email.com',
-    phone: '+1 234 567 8907',
-    age: 30,
-    gender: 'Female',
-    type: 'B2C',
-    status: 'New',
-    dateOfBirth: '18/2/1995',
-    occupation: 'Graphic Designer',
-    address: 'Not provided',
-    lastUpdated: '5/6/2025'
-  };
+
+  const fetchPatient = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await patientService.getPatientById(resolvedParams.id);
+      setPatient(response.patient);
+    } catch (err) {
+      setError('Failed to fetch patient details. Please try again.');
+      console.error('Error fetching patient:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedParams.id]);
+
+  useEffect(() => {
+    fetchPatient();
+  }, [fetchPatient]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading patient details...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !patient) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-500 text-xl mb-4">⚠️</div>
+            <p className="text-red-600 mb-4">{error || 'Patient not found'}</p>
+            <div className="space-x-3">
+              <button 
+                onClick={fetchPatient}
+                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                Try Again
+              </button>
+              <Link
+                href="/patients"
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Back to Patients
+              </Link>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -40,16 +91,20 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             </Link>
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-medium text-lg">
-                {getInitials(patient.name)}
+                {getInitials(patient.full_name)}
               </div>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>{patient.name}</h1>
+                <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>{patient.full_name}</h1>
                 <div className="flex items-center space-x-2 mt-1">
-                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">{patient.type}</span>
-                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">{patient.status}</span>
+                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">
+                    {patient.type || 'N/A'}
+                  </span>
+                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                    {patient.status || 'N/A'}
+                  </span>
                 </div>
                 <p className="text-sm mt-1" style={{ color: '#4A5565' }}>
-                  Patient ID: {patient.id} • Last updated: {patient.lastUpdated}
+                  Patient ID: {patient.patient_id} • Last updated: {patient.updated_at ? patientService.formatDate(patient.updated_at) : patientService.formatDate(patient.created_at)}
                 </p>
               </div>
             </div>
@@ -74,7 +129,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <Link href={`/patients/${patient.id}/emr`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
+            <Link href={`/patients/${patient.patient_id}/emr`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -83,7 +138,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
-            <Link href={`/patients/${patient.id}/billing`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
+            <Link href={`/patients/${patient.patient_id}/billing`} className="flex items-center space-x-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
@@ -149,13 +204,13 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Full Name *</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.name}
+                    {patient.full_name}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Date of Birth</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.dateOfBirth} ({patient.age} years)
+                    {patient.dob ? `${patientService.formatDate(patient.dob)} (${patientService.calculateAge(patient.dob)} years)` : 'Not provided'}
                   </div>
                 </div>
                 <div>
@@ -167,7 +222,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Occupation</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.occupation}
+                    {patient.occupation || 'Not provided'}
                   </div>
                 </div>
               </div>
@@ -180,19 +235,19 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Mobile Number *</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.phone}
+                    {patient.mobile_number}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Email Address</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.email}
+                    {patient.email_address}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: '#0A0A0A' }}>Address</label>
                   <div className="px-4 py-3 rounded-lg" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
-                    {patient.address}
+                    {patient.address || 'Not provided'}
                   </div>
                 </div>
               </div>

@@ -153,6 +153,70 @@ export interface ThemeConfig {
   };
 }
 
+// Patient types
+export interface Patient {
+  id: string;
+  patient_id: string;
+  full_name: string;
+  mobile_number: string;
+  email_address: string;
+  dob?: string;
+  gender: 'Male' | 'Female';
+  age?: number;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  type?: string;
+  status?: string;
+  last_visited?: string;
+  alternative_number?: string;
+  occupation?: string;
+  existing_hearing_aid_user?: boolean;
+  previous_hearing_aid_model?: string;
+  reason_for_visit?: string;
+  pre_existing_condition?: string;
+  diagnostic_assesment_id?: string;
+  branch_id?: string;
+  created_by_user_id?: string;
+  created_at: string;
+  updated_at?: string;
+  deleted_date?: string;
+}
+
+export interface CreatePatientData {
+  full_name: string;
+  mobile_number: string;
+  email_address: string;
+  dob: string;
+  gender: 'Male' | 'Female';
+  occupation: string;
+  address: string;
+}
+
+export interface UpdatePatientData extends Partial<CreatePatientData> {}
+
+export interface PatientsResponse {
+  status: string;
+  patients: Patient[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface PatientResponse {
+  status: string;
+  patient: Patient;
+}
+
+export interface PatientUpdateResponse {
+  status: string;
+  message: string;
+  patient: Patient;
+}
+
 // Breakpoint types
 export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
