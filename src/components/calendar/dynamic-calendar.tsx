@@ -41,7 +41,7 @@ export default function DynamicCalendar({
   const [currentView, setCurrentView] = useState<CalendarView>('week');
 
   // Generate time slots
-  const timeSlots = useMemo(() => generateTimeSlots(8, 23, 30), []);
+  const timeSlots = useMemo(() => generateTimeSlots(8, 17, 30), []);
 
   // Get calendar data based on current view
   const calendarData = useMemo(() => {
@@ -100,7 +100,7 @@ export default function DynamicCalendar({
   const renderAppointment = (appointment: Appointment) => (
     <div
       key={appointment.id}
-      className="absolute inset-1 rounded-sm p-2 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-blue-50 border-l-2 border-blue-500"
+      className="absolute inset-1 rounded-sm p-2 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-blue-50 border-l-2 !border-blue-500"
       onClick={() => handleAppointmentClick(appointment)}
       title={`${appointment.patient} - ${appointment.type}`}
     >
@@ -142,8 +142,8 @@ export default function DynamicCalendar({
                   className="h-16 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer relative flex"
                   onClick={() => handleTimeSlotClick(dayData.date, slot.time)}
                 >
-                  <div className="w-20 p-3 border-r border-gray-200 bg-gray-50">
-                    <span className="text-xs text-gray-600">{slot.display12}</span>
+                  <div className="w-20 p-3  border-gray-200 bg-gray-50 flex items-center justify-center">
+                    <span className="text-xs text-gray-600 text-center">{slot.time}</span>
                   </div>
                   <div className="flex-1 relative">
                     {slotAppointments.map(renderAppointment)}
@@ -165,8 +165,8 @@ export default function DynamicCalendar({
       <div className="flex-1 overflow-hidden">
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full">
           {/* Week Header */}
-          <div className="grid grid-cols-8 border-b border-gray-200 sticky top-0 z-10 bg-white">
-            <div className="p-3 bg-gray-50 border-r border-gray-200">
+          <div className="grid grid-cols-8  border-gray-200 sticky top-0 z-10 bg-white">
+            <div className="p-3 bg-gray-50  border-gray-200">
               <span className="text-xs font-medium text-gray-600">TIME</span>
             </div>
             {weekDays.map((day, index) => (
@@ -198,13 +198,13 @@ export default function DynamicCalendar({
           {/* Week Body */}
           <div className="grid grid-cols-8 overflow-y-auto scrollbar-hide h-[calc(100vh-250px)]">
             {/* Time Column */}
-            <div className="border-r border-gray-200">
+            <div className=" border-gray-200 bg-gray-50">
               {timeSlots.map((slot) => (
                 <div
                   key={slot.time}
                   className="h-16 border-b border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors"
                 >
-                  <span className="text-xs text-gray-600">{slot.display12}</span>
+                  <span className="text-xs text-gray-600 text-center">{slot.time}</span>
                 </div>
               ))}
             </div>
@@ -214,7 +214,7 @@ export default function DynamicCalendar({
               <div
                 key={day.date.toISOString()}
                 className={cn(
-                  "relative border-r border-gray-200 last:border-r-0",
+                  "relative border-gray-200 last:border-r-0",
                   day.isToday ? "bg-blue-50/30" : "transparent"
                 )}
               >
@@ -225,7 +225,7 @@ export default function DynamicCalendar({
                   return (
                     <div
                       key={slot.time}
-                      className="h-16 border-b border-gray-100 relative hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="h-16 border-b border-gray-200 relative hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => handleTimeSlotClick(day.date, slot.time)}
                     >
                       {slotAppointments.map(renderAppointment)}
@@ -250,7 +250,7 @@ export default function DynamicCalendar({
           {/* Month Header */}
           <div className="grid grid-cols-7 border-b border-gray-200">
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) => (
-              <div key={day} className="p-3 bg-gray-50 border-r border-gray-200 last:border-r-0">
+              <div key={day} className="p-3 bg-gray-50  border-gray-200 last:-0">
                 <div className="text-center text-xs font-medium text-gray-600">{day}</div>
               </div>
             ))}
