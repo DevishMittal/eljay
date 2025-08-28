@@ -25,6 +25,8 @@ interface TaskContextType {
   getTomorrowTasks: () => Task[];
   getOverdueTasks: () => Task[];
   getUpcomingTasks: () => Task[];
+  getPendingTasks: () => Task[];
+  getDoneTasks: () => Task[];
   getTaskStats: () => {
     total: number;
     completed: number;
@@ -201,6 +203,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return tasks.filter(task => isUpcoming(task.dueDate));
   };
 
+  const getPendingTasks = () => {
+    return tasks.filter(task => !task.completed && !isOverdue(task.dueDate) && !isToday(task.dueDate));
+  };
+
+  const getDoneTasks = () => {
+    return tasks.filter(task => task.completed);
+  };
+
   const getTaskStats = () => {
     const todayTasks = getTodayTasks();
     const tomorrowTasks = getTomorrowTasks();
@@ -227,6 +237,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     getTomorrowTasks,
     getOverdueTasks,
     getUpcomingTasks,
+    getPendingTasks,
+    getDoneTasks,
     getTaskStats,
   };
 

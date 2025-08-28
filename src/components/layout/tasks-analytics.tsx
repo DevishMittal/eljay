@@ -13,50 +13,85 @@ interface TasksAnalyticsProps {
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'today' | 'tomorrow' | 'overdue' | 'upcoming'>('today');
+  const [currentView, setCurrentView] = useState<'today' | 'overdue' | 'pending' | 'done'>('today');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(0); // 0 = today, 1 = tomorrow, etc.
   
   const { 
+    tasks,
     getTodayTasks, 
-    getTomorrowTasks, 
     getOverdueTasks, 
-    getUpcomingTasks,
-
+    getPendingTasks, 
+    getDoneTasks,
     toggleTaskCompletion 
   } = useTask();
 
 
   const todayTasks = getTodayTasks();
-  const tomorrowTasks = getTomorrowTasks();
   const overdueTasks = getOverdueTasks();
-  const upcomingTasks = getUpcomingTasks();
+  const pendingTasks = getPendingTasks();
+  const doneTasks = getDoneTasks();
 
   const getCurrentTasks = () => {
+    // Get tasks for the selected date
+    const getTasksForSelectedDate = () => {
+      const dates = getCalendarDates();
+      const selectedDateData = dates[selectedDate];
+      if (!selectedDateData) return [];
+      
+      return tasks.filter(task => {
+        const taskDate = new Date(task.dueDate);
+        const selectedDate = new Date(selectedDateData.date);
+        return taskDate.toDateString() === selectedDate.toDateString();
+      });
+    };
+
     switch (currentView) {
       case 'today':
-        return todayTasks;
-      case 'tomorrow':
-        return tomorrowTasks;
+        return getTasksForSelectedDate();
       case 'overdue':
         return overdueTasks;
-      case 'upcoming':
-        return upcomingTasks;
+      case 'pending':
+        return pendingTasks;
+      case 'done':
+        return doneTasks;
       default:
-        return todayTasks;
+        return getTasksForSelectedDate();
     }
   };
 
   const getViewTitle = () => {
+    const getTasksForSelectedDate = () => {
+      const dates = getCalendarDates();
+      const selectedDateData = dates[selectedDate];
+      if (!selectedDateData) return [];
+      
+      return tasks.filter(task => {
+        const taskDate = new Date(task.dueDate);
+        const selectedDate = new Date(selectedDateData.date);
+        return taskDate.toDateString() === selectedDate.toDateString();
+      });
+    };
+
     switch (currentView) {
       case 'today':
-        return `Tasks for Today (${todayTasks.length})`;
-      case 'tomorrow':
-        return `Tasks for Tomorrow (${tomorrowTasks.length})`;
+        const selectedDateTasks = getTasksForSelectedDate();
+        const dates = getCalendarDates();
+        const selectedDateData = dates[selectedDate];
+        const dateLabel = selectedDateData?.label || 'Today';
+        return `Tasks for ${dateLabel} (${selectedDateTasks.length})`;
       case 'overdue':
         return `Overdue Tasks (${overdueTasks.length})`;
-      case 'upcoming':
-        return `Upcoming Tasks (${upcomingTasks.length})`;
+      case 'pending':
+        return `Pending Tasks (${pendingTasks.length})`;
+      case 'done':
+        return `Done Tasks (${doneTasks.length})`;
       default:
-        return `Tasks for Today (${todayTasks.length})`;
+        const defaultSelectedDateTasks = getTasksForSelectedDate();
+        const defaultDates = getCalendarDates();
+        const defaultSelectedDateData = defaultDates[selectedDate];
+        const defaultDateLabel = defaultSelectedDateData?.label || 'Today';
+        return `Tasks for ${defaultDateLabel} (${defaultSelectedDateTasks.length})`;
     }
   };
 
@@ -80,32 +115,101 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
     });
   };
 
+  const getCalendarDates = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      let label = '';
+      if (i === 0) {
+        label = 'Today';
+      } else if (i === 1) {
+        label = 'Tomorrow';
+      } else {
+        label = formatDate(date);
+      }
+      
+      dates.push({ date, label, index: i });
+    }
+    
+    return dates;
+  };
+
+  const getCurrentDateLabel = () => {
+    const dates = getCalendarDates();
+    return dates[selectedDate]?.label || 'Today';
+  };
+
 
 
   const handleTaskToggle = (taskId: string) => {
     toggleTaskCompletion(taskId);
   };
 
-  const completedTodayTasks = todayTasks.filter(task => task.completed).length;
-  const completedTomorrowTasks = tomorrowTasks.filter(task => task.completed).length;
-  const completedUpcomingTasks = upcomingTasks.filter(task => task.completed).length;
+  const getTasksForSelectedDate = () => {
+    const dates = getCalendarDates();
+    const selectedDateData = dates[selectedDate];
+    if (!selectedDateData) return [];
+    
+    return tasks.filter(task => {
+      const taskDate = new Date(task.dueDate);
+      const selectedDate = new Date(selectedDateData.date);
+      return taskDate.toDateString() === selectedDate.toDateString();
+    });
+  };
+
+  const selectedDateTasks = getTasksForSelectedDate();
+  const completedSelectedDateTasks = selectedDateTasks.filter(task => task.completed).length;
+  const completedPendingTasks = pendingTasks.filter(task => task.completed).length;
 
   return (
-    <div className={cn('w-64 bg-white border-l border-border flex flex-col h-full', className)}>
+    <div className={cn('bg-white border-l border-border flex flex-col h-full transition-all duration-300', 
+      isCollapsed ? 'w-12' : 'w-64', className)}>
+      
+
+
+      {/* Collapsed State - Show Expand Button */}
+      {isCollapsed && (
+        <div className="flex items-center justify-center p-4">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Expand sidebar"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div className={cn("flex-1 overflow-auto", isCollapsed ? "hidden" : "p-4 space-y-4")}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Tasks & Analytics</h2>
           <button 
-            className="p-1 hover:bg-muted rounded-md transition-colors"
-            aria-label="Close sidebar"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            {isCollapsed ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
           </button>
         </div>
+        
+        {/* Division Line 1 - After Header */}
+        <div className="border-t border-border"></div>
 
         {/* Primary Actions */}
         <div className="space-y-2">
@@ -119,6 +223,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             <span>Add Walk-in Appointment</span>
           </button>
           
+          {/* Division Line 2 - After Add Walk-in Button */}
+          <div className="border-t border-border"></div>
+          
           <div className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer transition-colors">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,6 +237,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
+          
+          {/* Division Line 3 - After Audiologist Overview */}
+          <div className="border-t border-border"></div>
 
           <div className="flex items-center justify-between p-2 rounded-md">
             <div className="flex items-center space-x-2">
@@ -138,50 +248,49 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
               </svg>
               <span className="text-xs font-medium text-foreground">Task View</span>
             </div>
+            <button 
+              onClick={() => setCurrentView('today')}
+              className="text-xs text-black hover:text-foreground hover:bg-gray-100 transition-colors px-2 py-1 border rounded"
+            >
+              Today
+            </button>
           </div>
         </div>
 
         {/* Task Navigation */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <button 
+          <div className="flex items-center justify-between w-full">
+                          <button 
                 onClick={() => {
-                  const views: Array<'today' | 'tomorrow' | 'overdue' | 'upcoming'> = ['today', 'tomorrow', 'overdue', 'upcoming'];
-                  const currentIndex = views.indexOf(currentView);
-                  const previousIndex = currentIndex > 0 ? currentIndex - 1 : views.length - 1;
-                  setCurrentView(views[previousIndex]);
+                  if (selectedDate > 0) {
+                    setSelectedDate(selectedDate - 1);
+                  }
                 }}
-                className="p-1 hover:bg-muted rounded-md transition-colors"
-                aria-label="Previous view"
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                aria-label="Previous date"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <span className="text-sm font-medium text-foreground capitalize">{currentView}</span>
-              <button 
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-xs font-medium text-foreground">{getCurrentDateLabel()}</span>
+                          <button 
                 onClick={() => {
-                  const views: Array<'today' | 'tomorrow' | 'overdue' | 'upcoming'> = ['today', 'tomorrow', 'overdue', 'upcoming'];
-                  const currentIndex = views.indexOf(currentView);
-                  const nextIndex = currentIndex < views.length - 1 ? currentIndex + 1 : 0;
-                  setCurrentView(views[nextIndex]);
+                  if (selectedDate < 6) {
+                    setSelectedDate(selectedDate + 1);
+                  }
                 }}
-                className="p-1 hover:bg-muted rounded-md transition-colors"
-                aria-label="Next view"
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                aria-label="Next date"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-            <button 
-              onClick={() => setCurrentView('today')}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Today
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
+          
+          {/* Division Line 4 - After Today/Tomorrow Navigation */}
+          <div className="border-t border-border"></div>
 
           {/* Dynamic Task Summary */}
           <div className="space-y-2">
@@ -194,23 +303,19 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-sm text-foreground">TODAY</span>
+                <span className="text-xs text-foreground">TODAY</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div 
-                    className={cn(
-                      "h-full bg-red-500 rounded-full transition-all duration-300",
-                      completedTodayTasks === 0 ? "w-0" :
-                      completedTodayTasks === todayTasks.length ? "w-full" :
-                      completedTodayTasks / todayTasks.length > 0.8 ? "w-5/6" :
-                      completedTodayTasks / todayTasks.length > 0.6 ? "w-3/4" :
-                      completedTodayTasks / todayTasks.length > 0.4 ? "w-1/2" :
-                      completedTodayTasks / todayTasks.length > 0.2 ? "w-1/4" : "w-1/6"
-                    )}
+                    className="h-full bg-red-500 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: selectedDateTasks.length === 0 ? '0%' : 
+                      `${Math.min(((selectedDateTasks.length - completedSelectedDateTasks) / selectedDateTasks.length) * 100, 100)}%` 
+                    }}
                   ></div>
                 </div>
-                <span className="text-sm text-muted-foreground">{todayTasks.length}</span>
+                <span className="text-xs text-muted-foreground">{selectedDateTasks.length}</span>
               </div>
             </button>
             
@@ -223,88 +328,80 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <span className="text-sm text-foreground">OVERDUE</span>
+                <span className="text-xs text-foreground">OVERDUE</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div 
-                    className={cn(
-                      "h-full bg-orange-500 rounded-full transition-all duration-300",
-                      overdueTasks.length === 0 ? "w-0" :
-                      overdueTasks.length >= 5 ? "w-full" :
-                      overdueTasks.length >= 4 ? "w-4/5" :
-                      overdueTasks.length >= 3 ? "w-3/5" :
-                      overdueTasks.length >= 2 ? "w-2/5" : "w-1/5"
-                    )}
+                    className="h-full bg-orange-500 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: overdueTasks.length === 0 ? '0%' : 
+                      `${Math.min((overdueTasks.length / 10) * 100, 100)}%` 
+                    }}
                   ></div>
                 </div>
-                <span className="text-sm text-muted-foreground">{overdueTasks.length}</span>
+                <span className="text-xs text-muted-foreground">{overdueTasks.length}</span>
               </div>
             </button>
             
             <button
-              onClick={() => setCurrentView('tomorrow')}
+              onClick={() => setCurrentView('pending')}
               className={cn(
                 "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'tomorrow' ? 'bg-blue-50' : 'hover:bg-muted'
+                currentView === 'pending' ? 'bg-blue-50' : 'hover:bg-muted'
               )}
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-foreground">TOMORROW</span>
+                <span className="text-xs text-foreground">PENDING</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div 
-                    className={cn(
-                      "h-full bg-blue-500 rounded-full transition-all duration-300",
-                      completedTomorrowTasks === 0 ? "w-0" :
-                      completedTomorrowTasks === tomorrowTasks.length ? "w-full" :
-                      completedTomorrowTasks / tomorrowTasks.length > 0.8 ? "w-5/6" :
-                      completedTomorrowTasks / tomorrowTasks.length > 0.6 ? "w-3/4" :
-                      completedTomorrowTasks / tomorrowTasks.length > 0.4 ? "w-1/2" :
-                      completedTomorrowTasks / tomorrowTasks.length > 0.2 ? "w-1/4" : "w-1/6"
-                    )}
+                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: pendingTasks.length === 0 ? '0%' : 
+                      `${Math.min((pendingTasks.length / 10) * 100, 100)}%` 
+                    }}
                   ></div>
                 </div>
-                <span className="text-sm text-muted-foreground">{tomorrowTasks.length}</span>
+                <span className="text-xs text-muted-foreground">{pendingTasks.length}</span>
               </div>
             </button>
             
             <button
-              onClick={() => setCurrentView('upcoming')}
+              onClick={() => setCurrentView('done')}
               className={cn(
                 "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'upcoming' ? 'bg-green-50' : 'hover:bg-muted'
+                currentView === 'done' ? 'bg-green-50' : 'hover:bg-muted'
               )}
             >
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-foreground">UPCOMING</span>
+                <span className="text-xs text-foreground">DONE</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
                   <div 
-                    className={cn(
-                      "h-full bg-green-500 rounded-full transition-all duration-300",
-                      completedUpcomingTasks === 0 ? "w-0" :
-                      completedUpcomingTasks === upcomingTasks.length ? "w-full" :
-                      completedUpcomingTasks / upcomingTasks.length > 0.8 ? "w-5/6" :
-                      completedUpcomingTasks / upcomingTasks.length > 0.6 ? "w-3/4" :
-                      completedUpcomingTasks / upcomingTasks.length > 0.4 ? "w-1/2" :
-                      completedUpcomingTasks / upcomingTasks.length > 0.2 ? "w-1/4" : "w-1/6"
-                    )}
+                    className="h-full bg-green-500 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: doneTasks.length === 0 ? '0%' : 
+                      `${Math.min((doneTasks.length / 10) * 100, 100)}%` 
+                    }}
                   ></div>
                 </div>
-                <span className="text-sm text-muted-foreground">{upcomingTasks.length}</span>
+                <span className="text-xs text-muted-foreground">{doneTasks.length}</span>
               </div>
             </button>
           </div>
         </div>
+        
+        {/* Division Line 5 - After Task Bars */}
+        <div className="border-t border-border"></div>
 
         {/* Dynamic Tasks List */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-foreground">{getViewTitle()}</h3>
+          <h3 className="text-xs font-medium text-foreground">{getViewTitle()}</h3>
           
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {getCurrentTasks().length === 0 ? (
@@ -353,18 +450,25 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             )}
           </div>
         </div>
-
-        {/* Add New Task Button */}
-        <button 
-          onClick={() => setIsAddTaskModalOpen(true)}
-          className="w-full bg-white border border-border text-foreground py-3 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-muted transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Add New Task</span>
-        </button>
+        
+        {/* Division Line 6 - After Tasks for Today */}
+        <div className="border-t border-border"></div>
       </div>
+
+      {/* Add New Task Button - Fixed at Bottom */}
+      {!isCollapsed && (
+        <div className="p-4 border-t border-border">
+          <button 
+            onClick={() => setIsAddTaskModalOpen(true)}
+            className="w-full bg-white border border-border text-foreground py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center space-x-2 hover:bg-muted transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add New Task</span>
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       <WalkInAppointmentModal 
