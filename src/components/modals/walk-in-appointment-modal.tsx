@@ -3,11 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/utils';
 
+interface NewAppointment {
+  id: string;
+  date: Date;
+  time: string;
+  patient: string;
+  type: string;
+  duration: number;
+  audiologist: string;
+  notes: string;
+  phoneNumber: string;
+  email: string;
+}
+
 interface WalkInAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate?: Date;
   selectedTime?: string;
+  onAppointmentCreated?: (appointment: NewAppointment) => void;
 }
 
 type FormStage = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -34,14 +48,15 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   onClose,
   selectedDate,
   selectedTime,
+  onAppointmentCreated,
 }) => {
   const [currentStage, setCurrentStage] = useState<FormStage>(1);
   const [formData, setFormData] = useState<FormData>({
-    phoneNumber: '+1 234 567 8900',
-    fullName: 'Rakesh',
-    email: 'patient@example.com',
-    mobileNumber: '0123456789',
-    dateOfBirth: '28-06-2025',
+    phoneNumber: '',
+    fullName: '',
+    email: '',
+    mobileNumber: '',
+    dateOfBirth: '',
     gender: 'Male',
     alternateNumber: '',
     occupation: '',
@@ -52,6 +67,29 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     appointmentTime: '',
     notes: '',
   });
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStage(1);
+      setFormData({
+        phoneNumber: '',
+        fullName: '',
+        email: '',
+        mobileNumber: '',
+        dateOfBirth: '',
+        gender: 'Male',
+        alternateNumber: '',
+        occupation: '',
+        customerType: 'B2C (Direct Patient)',
+        selectedAudiologist: 'Dr. Sarah Johnson',
+        appointmentType: '',
+        appointmentDate: '',
+        appointmentTime: '',
+        notes: '',
+      });
+    }
+  }, [isOpen]);
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
@@ -97,8 +135,25 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   };
 
   const handleSubmit = () => {
-    // Handle form submission
+    // Create new appointment object
+    const newAppointment = {
+      id: Date.now().toString(), // Generate unique ID
+      date: selectedDate || new Date(),
+      time: formData.appointmentTime,
+      patient: formData.fullName,
+      type: formData.appointmentType,
+      duration: 30, // Default duration
+      audiologist: formData.selectedAudiologist,
+      notes: formData.notes,
+      phoneNumber: formData.phoneNumber,
+      email: formData.email,
+    };
+
+    // Pass the new appointment back to parent component
+    onAppointmentCreated?.(newAppointment);
+    
     console.log('Form submitted:', formData);
+    console.log('New appointment created:', newAppointment);
     onClose();
   };
 
@@ -210,10 +265,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           </label>
           <input
             type="tel"
+            id="mobileNumber"
             value={formData.mobileNumber}
             onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            placeholder="Enter mobile number"
+            aria-label="Mobile number"
           />
         </div>
 
@@ -223,10 +281,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           </label>
           <input
             type="date"
+            id="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            aria-label="Date of birth"
           />
         </div>
 
@@ -235,10 +295,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             Gender
           </label>
           <select
+            id="gender"
             value={formData.gender}
             onChange={(e) => handleInputChange('gender', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            aria-label="Gender"
           >
             <option value="Male">Male</option>
             <option value="Female">Female</option>
@@ -279,10 +341,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             Customer Type
           </label>
           <select
+            id="customerType"
             value={formData.customerType}
             onChange={(e) => handleInputChange('customerType', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            aria-label="Customer type"
           >
             <option value="B2C (Direct Patient)">B2C (Direct Patient)</option>
             <option value="B2B (Corporate)">B2B (Corporate)</option>
@@ -417,10 +481,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           </label>
           <input
             type="date"
+            id="appointmentDate"
             value={formData.appointmentDate}
             onChange={(e) => handleInputChange('appointmentDate', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            aria-label="Appointment date"
           />
         </div>
 
@@ -430,10 +496,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           </label>
           <input
             type="time"
+            id="appointmentTime"
             value={formData.appointmentTime}
             onChange={(e) => handleInputChange('appointmentTime', e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            aria-label="Appointment time"
           />
         </div>
       </div>

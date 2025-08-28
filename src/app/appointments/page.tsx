@@ -7,6 +7,20 @@ import DynamicCalendar from '@/components/calendar/dynamic-calendar';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { Appointment, CalendarView } from '@/utils/calendar';
 
+// Define the type for new appointments from modal
+interface NewAppointment {
+  id: string;
+  date: Date;
+  time: string;
+  patient: string;
+  type: string;
+  duration: number;
+  audiologist: string;
+  notes: string;
+  phoneNumber: string;
+  email: string;
+}
+
 
 export default function AppointmentsPage() {
   // State for walk-in appointment modal
@@ -14,8 +28,8 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
 
-  // Sample appointments data - convert to new format
-  const appointments: Appointment[] = [
+  // State for appointments - convert from const to state
+  const [appointments, setAppointments] = useState<Appointment[]>([
     {
       id: '1',
       date: new Date(2025, 7, 24), // Aug 24, 2025 (Sunday)
@@ -144,7 +158,7 @@ export default function AppointmentsPage() {
       type: 'Follow-up Assessment',
       duration: 30
     }
-  ];
+  ]);
 
   // Handle appointment click - just log for now, will add view functionality later
   const handleAppointmentClick = (appointment: Appointment) => {
@@ -157,6 +171,23 @@ export default function AppointmentsPage() {
     setSelectedDate(date);
     setSelectedTimeSlot(timeSlot);
     setIsWalkInModalOpen(true);
+  };
+
+  // Handle new appointment creation from modal
+  const handleAppointmentCreated = (newAppointment: NewAppointment) => {
+    // Convert the new appointment to match the Appointment type
+    const appointment: Appointment = {
+      id: newAppointment.id,
+      date: newAppointment.date,
+      time: newAppointment.time,
+      patient: newAppointment.patient,
+      type: newAppointment.type,
+      duration: newAppointment.duration,
+    };
+    
+    // Add the new appointment to the state
+    setAppointments(prev => [...prev, appointment]);
+    console.log('New appointment added:', appointment);
   };
 
   // Handle date change
@@ -198,6 +229,7 @@ export default function AppointmentsPage() {
         onClose={() => setIsWalkInModalOpen(false)}
         selectedDate={selectedDate}
         selectedTime={selectedTimeSlot}
+        onAppointmentCreated={handleAppointmentCreated}
       />
     </MainLayout>
   );
