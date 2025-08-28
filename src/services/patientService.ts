@@ -143,3 +143,4 @@ class PatientService {
 }
 
 export const patientService = new PatientService();
+
