@@ -493,7 +493,7 @@ export default function DynamicCalendar({
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-full">
           {/* Week Header */}
           <div className="grid grid-cols-8  border-gray-200 sticky top-0 z-10 bg-white">
-            <div className="p-3 bg-gray-50  border-gray-200">
+            <div className="p-3 bg-gray-50 border-gray-200 flex items-center justify-center">
               <span className="text-xs font-medium text-gray-600">TIME</span>
             </div>
             {weekDays.map((day, index) => (
