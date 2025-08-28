@@ -187,8 +187,8 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         </div>
       )}
 
-      {/* Scrollable Content */}
-      <div className={cn("flex-1 overflow-auto", isCollapsed ? "hidden" : "py-3 space-y-4")}>
+      {/* Fixed Header Section */}
+      <div className={cn("flex-shrink-0", isCollapsed ? "hidden" : "py-3")}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-2">
           <h2 className="text-sm font-semibold text-foreground">Tasks & Analytics</h2>
@@ -213,7 +213,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         <div className="border-t border-border"></div>
 
         {/* Primary Actions */}
-        <div className="space-y-2 px-3">
+        <div className="space-y-2 px-3 py-2">
           <button 
             onClick={() => setIsWalkInModalOpen(true)}
             className="w-full bg-orange-500 text-white py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center space-x-2 hover:bg-orange-600 transition-colors"
@@ -391,13 +391,16 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         
         {/* Division Line 5 - After Task Bars */}
         <div className="border-t border-border"></div>
+      </div>
 
+      {/* Scrollable Tasks Section */}
+      <div className={cn("flex-1 overflow-y-auto", isCollapsed ? "hidden" : "px-3")}>
         {/* Dynamic Tasks List */}
-        <div className="space-y-3 px-3">
+        <div className="space-y-3 py-3">
           <h3 className="text-xs font-medium text-foreground">{getViewTitle()}</h3>
           
           {/* Reduce space between tasks for today */}
-          <div className="space-y-1 max-h-96 overflow-y-auto">
+          <div className="space-y-1">
             {getCurrentTasks().length === 0 ? (
               <div className="bg-white border border-border rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">No tasks for this period</p>
@@ -446,7 +449,6 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             )}
           </div>
         </div>
-  
       </div>
 
       {/* Add New Task Button - Fixed at Bottom */}
