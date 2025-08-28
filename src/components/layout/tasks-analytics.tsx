@@ -7,11 +7,25 @@ import AddTaskModal from '@/components/modals/add-task-modal';
 import AudiologistOverview from '@/components/layout/audiologist-overview';
 import { useTask, Task } from '@/contexts/TaskContext';
 
-interface TasksAnalyticsProps {
-  className?: string;
+interface NewAppointment {
+  id: string;
+  date: Date;
+  time: string;
+  patient: string;
+  type: string;
+  duration: number;
+  audiologist: string;
+  notes: string;
+  phoneNumber: string;
+  email: string;
 }
 
-const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
+interface TasksAnalyticsProps {
+  className?: string;
+  onAppointmentCreated?: (appointment: NewAppointment) => void;
+}
+
+const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmentCreated }) => {
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'today' | 'overdue' | 'pending' | 'done'>('today');
@@ -470,6 +484,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
       <WalkInAppointmentModal 
         isOpen={isWalkInModalOpen}
         onClose={() => setIsWalkInModalOpen(false)}
+        onAppointmentCreated={onAppointmentCreated}
       />
       
       <AddTaskModal 

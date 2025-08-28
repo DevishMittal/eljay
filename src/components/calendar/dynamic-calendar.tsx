@@ -17,7 +17,8 @@ import {
   generateTimeSlots,
   getAppointmentsForDate,
   getAppointmentsForTimeSlot,
-  isSameDay
+  isSameDay,
+  formatDate
 } from '@/utils/calendar';
 
 interface DynamicCalendarProps {
@@ -39,6 +40,13 @@ export default function DynamicCalendar({
 }: DynamicCalendarProps) {
   const [currentDate, setCurrentDate] = useState(getToday());
   const [currentView, setCurrentView] = useState<CalendarView>('week');
+  const [hoveredAppointment, setHoveredAppointment] = useState<Appointment | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState('');
 
   // Generate time slots
   const timeSlots = useMemo(() => generateTimeSlots(8, 17, 30), []);
@@ -93,7 +101,86 @@ export default function DynamicCalendar({
 
   // Handle appointment click
   const handleAppointmentClick = (appointment: Appointment) => {
-    onAppointmentClick?.(appointment);
+    setSelectedAppointment(appointment);
+    setIsDetailsModalOpen(true);
+    setIsDropdownOpen(false); // Close dropdown when opening modal
+    setIsEditingNotes(false); // Reset notes editing state
+    setNotesText(appointment.notes || ''); // Initialize notes text
+    // Don't call onAppointmentClick here as we want to show our own modal
+  };
+
+  // Handle click outside dropdown
+  const handleClickOutside = (event: React.MouseEvent) => {
+    if (isDropdownOpen) {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  // Render appointment tooltip
+  const renderAppointmentTooltip = (appointment: Appointment) => {
+    if (!hoveredAppointment || hoveredAppointment.id !== appointment.id) return null;
+
+    return (
+      <div
+        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-3 max-w-xs"
+        style={{
+          left: tooltipPosition.x,
+          top: tooltipPosition.y,
+          transform: 'translate(-50%, -100%)',
+          marginTop: '-12px'
+        }}
+      >
+        {/* Tooltip arrow */}
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+        
+        {/* Patient Information Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-semibold text-sm text-gray-900">{appointment.patient}</div>
+              <div className="text-xs text-gray-500">Patient</div>
+            </div>
+          </div>
+          <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+            Pending
+          </div>
+        </div>
+
+        {/* Appointment Details */}
+        <div className="space-y-1.5">
+          <div className="flex items-center space-x-2">
+            <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-xs text-gray-700">{appointment.type || 'Follow-up Consultation'}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-xs text-gray-700">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs text-gray-700">{appointment.time} ({appointment.duration} min)</span>
+          </div>
+        </div>
+
+        {/* Contact Information */}
+        <div className="mt-1 pt-1">
+          <div className="text-xs text-gray-600">
+            Contact: {appointment.phoneNumber || 'fsfs'}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render appointment component
@@ -101,8 +188,20 @@ export default function DynamicCalendar({
     <div
       key={appointment.id}
       className="absolute inset-1 rounded-sm p-2 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-blue-50 border-l-2 !border-blue-500"
-      onClick={() => handleAppointmentClick(appointment)}
-      title={`${appointment.patient} - ${appointment.type}`}
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent the time slot click from firing
+        handleAppointmentClick(appointment);
+      }}
+      onMouseEnter={(e) => {
+        setHoveredAppointment(appointment);
+        setTooltipPosition({ x: e.clientX, y: e.clientY - 10 });
+      }}
+      onMouseMove={(e) => {
+        if (hoveredAppointment?.id === appointment.id) {
+          setTooltipPosition({ x: e.clientX, y: e.clientY - 10 });
+        }
+      }}
+      onMouseLeave={() => setHoveredAppointment(null)}
     >
       <div className="flex items-center space-x-1 mb-1">
         <svg className="w-2.5 h-2.5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,8 +210,236 @@ export default function DynamicCalendar({
         <span className="font-medium truncate text-blue-900">{appointment.patient}</span>
       </div>
       <div className="truncate text-blue-800">{appointment.type}</div>
+      <div className="text-xs text-blue-600 mt-1">{appointment.duration}min</div>
+      
+      {/* Render tooltip */}
+      {renderAppointmentTooltip(appointment)}
     </div>
   );
+
+  // Render appointment details modal
+  const renderAppointmentDetailsModal = () => {
+    if (!isDetailsModalOpen || !selectedAppointment) return null;
+
+    const appointment = selectedAppointment;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
+        <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="p-5">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Appointment Details</h2>
+                <p className="text-xs text-gray-500 mt-1">Patient appointment information and management options for {appointment.patient}</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    setIsDetailsModalOpen(false);
+                    setSelectedAppointment(null);
+                  }}
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  aria-label="Edit appointment"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsDetailsModalOpen(false);
+                    setSelectedAppointment(null);
+                  }}
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Patient Information Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 text-base">{appointment.patient}</h3>
+                    <p className="text-sm text-gray-500">Patient ID: PAT999</p>
+                    <p className="text-sm text-gray-600">{appointment.phoneNumber || 'No contact number'}</p>
+                  </div>
+                </div>
+                <div className="text-right space-y-1">
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">Pending</div>
+                  <div className="flex items-center justify-end space-x-1 text-orange-600 text-xs">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>Incomplete profile</span>
+                  </div>
+                  <div className="text-xs text-gray-500 text-right">No email</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Appointment Details Section */}
+            <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="font-semibold text-gray-900 text-base">In-Clinic Appointment</span>
+                </div>
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors flex items-center space-x-2"
+                  >
+                    <span>Mark as...</span>
+                    <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {/* Dropdown Menu */}
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                      <div className="py-1">
+                        <div 
+                          className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            // Handle check in logic here
+                          }}
+                        >
+                          <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Check In</span>
+                        </div>
+                        <div 
+                          className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            // Handle no-show logic here
+                          }}
+                        >
+                          <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                          </svg>
+                          <span>No-Show</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <p className="text-gray-700">
+                  <span className="font-medium">Doctor:</span> <span className="font-semibold">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
+                </p>
+                <p className="text-gray-700">
+                  <span className="font-medium">Time:</span> <span className="font-semibold">{appointment.time} - {appointment.duration} minutes</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Planned Procedures Section */}
+            <div className="mb-4">
+              <h3 className="font-semibold text-gray-900 text-base mb-3">Planned Procedures</h3>
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm text-gray-900">Follow-up Consultation</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-900 text-base mb-3">Notes</h3>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                {isEditingNotes ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={notesText}
+                      onChange={(e) => setNotesText(e.target.value)}
+                      className="w-full p-3 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
+                      placeholder="Add notes for this patient..."
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => {
+                          setIsEditingNotes(false);
+                          setNotesText(appointment.notes || '');
+                        }}
+                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Here you would save the notes to the appointment
+                          setIsEditingNotes(false);
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => setIsEditingNotes(true)}
+                  >
+                    <p className="text-sm text-gray-500 italic">
+                      {notesText || "No notes available. Click \"Edit\" to add notes for this patient."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between space-x-3 pt-4 ">
+              <button
+                onClick={() => {
+                  setIsDetailsModalOpen(false);
+                  setSelectedAppointment(null);
+                }}
+                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 text-sm font-medium"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <span>Collect Payment</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsDetailsModalOpen(false);
+                  setSelectedAppointment(null);
+                }}
+                className="px-6 py-2.5 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+              >
+                Cancel Appointment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Render day view
   const renderDayView = () => {
@@ -139,11 +466,11 @@ export default function DynamicCalendar({
               return (
                 <div
                   key={slot.time}
-                  className="h-16 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer relative flex"
+                  className="h-16 border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer relative flex group"
                   onClick={() => handleTimeSlotClick(dayData.date, slot.time)}
                 >
                   <div className="w-20 p-3  border-gray-200 bg-gray-50 flex items-center justify-center">
-                    <span className="text-xs text-gray-600 text-center">{slot.time}</span>
+                    <span className="text-xs text-gray-600 text-center group-hover:text-blue-600 transition-colors">{slot.time}</span>
                   </div>
                   <div className="flex-1 relative">
                     {slotAppointments.map(renderAppointment)}
@@ -225,7 +552,7 @@ export default function DynamicCalendar({
                   return (
                     <div
                       key={slot.time}
-                      className="h-16 border-b border-gray-200 relative hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="h-16 border-b border-gray-200 relative hover:bg-gray-100 transition-colors cursor-pointer group"
                       onClick={() => handleTimeSlotClick(day.date, slot.time)}
                     >
                       {slotAppointments.map(renderAppointment)}
@@ -291,9 +618,21 @@ export default function DynamicCalendar({
                               e.stopPropagation();
                               handleAppointmentClick(appointment);
                             }}
+                            onMouseEnter={(e) => {
+                              setHoveredAppointment(appointment);
+                              setTooltipPosition({ x: e.clientX, y: e.clientY - 10 });
+                            }}
+                            onMouseMove={(e) => {
+                              if (hoveredAppointment?.id === appointment.id) {
+                                setTooltipPosition({ x: e.clientX, y: e.clientY - 10 });
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredAppointment(null)}
                             title={`${appointment.time} - ${appointment.patient}: ${appointment.type}`}
                           >
                             {appointment.time} {appointment.patient}
+                            {/* Render tooltip for month view appointments too */}
+                            {renderAppointmentTooltip(appointment)}
                           </div>
                         ))}
                         {dayAppointments.length > 3 && (
@@ -319,7 +658,14 @@ export default function DynamicCalendar({
       <div className="flex-shrink-0 p-4">
         <div className="flex items-center justify-between bg-white">
           {/* Title */}
-          <h1 className="text-md font-bold text-black">Appointment Calendar</h1>
+          <h1 className="text-md font-bold text-black">
+            Appointment Calendar
+            {appointments.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                ({appointments.length} appointment{appointments.length !== 1 ? 's' : ''})
+              </span>
+            )}
+          </h1>
           
           {/* Date Navigation */}
           <div className="flex items-center">
@@ -378,6 +724,9 @@ export default function DynamicCalendar({
       {currentView === 'day' && renderDayView()}
       {currentView === 'week' && renderWeekView()}
       {currentView === 'month' && renderMonthView()}
+
+      {/* Appointment Details Modal */}
+      {renderAppointmentDetailsModal()}
     </div>
   );
 }

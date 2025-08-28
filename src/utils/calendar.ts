@@ -33,6 +33,10 @@ export interface Appointment {
   type: string;
   duration: number; // in minutes
   color?: string;
+  audiologist?: string;
+  phoneNumber?: string;
+  email?: string;
+  notes?: string;
 }
 
 /**

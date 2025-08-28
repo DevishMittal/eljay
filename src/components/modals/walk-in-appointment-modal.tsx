@@ -110,7 +110,15 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       setFormData(prev => ({ ...prev, appointmentDate: dateString }));
     }
     if (selectedTime) {
-      setFormData(prev => ({ ...prev, appointmentTime: selectedTime }));
+      // Convert 24-hour format to 12-hour format for display
+      const convertTimeTo12Hour = (time24: string): string => {
+        const [hours, minutes] = time24.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+      
+      setFormData(prev => ({ ...prev, appointmentTime: convertTimeTo12Hour(selectedTime) }));
     }
   }, [selectedDate, selectedTime]);
 
@@ -147,14 +155,29 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   };
 
   const handleSubmit = () => {
+    // Convert 12-hour format to 24-hour format for calendar compatibility
+    const convertTimeTo24Hour = (time12: string): string => {
+      const [time, period] = time12.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) {
+        hour24 = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        hour24 = 0;
+      }
+      
+      return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
     // Create new appointment object
     const newAppointment = {
       id: Date.now().toString(), // Generate unique ID
       date: selectedDate || new Date(),
-      time: formData.appointmentTime,
+      time: formData.appointmentTime ? convertTimeTo24Hour(formData.appointmentTime) : '09:00',
       patient: formData.fullName,
-      type: formData.appointmentType,
-      duration: 30, // Default duration
+      type: formData.selectedProcedures || 'Walk-in Appointment', // Use selected procedures or default
+      duration: parseInt(formData.duration) || 30, // Use form duration or default
       audiologist: formData.selectedAudiologist,
       notes: formData.notes,
       phoneNumber: formData.phoneNumber,
