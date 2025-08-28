@@ -11,6 +11,7 @@ export interface Task {
   taskType: 'General' | 'Patient Care' | 'Administrative' | 'Equipment' | 'Training';
   completed: boolean;
   setReminder: boolean;
+  reminderTime?: '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before';
   createdAt: Date;
   completedAt?: Date;
 }
@@ -81,6 +82,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       taskType: 'Patient Care',
       completed: false,
       setReminder: true,
+      reminderTime: '15 minutes before',
       createdAt: new Date(Date.now() - 86400000), // Yesterday
     },
     {
@@ -104,6 +106,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       taskType: 'Training',
       completed: false,
       setReminder: true,
+      reminderTime: '1 hour before',
       createdAt: new Date(),
     },
     {
@@ -126,6 +129,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       taskType: 'Patient Care',
       completed: false,
       setReminder: true,
+      reminderTime: '30 minutes before',
       createdAt: new Date(),
     },
   ]);

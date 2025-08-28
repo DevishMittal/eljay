@@ -319,25 +319,25 @@ export default function DynamicCalendar({
       <div className="flex-shrink-0 p-4">
         <div className="flex items-center justify-between bg-white">
           {/* Title */}
-          <h1 className="text-xl font-bold text-gray-900">Appointment Calendar</h1>
+          <h1 className="text-md font-bold text-black">Appointment Calendar</h1>
           
           {/* Date Navigation */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center">
             <button
               onClick={handlePrevious}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className=" hover:bg-gray-100 rounded-md transition-colors"
               aria-label={`Previous ${currentView}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <span className="text-md font-medium text-black min-w-[200px] text-center">
+            <span className="text-md font-medium text-black min-w-[150px] text-center">
               {getDateRangeText(currentDate, currentView)}
             </span>
             <button
               onClick={handleNext}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="hover:bg-gray-100 rounded-lg transition-colors"
               aria-label={`Next ${currentView}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -350,7 +350,7 @@ export default function DynamicCalendar({
           <div className="flex items-center space-x-2">
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-sm bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors shadow-sm"
+              className="px-3 py-1 text-xs bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors shadow-lg"
             >
               Today
             </button>
@@ -360,9 +360,9 @@ export default function DynamicCalendar({
                   key={view}
                   onClick={() => handleViewChange(view)}
                   className={cn(
-                    "px-3 py-1 text-sm rounded-md transition-colors capitalize",
+                    "px-3 py-1 text-xs rounded-md transition-colors capitalize",
                     currentView === view
-                      ? "bg-white border border-gray-300 text-black shadow-sm"
+                      ? "bg-white border border-gray-300 text-black shadow-lg"
                       : "bg-gray-100 text-black hover:bg-gray-200"
                   )}
                 >

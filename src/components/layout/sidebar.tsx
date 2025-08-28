@@ -130,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   return (
     <aside className={cn(
       'bg-white border-custom-r flex flex-col transition-all duration-300',
-      isCollapsed ? 'w-16' : 'w-64',
+      isCollapsed ? 'w-14' : 'w-52',
       className
     )}>
       {/* Logo Section */}
@@ -147,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-[#101828]">Eljay</span>
+              <span className="text-base font-bold text-[#101828]">Eljay</span>
               <span className="text-xs text-[#667085]">Hearing Care Management</span>
             </div>
           )}
@@ -164,11 +164,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                   <button
                     onClick={() => toggleExpanded(item.title)}
                     className={cn(
-                      'flex items-center w-full px-4 py-3 text-sm transition-colors',
-                      isCollapsed ? 'justify-center' : 'space-x-3',
+                      'flex items-center w-full px-3 py-2.5 text-xs transition-colors',
+                      isCollapsed ? 'justify-center' : 'space-x-2',
                       item.isActive
                         ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                        : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
+                        : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
                     )}
                     style={{ fontFamily: 'Segoe UI' }}
                   >
@@ -213,10 +213,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                           <Link
                             href={subItem.href}
                             className={cn(
-                              'flex items-center px-4 py-2 text-sm transition-colors space-x-3',
+                              'flex items-center px-3 py-1.5 text-xs transition-colors space-x-2',
                               subItem.isActive
                                 ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                                : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
+                                : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
                             )}
                             style={{ fontFamily: 'Segoe UI' }}
                           >
@@ -243,11 +243,11 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center px-4 py-3 text-sm transition-colors',
-                    isCollapsed ? 'justify-center' : 'space-x-3',
+                    'flex items-center px-3 py-2.5 text-xs transition-colors',
+                    isCollapsed ? 'justify-center' : 'space-x-2',
                     item.isActive
                       ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                      : 'text-[#4A5565] font-normal hover:text-[#F9FAFB] hover:bg-gray-400'
+                      : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
                   )}
                   style={{ fontFamily: 'Segoe UI' }}
                 >

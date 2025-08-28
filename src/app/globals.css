@@ -16,7 +16,7 @@
   --border: #E5E7EB;
   
   --input: #e2e8f0;
-  --ring: #f97316;
+  --ring: #999898;
   
   /* Search bar specific colors */
   --search-bg: #F9FAFB;
@@ -80,7 +80,7 @@
     --muted-foreground: #94a3b8;
     --border: #E5E7EB;
     --input: #334155;
-    --ring: #f97316;
+    --ring: #999898;
     --search-bg: #1e293b;
     --search-border: #E5E7EB;
     --search-placeholder: #94a3b8;
@@ -161,8 +161,8 @@ body {
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-gray-200) ;
+  
 }
 
 /* Selection styles */

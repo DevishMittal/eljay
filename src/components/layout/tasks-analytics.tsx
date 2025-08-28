@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { cn } from '@/utils';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import AddTaskModal from '@/components/modals/add-task-modal';
+import AudiologistOverview from '@/components/layout/audiologist-overview';
 import { useTask, Task } from '@/contexts/TaskContext';
 
 interface TasksAnalyticsProps {
@@ -167,7 +168,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
 
   return (
     <div className={cn('bg-white border-l border-border flex flex-col h-full transition-all duration-300', 
-      isCollapsed ? 'w-12' : 'w-64', className)}>
+      isCollapsed ? 'w-12' : 'w-72', className)}>
       
 
 
@@ -187,9 +188,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
       )}
 
       {/* Scrollable Content */}
-      <div className={cn("flex-1 overflow-auto", isCollapsed ? "hidden" : "p-4 space-y-4")}>
+      <div className={cn("flex-1 overflow-auto", isCollapsed ? "hidden" : "py-3 space-y-4")}>
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-5 py-2">
           <h2 className="text-sm font-semibold text-foreground">Tasks & Analytics</h2>
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -212,7 +213,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         <div className="border-t border-border"></div>
 
         {/* Primary Actions */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-3">
           <button 
             onClick={() => setIsWalkInModalOpen(true)}
             className="w-full bg-orange-500 text-white py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center space-x-2 hover:bg-orange-600 transition-colors"
@@ -226,22 +227,14 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
           {/* Division Line 2 - After Add Walk-in Button */}
           <div className="border-t border-border"></div>
           
-          <div className="flex items-center justify-between p-2 hover:bg-muted rounded-md cursor-pointer transition-colors">
-            <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="text-xs font-medium text-foreground">Audiologist Overview</span>
-            </div>
-            <svg className="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <div className="px-1">
+            <AudiologistOverview />
           </div>
           
           {/* Division Line 3 - After Audiologist Overview */}
           <div className="border-t border-border"></div>
 
-          <div className="flex items-center justify-between p-2 rounded-md">
+          <div className="flex items-center justify-between p-2 rounded-md px-3">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -258,7 +251,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         </div>
 
         {/* Task Navigation */}
-        <div className="space-y-3">
+        <div className="space-y-3 px-3">
           <div className="flex items-center justify-between w-full">
                           <button 
                 onClick={() => {
@@ -400,39 +393,42 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
         <div className="border-t border-border"></div>
 
         {/* Dynamic Tasks List */}
-        <div className="space-y-3">
+        <div className="space-y-3 px-3">
           <h3 className="text-xs font-medium text-foreground">{getViewTitle()}</h3>
           
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          {/* Reduce space between tasks for today */}
+          <div className="space-y-1 max-h-96 overflow-y-auto">
             {getCurrentTasks().length === 0 ? (
               <div className="bg-white border border-border rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">No tasks for this period</p>
               </div>
             ) : (
               getCurrentTasks().map((task: Task) => (
-                <div key={task.id} className="bg-white border border-border rounded-lg p-4 space-y-3">
-                  <div className="flex items-start space-x-3">
+                <div key={task.id} className="bg-white border border-border rounded-lg p-2 space-y-2">
+                  <div className="flex items-start space-x-2">
                     <input 
                       type="checkbox" 
                       checked={task.completed}
                       onChange={() => handleTaskToggle(task.id)}
-                      className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded" 
+                      className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-2 border-gray-300 rounded-full appearance-none checked:bg-green-600 checked:border-green-600 relative cursor-pointer" 
                       id={`task-${task.id}`}
                       aria-label={`Mark ${task.title} as ${task.completed ? 'incomplete' : 'complete'}`}
+                      style={{
+                        backgroundImage: task.completed ? 'url("data:image/svg+xml,%3csvg viewBox=\'0 0 16 16\' fill=\'white\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z\'/%3e%3c/svg%3e")' : 'none',
+                        backgroundSize: '12px',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        borderRadius: '50%'
+                      }}
                     />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className={cn("px-2 py-1 text-xs rounded-full", getPriorityColor(task.priority))}>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center space-x-1">
+                        <span className={cn("px-1 py-0.5 text-xs rounded-full", getPriorityColor(task.priority))}>
                           {task.priority.toLowerCase()}
                         </span>
-                        {task.setReminder && (
-                          <svg className="w-3 h-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5V3h0z" />
-                          </svg>
-                        )}
                       </div>
                       <h4 className={cn(
-                        "text-sm font-medium",
+                        "text-xs font-medium",
                         task.completed ? 'text-muted-foreground line-through' : 'text-foreground'
                       )}>
                         {task.title}
@@ -440,7 +436,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
                       {task.description && (
                         <p className="text-xs text-muted-foreground">{task.description}</p>
                       )}
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground font-light">
                         Due: {formatDate(task.dueDate)}
                       </p>
                     </div>
@@ -450,14 +446,12 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className }) => {
             )}
           </div>
         </div>
-        
-        {/* Division Line 6 - After Tasks for Today */}
-        <div className="border-t border-border"></div>
+  
       </div>
 
       {/* Add New Task Button - Fixed at Bottom */}
       {!isCollapsed && (
-        <div className="p-4 border-t border-border">
+        <div className="px-3 py-3 border-t border-border">
           <button 
             onClick={() => setIsAddTaskModalOpen(true)}
             className="w-full bg-white border border-border text-foreground py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center space-x-2 hover:bg-muted transition-colors"
