@@ -116,14 +116,12 @@ export default function PatientsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Patients</h1>
-            <p className="text-sm" style={{ color: '#4A5565' }}>
-              {patients.length === 0 ? 'No patients endpoint available yet' : `${patients.length} of ${totalPatients} patients`}
-            </p>
+            <h1 className="text-lg font-medium" style={{ color: '#101828' }}>Patients</h1>
+          
           </div>
           <div className="flex items-center space-x-3">
             <button 
-              className="px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+              className="text-sm px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Filter patients"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor ">
@@ -132,7 +130,7 @@ export default function PatientsPage() {
               <span>Filter</span>
             </button>
             <button 
-              className="px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+              className=" text-sm px-3 py-2 bg-white text-gray-700 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-200 transition-colors"
               aria-label="Sort patients"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,7 +143,7 @@ export default function PatientsPage() {
             </button>
             <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
               <button 
-                className="p-2 bg-white rounded-md shadow-sm"
+                className="text-sm p-2 bg-white rounded-md shadow-sm"
                 aria-label="List view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,7 +151,7 @@ export default function PatientsPage() {
                 </svg>
               </button>
               <button 
-                className="p-2 hover:bg-white rounded-md transition-colors"
+                className="text-sm p-2 hover:bg-white rounded-md transition-colors"
                 aria-label="Grid view"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,7 +161,7 @@ export default function PatientsPage() {
             </div>
             <button 
               onClick={handleAddPatient}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-600 transition-colors"
+              className="text-sm bg-orange-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-600 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

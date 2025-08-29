@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       <nav className="flex-1 py-4">
         <ul className="space-y-1">
           {navigationItems.map((item) => (
-            <li key={item.href}>
+            <li key={item.href} className={cn(!isCollapsed && 'px-2')}>
               {item.hasSubItems ? (
                 <div>
                   <button
@@ -166,9 +166,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                     className={cn(
                       'flex items-center w-full px-3 py-2.5 text-xs transition-colors',
                       isCollapsed ? 'justify-center' : 'space-x-2',
+                      'rounded-lg', // rounded rectangle
                       item.isActive
                         ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                        : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
+                        : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black hover:rounded-lg'
                     )}
                     style={{ fontFamily: 'Segoe UI' }}
                   >
@@ -209,14 +210,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                   {!isCollapsed && isExpanded(item.title) && item.subItems && (
                     <ul className="ml-4 space-y-1">
                       {item.subItems.map((subItem) => (
-                        <li key={subItem.href}>
+                        <li key={subItem.href} className="px-1">
                           <Link
                             href={subItem.href}
                             className={cn(
                               'flex items-center px-3 py-1.5 text-xs transition-colors space-x-2',
+                              'rounded-lg', // rounded rectangle
                               subItem.isActive
                                 ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                                : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
+                                : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black hover:rounded-lg'
                             )}
                             style={{ fontFamily: 'Segoe UI' }}
                           >
@@ -245,9 +247,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                   className={cn(
                     'flex items-center px-3 py-2.5 text-xs transition-colors',
                     isCollapsed ? 'justify-center' : 'space-x-2',
+                    'rounded-lg', // rounded rectangle
                     item.isActive
                       ? 'bg-[#F3F4F6] text-[#101828] font-semibold'
-                      : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black'
+                      : 'text-[#4A5565] font-normal hover:bg-gray-100 hover:text-black hover:rounded-lg'
                   )}
                   style={{ fontFamily: 'Segoe UI' }}
                 >

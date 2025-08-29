@@ -28,6 +28,7 @@ export default function AddPatientPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
   const handleInputChange = (field: keyof CreateUserData, value: string) => {
@@ -65,13 +66,41 @@ export default function AddPatientPage() {
     try {
       setLoading(true);
       setError(null);
-      await patientService.createUser(formData);
+      setSuccess(null);
+      const response = await patientService.createUser(formData);
       
-      // Navigate back to patients list
-      router.push('/patients');
-    } catch (err) {
-      setError('Failed to create patient. Please try again.');
-      console.error('Error creating patient:', err);
+      // Show success message briefly before navigation
+      setSuccess('Patient created successfully!');
+      
+      // Navigate back to patients list after a short delay
+      setTimeout(() => {
+        router.push('/patients');
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error creating patient:', error);
+      
+      // Handle specific error cases
+      let errorMessage = 'Failed to create patient. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        // Check for common error patterns
+        const message = error.message.toLowerCase();
+        if (message.includes('email') && (message.includes('already') || message.includes('exists') || message.includes('duplicate'))) {
+          errorMessage = 'This email address is already registered. Please use a different email.';
+        } else if (message.includes('phone') && (message.includes('already') || message.includes('exists') || message.includes('duplicate'))) {
+          errorMessage = 'This phone number is already registered. Please use a different phone number.';
+        } else if (message.includes('duplicate') || message.includes('already exists')) {
+          errorMessage = 'A patient with these details already exists. Please check the information and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -310,8 +339,30 @@ export default function AddPatientPage() {
                   </div>
 
                 {error && (
-                  <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-xs">{error}</p>
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h4 className="text-red-800 font-medium text-sm mb-1">Error Creating Patient</h4>
+                        <p className="text-red-600 text-sm">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h4 className="text-green-800 font-medium text-sm mb-1">Success!</h4>
+                        <p className="text-green-600 text-sm">{success}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
 

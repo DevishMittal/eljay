@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/utils';
+import Image from 'next/image'; // Import for using SVG as <Image>
 import {
   CalendarView,
   CalendarDate,
@@ -137,9 +138,14 @@ export default function DynamicCalendar({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              {/* Use doctor-referrals.svg instead of profile svg */}
+              <Image
+                src="/sidebar/doctor-referrals.svg"
+                alt="Doctor Referrals"
+                width={15}
+                height={15}
+                className="w-3 h-3"
+              />
             </div>
             <div>
               <div className="font-semibold text-sm text-gray-900">{appointment.patient}</div>
@@ -204,9 +210,14 @@ export default function DynamicCalendar({
       onMouseLeave={() => setHoveredAppointment(null)}
     >
       <div className="flex items-center space-x-1 mb-1">
-        <svg className="w-2.5 h-2.5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
+        {/* Use doctor-referrals.svg instead of profile svg */}
+        <Image
+          src="/sidebar/doctor-referrals.svg"
+          alt="Doctor Referrals"
+          width={10}
+          height={10}
+          className="w-2.5 h-2.5 flex-shrink-0 text-gray-500"
+        />
         <span className="font-medium truncate text-blue-900">{appointment.patient}</span>
       </div>
       <div className="truncate text-blue-800">{appointment.type}</div>
@@ -266,9 +277,14 @@ export default function DynamicCalendar({
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    {/* Use doctor-referrals.svg instead of profile svg */}
+                    <Image
+                      src="/sidebar/doctor-referrals.svg"
+                      alt="Doctor Referrals"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 text-blue-600"
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 text-base">{appointment.patient}</h3>
@@ -630,6 +646,16 @@ export default function DynamicCalendar({
                             onMouseLeave={() => setHoveredAppointment(null)}
                             title={`${appointment.time} - ${appointment.patient}: ${appointment.type}`}
                           >
+                            {/* Use doctor-referrals.svg before patient name */}
+                            <span className="inline-block align-middle mr-1">
+                              <Image
+                                src="/sidebar/doctor-referrals.svg"
+                                alt="Doctor Referrals"
+                                width={10}
+                                height={10}
+                                className="w-2.5 h-2.5"
+                              />
+                            </span>
                             {appointment.time} {appointment.patient}
                             {/* Render tooltip for month view appointments too */}
                             {renderAppointmentTooltip(appointment)}

@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             </div>
             <input
               type="text"
-              placeholder="Search audiologists, patients..."
+              placeholder="Search patients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[70%] pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-xs text-[#4A5565] placeholder:text-search-placeholder"
