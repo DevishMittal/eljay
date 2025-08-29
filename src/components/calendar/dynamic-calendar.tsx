@@ -224,7 +224,7 @@ export default function DynamicCalendar({
     const appointment = selectedAppointment;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
         <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <div className="p-5">
             {/* Header */}

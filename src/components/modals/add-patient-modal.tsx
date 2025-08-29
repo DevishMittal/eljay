@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CreatePatientData } from '@/types';
+import { CreatePatientData, CreateUserData } from '@/types';
 import { patientService } from '@/services/patientService';
 
 interface AddPatientModalProps {
@@ -11,19 +11,21 @@ interface AddPatientModalProps {
 }
 
 export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatientModalProps) {
-  const [formData, setFormData] = useState<CreatePatientData>({
-    full_name: '',
-    mobile_number: '',
-    email_address: '',
+  const [formData, setFormData] = useState<CreateUserData>({
+    fullname: '',
+    email: '',
+    countrycode: '+82',
+    phoneNumber: '',
     dob: '',
     gender: 'Male',
     occupation: '',
-    address: ''
+    customerType: 'B2C',
+    alternateNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof CreatePatientData, value: string) => {
+  const handleInputChange = (field: keyof CreateUserData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -34,15 +36,15 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
     e.preventDefault();
     
     // Basic validation
-    if (!formData.full_name.trim()) {
+    if (!formData.fullname.trim()) {
       setError('Full name is required');
       return;
     }
-    if (!formData.mobile_number.trim()) {
-      setError('Mobile number is required');
+    if (!formData.phoneNumber.trim()) {
+      setError('Phone number is required');
       return;
     }
-    if (!formData.email_address.trim()) {
+    if (!formData.email.trim()) {
       setError('Email address is required');
       return;
     }
@@ -54,25 +56,23 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
       setError('Occupation is required');
       return;
     }
-    if (!formData.address.trim()) {
-      setError('Address is required');
-      return;
-    }
 
     try {
       setLoading(true);
       setError(null);
-      await patientService.createPatient(formData);
+      await patientService.createUser(formData);
       
       // Reset form
       setFormData({
-        full_name: '',
-        mobile_number: '',
-        email_address: '',
+        fullname: '',
+        email: '',
+        countrycode: '+82',
+        phoneNumber: '',
         dob: '',
         gender: 'Male',
         occupation: '',
-        address: ''
+        customerType: 'B2C',
+        alternateNumber: ''
       });
       
       onSuccess();
@@ -88,13 +88,15 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        full_name: '',
-        mobile_number: '',
-        email_address: '',
+        fullname: '',
+        email: '',
+        countrycode: '+82',
+        phoneNumber: '',
         dob: '',
         gender: 'Male',
         occupation: '',
-        address: ''
+        customerType: 'B2C',
+        alternateNumber: ''
       });
       setError(null);
       onClose();
@@ -104,8 +106,8 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2  shadow-lg">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold" style={{ color: '#101828' }}>Add New Patient</h2>
@@ -140,8 +142,8 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   </label>
                   <input
                     type="text"
-                    value={formData.full_name}
-                    onChange={(e) => handleInputChange('full_name', e.target.value)}
+                    value={formData.fullname}
+                    onChange={(e) => handleInputChange('fullname', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter full name"
                     disabled={loading}
@@ -205,14 +207,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Mobile Number *
+                    Phone Number *
                   </label>
                   <input
                     type="tel"
-                    value={formData.mobile_number}
-                    onChange={(e) => handleInputChange('mobile_number', e.target.value)}
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter mobile number"
+                    placeholder="Enter phone number"
                     disabled={loading}
                     required
                   />
@@ -224,8 +226,8 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   </label>
                   <input
                     type="email"
-                    value={formData.email_address}
-                    onChange={(e) => handleInputChange('email_address', e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter email address"
                     disabled={loading}
@@ -235,22 +237,56 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Address *
+                    Country Code *
                   </label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                  <select
+                    value={formData.countrycode}
+                    onChange={(e) => handleInputChange('countrycode', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter address"
-                    rows={3}
                     disabled={loading}
                     required
+                    aria-label="Select country code"
+                  >
+                    <option value="+82">+82 (South Korea)</option>
+                    <option value="+1">+1 (US/Canada)</option>
+                    <option value="+91">+91 (India)</option>
+                    <option value="+86">+86 (China)</option>
+                    <option value="+81">+81 (Japan)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                    Customer Type *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.customerType}
+                    onChange={(e) => handleInputChange('customerType', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="e.g., B2C, B2B, New"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                    Alternate Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.alternateNumber}
+                    onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter alternate number (optional)"
+                    disabled={loading}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+            <div className="flex items-center justify-end space-x-2">
               <button
                 type="button"
                 onClick={handleClose}

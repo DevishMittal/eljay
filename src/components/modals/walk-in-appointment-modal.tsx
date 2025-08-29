@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/utils';
+import { patientService } from '@/services/patientService';
+import { appointmentService } from '@/services/appointmentService';
+import { Audiologist, Procedure, CreateUserData, CreateAppointmentData, User } from '@/types';
 
 interface NewAppointment {
   id: string;
@@ -24,7 +27,7 @@ interface WalkInAppointmentModalProps {
   onAppointmentCreated?: (appointment: NewAppointment) => void;
 }
 
-type FormStage = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type FormStage = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 interface FormData {
   phoneNumber: string;
@@ -42,7 +45,7 @@ interface FormData {
   appointmentTime: string;
   notes: string;
   referralSource: string;
-  otherReferralSource: string;
+  directSource: string;
   duration: string;
   selectedProcedures: string;
 }
@@ -64,44 +67,84 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     gender: 'Male',
     alternateNumber: '',
     occupation: '',
-    customerType: 'B2C (Direct Patient)',
-    selectedAudiologist: 'Dr. Sarah Johnson',
+    customerType: 'B2C',
+    selectedAudiologist: '',
     appointmentType: '',
     appointmentDate: '',
     appointmentTime: '',
     notes: '',
-    referralSource: '',
-    otherReferralSource: '',
+    referralSource: 'Direct',
+    directSource: 'Walk-in',
     duration: '30',
     selectedProcedures: '',
   });
+
+  // API data states
+  const [audiologists, setAudiologists] = useState<Audiologist[]>([]);
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [existingUser, setExistingUser] = useState<User | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userLookupLoading, setUserLookupLoading] = useState(false);
+  const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([]);
+  const [totalProcedureDuration, setTotalProcedureDuration] = useState(0);
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setCurrentStage(1);
-                                                       setFormData({
-           phoneNumber: '',
-           fullName: '',
-           email: '',
-           mobileNumber: '',
-           dateOfBirth: '',
-           gender: 'Male',
-           alternateNumber: '',
-           occupation: '',
-           customerType: 'B2C (Direct Patient)',
-           selectedAudiologist: 'Dr. Sarah Johnson',
-           appointmentType: '',
-           appointmentDate: '',
-           appointmentTime: '',
-           notes: '',
-           referralSource: '',
-           otherReferralSource: '',
-           duration: '30',
-           selectedProcedures: '',
-         });
+      setFormData({
+        phoneNumber: '',
+        fullName: '',
+        email: '',
+        mobileNumber: '',
+        dateOfBirth: '',
+        gender: 'Male',
+        alternateNumber: '',
+        occupation: '',
+        customerType: 'B2C',
+        selectedAudiologist: '',
+        appointmentType: '',
+        appointmentDate: '',
+        appointmentTime: '',
+        notes: '',
+        referralSource: 'Direct',
+        directSource: 'Walk-in',
+        duration: '30',
+        selectedProcedures: '',
+      });
+      setExistingUser(null);
+      setSelectedProcedureIds([]);
+      setTotalProcedureDuration(0);
+      
+      // Load audiologists and procedures
+      loadAudiologists();
+      loadProcedures();
     }
   }, [isOpen]);
+
+  // Load audiologists from API
+  const loadAudiologists = async () => {
+    try {
+      const response = await appointmentService.getAvailableAudiologists();
+      setAudiologists(response.data);
+      // Set first audiologist as default
+      if (response.data.length > 0) {
+        setFormData(prev => ({ ...prev, selectedAudiologist: response.data[0].id }));
+      }
+    } catch (error) {
+      console.error('Error loading audiologists:', error);
+    }
+  };
+
+  // Load procedures from API
+  const loadProcedures = async () => {
+    try {
+      const response = await appointmentService.getProcedures();
+      setProcedures(response.data);
+    } catch (error) {
+      console.error('Error loading procedures:', error);
+    }
+  };
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
@@ -122,28 +165,60 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     }
   }, [selectedDate, selectedTime]);
 
-  const audiologists = [
-    'Dr. Sarah Johnson',
-    'Dr. Michael Brown',
-    'Dr. Jennifer Lee',
-    'Dr. Alex Kumar',
-    'Dr. Emily Davis',
-  ];
+  // Phone lookup functionality
+  const handlePhoneLookup = async () => {
+    if (!formData.phoneNumber) return;
+    
+    setUserLookupLoading(true);
+    try {
+      // Extract phone number (remove any formatting)
+      const cleanPhone = formData.phoneNumber.replace(/[^\d]/g, '');
+      
+      const response = await patientService.lookupUser(cleanPhone);
+      
+      if (response.code === 200) {
+        // User found, populate form with existing data
+        setExistingUser(response.data);
+        setFormData(prev => ({
+          ...prev,
+          fullName: response.data.fullname,
+          email: response.data.email,
+          mobileNumber: response.data.phoneNumber,
+          dateOfBirth: response.data.dob?.split('T')[0] || '',
+          gender: response.data.gender,
+          alternateNumber: response.data.alternateNumber || '',
+          occupation: response.data.occupation,
+          customerType: response.data.customerType,
+        }));
+      }
+    } catch (error) {
+      console.error('User lookup failed:', error);
+      // User not found, continue with new user flow
+      setExistingUser(null);
+    } finally {
+      setUserLookupLoading(false);
+    }
+  };
 
-  const appointmentTypes = [
-    'Initial Consultation',
-    'Hearing Assessment',
-    'Hearing Aid Fitting',
-    'Follow-up Appointment',
-    'Emergency Consultation',
-  ];
+  // const appointmentTypes = [
+  //   'Initial Consultation',
+  //   'Hearing Assessment', 
+  //   'Hearing Aid Fitting',
+  //   'Follow-up Appointment',
+  //   'Emergency Consultation',
+  // ];
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNext = () => {
-    if (currentStage < 7) {
+  const handleNext = async () => {
+    // Handle phone lookup on stage 1
+    if (currentStage === 1) {
+      await handlePhoneLookup();
+    }
+    
+    if (currentStage < 8) {
       setCurrentStage(prev => (prev + 1) as FormStage);
     }
   };
@@ -154,42 +229,72 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
-    // Convert 12-hour format to 24-hour format for calendar compatibility
-    const convertTimeTo24Hour = (time12: string): string => {
-      const [time, period] = time12.split(' ');
-      const [hours, minutes] = time.split(':').map(Number);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      let userId = existingUser?.id;
       
-      let hour24 = hours;
-      if (period === 'PM' && hours !== 12) {
-        hour24 = hours + 12;
-      } else if (period === 'AM' && hours === 12) {
-        hour24 = 0;
+      // Create user if not existing
+      if (!existingUser) {
+        const userData: CreateUserData = {
+          fullname: formData.fullName,
+          email: formData.email,
+          countrycode: '+82', // Default country code, make dynamic if needed
+          phoneNumber: formData.mobileNumber || formData.phoneNumber,
+          dob: formData.dateOfBirth,
+          gender: formData.gender,
+          occupation: formData.occupation,
+          customerType: formData.customerType,
+          alternateNumber: formData.alternateNumber || undefined,
+        };
+        
+        const userResponse = await patientService.createUser(userData);
+        userId = userResponse.data.id;
       }
       
-      return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    };
+      if (!userId) {
+        throw new Error('Failed to get user ID');
+      }
+      
+      // Create appointment
+      const appointmentData: CreateAppointmentData = {
+        userId: userId,
+        audiologistId: formData.selectedAudiologist,
+        appointmentDate: formData.appointmentDate,
+        appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
+        appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.duration),
+        procedures: formData.selectedProcedures || 'General Consultation',
+        referralSource: formData.referralSource, // Only send the main referral source (Direct, Doctor Referral, Hear.com)
+      };
+      
+      const appointmentResponse = await appointmentService.createAppointment(appointmentData);
+      
+      // Create new appointment object for calendar
+      const newAppointment = {
+        id: appointmentResponse.data?.id || Date.now().toString(),
+        date: selectedDate || new Date(formData.appointmentDate),
+        time: appointmentService.convertTo24Hour(formData.appointmentTime),
+        patient: formData.fullName,
+        type: formData.selectedProcedures || 'Walk-in Appointment',
+        duration: parseInt(formData.duration) || 30,
+        audiologist: formData.selectedAudiologist,
+        notes: formData.notes,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+      };
 
-    // Create new appointment object
-    const newAppointment = {
-      id: Date.now().toString(), // Generate unique ID
-      date: selectedDate || new Date(),
-      time: formData.appointmentTime ? convertTimeTo24Hour(formData.appointmentTime) : '09:00',
-      patient: formData.fullName,
-      type: formData.selectedProcedures || 'Walk-in Appointment', // Use selected procedures or default
-      duration: parseInt(formData.duration) || 30, // Use form duration or default
-      audiologist: formData.selectedAudiologist,
-      notes: formData.notes,
-      phoneNumber: formData.phoneNumber,
-      email: formData.email,
-    };
-
-    // Pass the new appointment back to parent component
-    onAppointmentCreated?.(newAppointment);
-    
-    console.log('Form submitted:', formData);
-    console.log('New appointment created:', newAppointment);
-    onClose();
+      // Pass the new appointment back to parent component
+      onAppointmentCreated?.(newAppointment);
+      
+      console.log('Appointment created successfully:', appointmentResponse);
+      onClose();
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      alert('Failed to create appointment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -197,7 +302,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const renderProgressBar = () => {
     return (
       <div className="flex space-x-1 mb-6">
-        {[1, 2, 3, 4, 5, 6, 7].map((stage) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((stage) => (
           <div
             key={stage}
             className={cn(
@@ -236,7 +341,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
-            placeholder="+1 234 567 8900"
+            placeholder="Enter phone number (e.g., 8025550104)"
             aria-label="Patient phone number"
           />
         </div>
@@ -245,8 +350,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
-          <span className="text-xs" style={{ color: '#0A0A0A' }}>We&apos;ll check if this patient exists in our system</span>
+          <span className="text-xs" style={{ color: '#0A0A0A' }}>
+            {existingUser ? `Found existing patient: ${existingUser.fullname}` : "We'll check if this patient exists in our system"}
+          </span>
         </div>
+
+        {userLookupLoading && (
+          <div className="flex items-center justify-center p-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-sm text-gray-600">Looking up patient...</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -268,15 +382,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Full Name *
+             Full Name * {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="text"
              id="fullName"
              value={formData.fullName}
              onChange={(e) => handleInputChange('fullName', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              placeholder="Enter patient full name"
              aria-label="Full name"
            />
@@ -284,15 +400,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Email Address
+             Email Address {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="email"
              id="email"
              value={formData.email}
              onChange={(e) => handleInputChange('email', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              placeholder="patient@example.com"
              aria-label="Email address"
            />
@@ -300,15 +418,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Mobile Number
+             Mobile Number {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="tel"
              id="mobileNumber"
              value={formData.mobileNumber}
              onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              placeholder="8000948601"
              aria-label="Mobile number"
            />
@@ -316,29 +436,33 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Date of Birth
+             Date of Birth {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="date"
              id="dateOfBirth"
              value={formData.dateOfBirth}
              onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              aria-label="Date of birth"
            />
          </div>
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Gender
+             Gender {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <select
              id="gender"
              value={formData.gender}
              onChange={(e) => handleInputChange('gender', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              aria-label="Gender"
            >
              <option value="Male">Male</option>
@@ -349,15 +473,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Alternate Number
+             Alternate Number {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="tel"
              id="alternateNumber"
              value={formData.alternateNumber}
              onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              placeholder="Optional alternate contact"
              aria-label="Alternate number"
            />
@@ -365,15 +491,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Occupation
+             Occupation {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="text"
              id="occupation"
              value={formData.occupation}
              onChange={(e) => handleInputChange('occupation', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
              placeholder="Patient's occupation"
              aria-label="Occupation"
            />
@@ -381,20 +509,26 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Customer Type
+             Customer Type {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
-           <select
+           <input
+             type="text"
              id="customerType"
              value={formData.customerType}
              onChange={(e) => handleInputChange('customerType', e.target.value)}
-             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
+               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
+             }`}
+             style={{ color: '#717182' }}
+             placeholder="Customer type (e.g., B2C, B2B, New)"
              aria-label="Customer type"
-           >
-             <option value="B2C (Direct Patient)">B2C (Direct Patient)</option>
-             <option value="B2B (Corporate)">B2B (Corporate)</option>
-             <option value="Insurance">Insurance</option>
-           </select>
+             readOnly={!!existingUser}
+           />
+           {existingUser && (
+             <p className="text-xs text-green-500 mt-1">
+               ✓ This field is populated from existing user data
+             </p>
+           )}
          </div>
        </div>
     </div>
@@ -421,27 +555,29 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {audiologists.map((audiologist) => (
             <div
-              key={audiologist}
-              onClick={() => handleInputChange('selectedAudiologist', audiologist)}
+              key={audiologist.id}
+              onClick={() => handleInputChange('selectedAudiologist', audiologist.id)}
               className={cn(
                 'p-3 rounded-lg border cursor-pointer transition-all duration-200',
-                formData.selectedAudiologist === audiologist
+                formData.selectedAudiologist === audiologist.id
                   ? 'bg-gray-100 border-gray-300'
                   : 'bg-white border-gray-200 hover:border-gray-300'
               )}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{audiologist}</div>
-                  <div className="text-xs" style={{ color: '#717182' }}>Available</div>
+                  <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{audiologist.name}</div>
+                  <div className="text-xs" style={{ color: '#717182' }}>
+                    {audiologist.availability.morning || audiologist.availability.afternoon || audiologist.availability.evening ? 'Available' : 'Not Available'}
+                  </div>
                 </div>
                 <div className={cn(
                   'w-4 h-4 rounded-full border-2',
-                  formData.selectedAudiologist === audiologist
+                  formData.selectedAudiologist === audiologist.id
                     ? 'bg-blue-600 border-blue-600'
                     : 'border-gray-300'
                 )}>
-                  {formData.selectedAudiologist === audiologist && (
+                  {formData.selectedAudiologist === audiologist.id && (
                     <div className="w-2 h-2 bg-white rounded-full m-0.5" />
                   )}
                 </div>
@@ -471,26 +607,27 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
           How was this patient referred to us? *
         </label>
+        
+        {/* Main 3 referral options */}
         <div className="grid grid-cols-1 gap-2">
           {[
-            { value: 'Walk-in', description: 'Patient came directly' },
-            { value: 'Online Booking', description: 'Booked through our website' },
-            { value: 'Phone Call', description: 'Called to schedule appointment' },
-            { value: 'Website', description: 'Found us through our website' },
-            { value: 'Social Media', description: 'Referred through social media' },
-            { value: 'Advertisement', description: 'Saw our advertisement' },
-            { value: 'Family/Friend Referral', description: 'Referred by family or friend' },
-            { value: 'Previous Patient', description: 'Returning patient' },
-            { value: 'Emergency', description: 'Emergency appointment' },
-            { value: 'Other', description: 'Other referral source' }
+            { value: 'Direct', description: 'Patient came directly' },
+            { value: 'Doctor Referral', description: 'Referred by a medical professional' },
+            { value: 'Hear.com', description: 'Online hearing platform referral' }
           ].map((option) => (
             <div
               key={option.value}
-              onClick={() => handleInputChange('referralSource', option.value)}
+              onClick={() => {
+                handleInputChange('referralSource', option.value);
+                // Reset direct source when changing main referral
+                if (option.value !== 'Direct') {
+                  handleInputChange('directSource', '');
+                }
+              }}
               className={cn(
                 'p-3 rounded-lg border cursor-pointer transition-all duration-200',
                 formData.referralSource === option.value
-                  ? 'bg-gray-100 border-gray-300'
+                  ? 'bg-blue-50 border-blue-300'
                   : 'bg-white border-gray-200 hover:border-gray-300'
               )}
             >
@@ -500,13 +637,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                   <div className="text-xs" style={{ color: '#717182' }}>{option.description}</div>
                 </div>
                 <div className={cn(
-                  'w-4 h-4 rounded-full border-2',
+                  'w-5 h-5 rounded-full border-2 flex items-center justify-center',
                   formData.referralSource === option.value
                     ? 'bg-blue-600 border-blue-600'
                     : 'border-gray-300'
                 )}>
                   {formData.referralSource === option.value && (
-                    <div className="w-2 h-2 bg-white rounded-full m-0.5" />
+                    <div className="w-2 h-2 bg-white rounded-full" />
                   )}
                 </div>
               </div>
@@ -514,30 +651,31 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           ))}
         </div>
 
-        {formData.referralSource === 'Other' && (
-          <div className="mt-3">
+        {/* Direct Source dropdown when "Direct" is selected */}
+        {formData.referralSource === 'Direct' && (
+          <div className="mt-4">
             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-              Select source
+              Direct Source
             </label>
             <select
-              id="otherReferralSource"
-              value={formData.otherReferralSource}
-              onChange={(e) => handleInputChange('otherReferralSource', e.target.value)}
+              id="directSource"
+              value={formData.directSource}
+              onChange={(e) => handleInputChange('directSource', e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
-              aria-label="Other referral source"
+              aria-label="Direct source"
             >
-              <option value="">Select source</option>
-              <option value="Doctor Referral">Doctor Referral</option>
-              <option value="Hear.com">Hear.com</option>
-              <option value="Insurance Company">Insurance Company</option>
-              <option value="Hospital">Hospital</option>
-              <option value="Clinic">Clinic</option>
-              <option value="Online Platform">Online Platform</option>
-              <option value="Magazine">Magazine</option>
-              <option value="Radio">Radio</option>
-              <option value="TV">TV</option>
-              <option value="Newspaper">Newspaper</option>
+              <option value="">Select direct source</option>
+              <option value="Walk-in">Walk-in</option>
+              <option value="Online Booking">Online Booking</option>
+              <option value="Phone Call">Phone Call</option>
+              <option value="Website">Website</option>
+              <option value="Social Media">Social Media</option>
+              <option value="Advertisement">Advertisement</option>
+              <option value="Family/Friend Referral">Family/Friend Referral</option>
+              <option value="Previous Patient">Previous Patient</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Other">Other</option>
             </select>
           </div>
         )}
@@ -637,6 +775,95 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const renderStage6 = () => (
     <div className="space-y-4">
       <div className="flex items-center space-x-3 mb-3">
+        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Select Procedures</h2>
+          <p className="text-xs" style={{ color: '#4A5565' }}>Choose the procedures and diagnostic tests needed</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+            Select Procedures/Diagnostics (Optional)
+          </label>
+          {totalProcedureDuration > 0 && (
+            <div className="text-sm font-medium text-blue-600">
+              Total: {totalProcedureDuration} minutes
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {procedures.map((procedure) => {
+            const isSelected = selectedProcedureIds.includes(procedure.id);
+            return (
+              <div
+                key={procedure.id}
+                onClick={() => {
+                  const updatedIds = isSelected 
+                    ? selectedProcedureIds.filter(id => id !== procedure.id)
+                    : [...selectedProcedureIds, procedure.id];
+                  setSelectedProcedureIds(updatedIds);
+                  
+                  // Calculate total duration
+                  const totalDuration = updatedIds.reduce((sum, id) => {
+                    const proc = procedures.find(p => p.id === id);
+                    return sum + (proc?.duration || 0);
+                  }, 0);
+                  setTotalProcedureDuration(totalDuration);
+                  
+                  // Update form data
+                  const selectedNames = updatedIds.map(id => 
+                    procedures.find(p => p.id === id)?.name
+                  ).filter(Boolean).join(', ');
+                  handleInputChange('selectedProcedures', selectedNames);
+                  handleInputChange('duration', totalDuration.toString() || '30');
+                }}
+                className={cn(
+                  'p-3 rounded-lg border cursor-pointer transition-all duration-200',
+                  isSelected
+                    ? 'bg-blue-50 border-blue-300'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                )}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className={cn(
+                    'w-4 h-4 rounded border-2 mt-0.5 flex-shrink-0',
+                    isSelected
+                      ? 'bg-blue-600 border-blue-600'
+                      : 'border-gray-300'
+                  )}>
+                    {isSelected && (
+                      <svg className="w-2.5 h-2.5 text-white m-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{procedure.name}</div>
+                      <div className="text-xs font-medium px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>
+                        {procedure.duration} min
+                      </div>
+                    </div>
+                    <div className="text-xs" style={{ color: '#717182' }}>{procedure.description}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStage7 = () => (
+    <div className="space-y-4">
+      <div className="flex items-center space-x-3 mb-3">
         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
           <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -670,21 +897,27 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           <div>
             <h4 className="font-semibold mb-2 text-sm" style={{ color: '#0A0A0A' }}>Appointment Details</h4>
             <div className="space-y-1 text-xs" style={{ color: '#717182' }}>
-              <p><strong>Audiologist:</strong> {formData.selectedAudiologist}</p>
+              <p><strong>Audiologist:</strong> {audiologists.find(a => a.id === formData.selectedAudiologist)?.name || formData.selectedAudiologist}</p>
               <p><strong>Date:</strong> {formData.appointmentDate ? new Date(formData.appointmentDate).toLocaleDateString('en-GB') : 'Not selected'}</p>
               <p><strong>Time:</strong> {formData.appointmentTime || 'Not selected'}</p>
-              <p><strong>Duration:</strong> {formData.duration} minutes</p>
-              <p><strong>Referral Source:</strong> {formData.referralSource || 'Not selected'}</p>
+              <p><strong>Duration:</strong> {totalProcedureDuration > 0 ? totalProcedureDuration : formData.duration} minutes</p>
+              <p><strong>Referral Source:</strong> {formData.referralSource || 'Not selected'}{formData.referralSource === 'Direct' && formData.directSource ? ` (${formData.directSource})` : ''}</p>
             </div>
           </div>
           
-          {formData.selectedProcedures && (
+          {selectedProcedureIds.length > 0 && (
             <div>
               <h4 className="font-semibold mb-2 text-sm" style={{ color: '#0A0A0A' }}>Selected Procedures</h4>
               <div className="space-y-1 text-xs" style={{ color: '#717182' }}>
-                {formData.selectedProcedures.split(',').map((procedure, index) => (
-                  <p key={index}>• {procedure.trim()}</p>
-                ))}
+                {selectedProcedureIds.map((procedureId) => {
+                  const procedure = procedures.find(p => p.id === procedureId);
+                  return procedure ? (
+                    <p key={procedureId}>• {procedure.name} ({procedure.duration} min)</p>
+                  ) : null;
+                })}
+                <p className="font-medium text-blue-600 mt-2">
+                  Total Duration: {totalProcedureDuration} minutes
+                </p>
               </div>
             </div>
           )}
@@ -700,82 +933,25 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     </div>
   );
 
-  const renderStage7 = () => (
+
+
+  const renderStage8 = () => (
     <div className="space-y-4">
       <div className="flex items-center space-x-3 mb-3">
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         </div>
         <div>
-          <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Select Procedures</h2>
-          <p className="text-xs" style={{ color: '#4A5565' }}>Choose the procedures and diagnostic tests needed</p>
+          <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Additional Notes</h2>
+          <p className="text-xs" style={{ color: '#4A5565' }}>Add any special instructions or notes for this appointment</p>
         </div>
       </div>
 
       <div className="space-y-3">
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-          Select Procedures/Diagnostics (Optional)
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {[
-            { name: 'Hearing Test', description: 'Comprehensive hearing assessment including pure tone audiometry', duration: '30 min' },
-            { name: 'Hearing Aid Fitting', description: 'Initial hearing aid fitting and programming', duration: '45 min' },
-            { name: 'Tinnitus Assessment', description: 'Comprehensive tinnitus evaluation and management consultation', duration: '60 min' },
-            { name: 'Balance Test', description: 'Vestibular function testing and balance assessment', duration: '45 min' },
-            { name: 'Follow-up Consultation', description: 'Progress review and adjustment session', duration: '20 min' },
-            { name: 'General Consultation', description: 'Initial consultation and case history', duration: '30 min' },
-            { name: 'Hearing Aid Trial', description: 'Hearing aid trial and evaluation session', duration: '60 min' },
-            { name: 'OAE Testing', description: 'Otoacoustic emissions testing for hearing screening', duration: '30 min' },
-            { name: 'Hearing Aid Adjustment', description: 'Hearing aid reprogramming and fine-tuning', duration: '30 min' }
-          ].map((procedure) => (
-            <div
-              key={procedure.name}
-              onClick={() => {
-                const currentProcedures = formData.selectedProcedures ? formData.selectedProcedures.split(',') : [];
-                const isSelected = currentProcedures.includes(procedure.name);
-                const updatedProcedures = isSelected 
-                  ? currentProcedures.filter((p: string) => p !== procedure.name)
-                  : [...currentProcedures, procedure.name];
-                handleInputChange('selectedProcedures', updatedProcedures.join(','));
-              }}
-              className={cn(
-                'p-3 rounded-lg border cursor-pointer transition-all duration-200',
-                (formData.selectedProcedures || '').includes(procedure.name)
-                  ? 'bg-gray-100 border-gray-300'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="flex items-start space-x-3">
-                <div className={cn(
-                  'w-4 h-4 rounded border-2 mt-0.5 flex-shrink-0',
-                  (formData.selectedProcedures || '').includes(procedure.name)
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'border-gray-300'
-                )}>
-                  {(formData.selectedProcedures || '').includes(procedure.name) && (
-                    <svg className="w-2.5 h-2.5 text-white m-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{procedure.name}</div>
-                    <div className="text-xs font-medium" style={{ color: '#717182' }}>{procedure.duration}</div>
-                  </div>
-                  <div className="text-xs" style={{ color: '#717182' }}>{procedure.description}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-          Appointment Notes
+          Appointment Notes (Optional)
         </label>
         <textarea
           id="notes"
@@ -800,13 +976,14 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       case 5: return renderStage5();
       case 6: return renderStage6();
       case 7: return renderStage7();
+      case 8: return renderStage8();
       default: return renderStage1();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -844,12 +1021,19 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             >
               Back
             </button>
-                         <button
-               onClick={currentStage === 6 ? handleSubmit : handleNext}
-               className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-             >
-               {currentStage === 6 ? 'Confirm Appointment' : 'Continue'}
-             </button>
+                                     <button
+              onClick={currentStage === 7 ? handleSubmit : handleNext}
+              disabled={isSubmitting || (currentStage === 1 && userLookupLoading)}
+              className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {(isSubmitting || (currentStage === 1 && userLookupLoading)) && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              <span>
+                {currentStage === 7 ? (isSubmitting ? 'Creating...' : 'Confirm Appointment') : 
+                 (currentStage === 1 && userLookupLoading ? 'Looking up...' : 'Continue')}
+              </span>
+            </button>
           </div>
         </div>
       </div>

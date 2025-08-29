@@ -218,6 +218,149 @@ export interface PatientUpdateResponse {
   patient: Patient;
 }
 
+// New API User types
+export interface User {
+  id: string;
+  fullname: string;
+  email: string;
+  phoneNumber: string;
+  dob: string;
+  gender: string;
+  alternateNumber?: string | null;
+  occupation: string;
+  customerType: string;
+}
+
+export interface CreateUserData {
+  fullname: string;
+  email: string;
+  countrycode: string;
+  phoneNumber: string;
+  dob: string;
+  gender: string;
+  occupation: string;
+  customerType: string;
+  alternateNumber?: string;
+}
+
+export interface UserLookupResponse {
+  code: number;
+  status: string;
+  data: User;
+}
+
+export interface UserCreateResponse {
+  status: string;
+  data: User;
+}
+
+// Appointment types
+export interface Appointment {
+  id: string;
+  audiologistId: string;
+  userId: string;
+  referralSource: string;
+  appointmentDate: string;
+  appointmentDuration: number;
+  appointmentTime: string;
+  procedures: string;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    fullname: string;
+    email: string;
+    phoneNumber: string;
+  };
+  audiologist: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface AppointmentSummary {
+  id: string;
+  date: string;
+  time: string;
+  duration: number;
+  procedures: string;
+  referralSource: string;
+  patient: {
+    id: string;
+    fullname: string;
+    email: string;
+    phoneNumber: string;
+    gender: string;
+    customerType: string;
+  };
+  audiologist: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
+}
+
+export interface CreateAppointmentData {
+  userId: string;
+  audiologistId: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  appointmentDuration: number;
+  procedures: string;
+  referralSource: string;
+}
+
+export interface AppointmentsResponse {
+  status: string;
+  data: {
+    appointments: Appointment[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface AppointmentResponse {
+  status: string;
+  data: AppointmentSummary;
+}
+
+// Audiologist types
+export interface Audiologist {
+  id: string;
+  name: string;
+  email: string;
+  availability: {
+    morning: boolean;
+    afternoon: boolean;
+    evening: boolean;
+  };
+  bookedSlots: string[];
+}
+
+export interface AudiologistsResponse {
+  status: string;
+  data: Audiologist[];
+}
+
+// Procedure types
+export interface Procedure {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+}
+
+export interface ProceduresResponse {
+  status: string;
+  data: Procedure[];
+}
+
 // Breakpoint types
 export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 

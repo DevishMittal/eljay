@@ -1,19 +1,21 @@
 import { 
-  Patient, 
   CreatePatientData, 
   UpdatePatientData, 
   PatientsResponse, 
   PatientResponse, 
-  PatientUpdateResponse 
+  PatientUpdateResponse,
+  UserLookupResponse,
+  CreateUserData,
+  UserCreateResponse
 } from '@/types';
 
 const BASE_URL = 'https://eljay-api.vizdale.com';
 
 class PatientService {
-  // Get all patients with pagination
-  async getPatients(page: number = 1, limit: number = 10): Promise<PatientsResponse> {
+  // Lookup user by phone number only
+  async lookupUser(phoneNumber: string): Promise<UserLookupResponse> {
     try {
-      const response = await fetch(`${BASE_URL}/api/patients?page=${page}&limit=${limit}`, {
+      const response = await fetch(`${BASE_URL}/api/v1/users/lookup?phone=${phoneNumber}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -21,10 +23,57 @@ class PatientService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch patients: ${response.statusText}`);
+        throw new Error(`Failed to lookup user: ${response.statusText}`);
       }
 
       return await response.json();
+    } catch (error) {
+      console.error('Error looking up user:', error);
+      throw error;
+    }
+  }
+
+  // Create new user
+  async createUser(userData: CreateUserData): Promise<UserCreateResponse> {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create user: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  // Get all users as patients - since there's no direct patients endpoint, we'll need to implement this differently
+  // For now, we'll create a mock response structure until you provide a users list endpoint
+  async getPatients(page: number = 1, limit: number = 10): Promise<PatientsResponse> {
+    try {
+      // Since there's no direct endpoint to get all users, we'll return a mock structure
+      // You may need to implement a GET /api/v1/users endpoint on your backend
+      // For now, returning empty structure to prevent 404 errors
+      const mockResponse: PatientsResponse = {
+        status: 'success',
+        patients: [], // Empty for now since we don't have a users list endpoint
+        pagination: {
+          page: page,
+          limit: limit,
+          total: 0,
+          totalPages: 0
+        }
+      };
+      
+      return mockResponse;
     } catch (error) {
       console.error('Error fetching patients:', error);
       throw error;
@@ -52,7 +101,7 @@ class PatientService {
     }
   }
 
-  // Create new patient
+  // Create new patient (keeping for backward compatibility)
   async createPatient(patientData: CreatePatientData): Promise<PatientResponse> {
     try {
       const response = await fetch(`${BASE_URL}/api/patients`, {

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import TasksAnalytics from '@/components/layout/tasks-analytics';
 import DynamicCalendar from '@/components/calendar/dynamic-calendar';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
-import { Appointment, CalendarView } from '@/utils/calendar';
+import { Appointment as CalendarAppointment, CalendarView } from '@/utils/calendar';
+import { Appointment, AppointmentsResponse } from '@/types';
+import { appointmentService } from '@/services/appointmentService';
 
 // Define the type for new appointments from modal
 interface NewAppointment {
@@ -28,10 +30,55 @@ export default function AppointmentsPage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
 
   // State for appointments - start with empty array
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
+  const [apiAppointments, setApiAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch appointments from API
+  useEffect(() => {
+    fetchAppointments();
+  }, [currentPage]);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await appointmentService.getAppointments(currentPage, 50); // Get more appointments for calendar
+      setApiAppointments(response.data.appointments);
+      
+      // Convert API appointments to calendar format
+      const calendarAppointments: CalendarAppointment[] = response.data.appointments.map(appointment => {
+        // Extract time from the API response (format: "1970-01-01T10:30:00.000Z")
+        const timeDate = new Date(appointment.appointmentTime);
+        const hours = timeDate.getUTCHours().toString().padStart(2, '0');
+        const minutes = timeDate.getUTCMinutes().toString().padStart(2, '0');
+        const time24 = `${hours}:${minutes}`;
+        
+        return {
+          id: appointment.id,
+          date: new Date(appointment.appointmentDate),
+          time: time24, // Use 24-hour format to match calendar time slots
+          patient: appointment.user.fullname,
+          type: appointment.procedures,
+          duration: appointment.appointmentDuration,
+          audiologist: appointment.audiologist?.name,
+          phoneNumber: appointment.user.phoneNumber,
+        };
+      });
+      
+      setAppointments(calendarAppointments);
+    } catch (err) {
+      setError('Failed to fetch appointments. Please try again.');
+      console.error('Error fetching appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle appointment click - just log for now, will add view functionality later
-  const handleAppointmentClick = (appointment: Appointment) => {
+  const handleAppointmentClick = (appointment: CalendarAppointment) => {
     console.log('Appointment clicked:', appointment);
     // TODO: Add appointment view/edit functionality
   };
@@ -45,19 +92,41 @@ export default function AppointmentsPage() {
 
   // Handle new appointment creation from modal
   const handleAppointmentCreated = (newAppointment: NewAppointment) => {
-    // Convert the new appointment to match the Appointment type
-    const appointment: Appointment = {
+    // Convert the new appointment time from 12-hour to 24-hour format if needed
+    let time24 = newAppointment.time;
+    if (newAppointment.time.includes('AM') || newAppointment.time.includes('PM')) {
+      // Convert 12-hour format to 24-hour format
+      const [time, period] = newAppointment.time.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) {
+        hour24 = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        hour24 = 0;
+      }
+      
+      time24 = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+    
+    // Convert the new appointment to match the CalendarAppointment type
+    const appointment: CalendarAppointment = {
       id: newAppointment.id,
       date: newAppointment.date,
-      time: newAppointment.time,
+      time: time24, // Use 24-hour format
       patient: newAppointment.patient,
       type: newAppointment.type || 'Walk-in Appointment',
       duration: newAppointment.duration,
+      audiologist: newAppointment.audiologist,
+      phoneNumber: newAppointment.phoneNumber,
     };
     
     // Add the new appointment to the state
     setAppointments(prev => [...prev, appointment]);
     console.log('New appointment added:', appointment);
+    
+    // Refresh appointments from API to get the latest data
+    fetchAppointments();
   };
 
   // Handle date change
@@ -71,6 +140,38 @@ export default function AppointmentsPage() {
     console.log('View changed:', view);
     // TODO: Save view preference
   };
+
+  if (loading) {
+    return (
+      <MainLayout showTasksSidebar={true}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading appointments...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout showTasksSidebar={true}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="text-red-500 text-xl mb-4">⚠️</div>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={fetchAppointments}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showTasksSidebar={true}>

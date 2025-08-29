@@ -274,9 +274,35 @@ export function getAppointmentsForDate(appointments: Appointment[], date: Date):
  * Get appointments for a time slot
  */
 export function getAppointmentsForTimeSlot(appointments: Appointment[], date: Date, timeSlot: string): Appointment[] {
-  return appointments.filter(apt => 
-    isSameDay(apt.date, date) && apt.time === timeSlot
-  );
+  return appointments.filter(apt => {
+    if (!isSameDay(apt.date, date)) return false;
+    
+    // Normalize both times to 24-hour format for comparison
+    const normalizeTime = (time: string): string => {
+      // If already in 24-hour format, return as is
+      if (!time.includes('AM') && !time.includes('PM')) {
+        return time;
+      }
+      
+      // Convert 12-hour to 24-hour format
+      const [timePart, period] = time.split(' ');
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) {
+        hour24 = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        hour24 = 0;
+      }
+      
+      return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+    
+    const normalizedAptTime = normalizeTime(apt.time);
+    const normalizedSlotTime = normalizeTime(timeSlot);
+    
+    return normalizedAptTime === normalizedSlotTime;
+  });
 }
 
 /**

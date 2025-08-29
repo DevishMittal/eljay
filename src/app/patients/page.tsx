@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { useRouter } from 'next/navigation';
-import { Patient } from '@/types';
+import { Patient, User } from '@/types';
 import { patientService } from '@/services/patientService';
 import AddPatientModal from '@/components/modals/add-patient-modal';
 
@@ -117,7 +117,9 @@ export default function PatientsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Patients</h1>
-            <p className="text-sm" style={{ color: '#4A5565' }}>{patients.length} of {totalPatients} patients</p>
+            <p className="text-sm" style={{ color: '#4A5565' }}>
+              {patients.length === 0 ? 'No patients endpoint available yet' : `${patients.length} of ${totalPatients} patients`}
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <button 
@@ -210,31 +212,53 @@ export default function PatientsPage() {
 
         {/* Patients Table */}
         <div className="bg-white rounded-lg border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-4 py-2 text-left">
-                    <input 
-                      type="checkbox" 
-                      className="rounded border-gray-300" 
-                      aria-label="Select all patients"
-                      id="select-all-patients"
-                    />
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Patient</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Email</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Phone</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Age</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Gender</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Last Visit</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {patients.map((patient) => (
+          {patients.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Patients List Endpoint</h3>
+              <p className="text-gray-500 mb-4">
+                The patients list requires a GET endpoint at <code className="bg-gray-100 px-2 py-1 rounded">/api/v1/users</code> to fetch all users.
+              </p>
+              <p className="text-sm text-gray-400 mb-6">
+                Currently, you can only lookup individual users by phone number or create new patients.
+              </p>
+              <button 
+                onClick={handleAddPatient}
+                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                Add New Patient
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-2 text-left">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        aria-label="Select all patients"
+                        id="select-all-patients"
+                      />
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Patient</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Email</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Phone</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Age</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Gender</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Last Visit</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {patients.map((patient) => (
                   <tr 
                     key={patient.id} 
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
@@ -303,10 +327,11 @@ export default function PatientsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
