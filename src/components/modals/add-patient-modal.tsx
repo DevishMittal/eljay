@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { CreateUserData } from '@/types';
 import { patientService } from '@/services/patientService';
+import CustomDropdown from '@/components/ui/custom-dropdown';
+import DatePicker from '@/components/ui/date-picker';
 
 interface AddPatientModalProps {
   isOpen: boolean;
@@ -155,15 +157,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Date of Birth *
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={formData.dob}
-                    onChange={(e) => handleInputChange('dob', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={(date) => handleInputChange('dob', date)}
+                    placeholder="Select date of birth"
+                    maxDate={new Date()} // Can't select future dates for DOB
                     disabled={loading}
                     required
-                    title="Select date of birth"
-                    placeholder="Select date of birth"
+                    aria-label="Date of birth"
                   />
                 </div>
 
@@ -171,18 +172,18 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Gender *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: 'Male', label: 'Male' },
+                      { value: 'Female', label: 'Female' },
+                      { value: 'Other', label: 'Other' }
+                    ]}
                     value={formData.gender}
-                    onChange={(e) => handleInputChange('gender', e.target.value as 'Male' | 'Female')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={(value) => handleInputChange('gender', value as 'Male' | 'Female')}
+                    placeholder="Select gender"
                     disabled={loading}
-                    required
-                    title="Select gender"
                     aria-label="Select gender"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
@@ -239,37 +240,36 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Country Code *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: '+91', label: '+91 (India)' },
+
+                  
+                   
+                    ]}
                     value={formData.countrycode}
-                    onChange={(e) => handleInputChange('countrycode', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={(value) => handleInputChange('countrycode', value)}
+                    placeholder="Select country code"
                     disabled={loading}
-                    required
                     aria-label="Select country code"
-                  >
-                    <option value="+82">+82 (South Korea)</option>
-                    <option value="+1">+1 (US/Canada)</option>
-                    <option value="+91">+91 (India)</option>
-                    <option value="+86">+86 (China)</option>
-                    <option value="+81">+81 (Japan)</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Customer Type *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: 'B2C', label: 'B2C' },
+                      { value: 'B2B', label: 'B2B' }
+                    ]}
                     value={formData.customerType}
-                    onChange={(e) => handleInputChange('customerType', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={(value) => handleInputChange('customerType', value)}
+                    placeholder="Select customer type"
                     disabled={loading}
-                    required
                     aria-label="Select customer type"
-                  >
-                    <option value="B2C">B2C </option>
-                    <option value="B2B">B2B </option>
-                  </select>
+                  />
                 </div>
 
                 <div>

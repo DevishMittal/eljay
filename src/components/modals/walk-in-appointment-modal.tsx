@@ -5,6 +5,8 @@ import { cn } from '@/utils';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
 import { Audiologist, Procedure, CreateUserData, CreateAppointmentData, User } from '@/types';
+import CustomDropdown from '@/components/ui/custom-dropdown';
+import DatePicker from '@/components/ui/date-picker';
 
 interface NewAppointment {
   id: string;
@@ -438,38 +440,33 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
              Date of Birth {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
-           <input
-             type="date"
-             id="dateOfBirth"
+           <DatePicker
              value={formData.dateOfBirth}
-             onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
-               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
-             }`}
-             style={{ color: '#717182' }}
+             onChange={(date) => handleInputChange('dateOfBirth', date)}
+             placeholder="Select date of birth"
+             maxDate={new Date()} // Can't select future dates for DOB
+             className={existingUser ? 'border-green-200 bg-green-50' : ''}
              aria-label="Date of birth"
            />
          </div>
 
-         <div>
-           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Gender {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
-           </label>
-           <select
-             id="gender"
-             value={formData.gender}
-             onChange={(e) => handleInputChange('gender', e.target.value)}
-             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
-               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
-             }`}
-             style={{ color: '#717182' }}
-             aria-label="Gender"
-           >
-             <option value="Male">Male</option>
-             <option value="Female">Female</option>
-             <option value="Other">Other</option>
-           </select>
-         </div>
+                 <div>
+          <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+            Gender {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
+          </label>
+          <CustomDropdown
+            options={[
+              { value: 'Male', label: 'Male' },
+              { value: 'Female', label: 'Female' },
+              { value: 'Other', label: 'Other' }
+            ]}
+            value={formData.gender}
+            onChange={(value) => handleInputChange('gender', value)}
+            placeholder="Select gender"
+            className={existingUser ? 'border-green-200 bg-green-50' : ''}
+            aria-label="Gender"
+          />
+        </div>
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
@@ -657,26 +654,24 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
               Direct Source
             </label>
-            <select
-              id="directSource"
+            <CustomDropdown
+              options={[
+                { value: 'Walk-in', label: 'Walk-in' },
+                { value: 'Online Booking', label: 'Online Booking' },
+                { value: 'Phone Call', label: 'Phone Call' },
+                { value: 'Website', label: 'Website' },
+                { value: 'Social Media', label: 'Social Media' },
+                { value: 'Advertisement', label: 'Advertisement' },
+                { value: 'Family/Friend Referral', label: 'Family/Friend Referral' },
+                { value: 'Previous Patient', label: 'Previous Patient' },
+                { value: 'Emergency', label: 'Emergency' },
+                { value: 'Other', label: 'Other' }
+              ]}
               value={formData.directSource}
-              onChange={(e) => handleInputChange('directSource', e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+              onChange={(value) => handleInputChange('directSource', value)}
+              placeholder="Select direct source"
               aria-label="Direct source"
-            >
-              <option value="">Select direct source</option>
-              <option value="Walk-in">Walk-in</option>
-              <option value="Online Booking">Online Booking</option>
-              <option value="Phone Call">Phone Call</option>
-              <option value="Website">Website</option>
-              <option value="Social Media">Social Media</option>
-              <option value="Advertisement">Advertisement</option>
-              <option value="Family/Friend Referral">Family/Friend Referral</option>
-              <option value="Previous Patient">Previous Patient</option>
-              <option value="Emergency">Emergency</option>
-              <option value="Other">Other</option>
-            </select>
+            />
           </div>
         )}
       </div>
@@ -702,13 +697,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
             Appointment Date *
           </label>
-          <input
-            type="date"
-            id="appointmentDate"
+          <DatePicker
             value={formData.appointmentDate}
-            onChange={(e) => handleInputChange('appointmentDate', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+            onChange={(date) => handleInputChange('appointmentDate', date)}
+            placeholder="Select appointment date"
+            minDate={new Date()} // Can't select past dates for appointments
+            required
             aria-label="Appointment date"
           />
         </div>
