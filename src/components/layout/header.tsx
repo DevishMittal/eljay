@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <header className={cn('w-full bg-white border-custom-b px-6 py-4', className)}>
+    <header className={cn('w-full bg-white border-custom-b px-6 py-2', className)}>
       <div className="flex items-center justify-between">
         {/* Search Bar */}
         <div className="flex-1 max-w-md">
@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               placeholder="Search audiologists, patients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-sm text-[#4A5565] placeholder:text-search-placeholder"
+              className="w-[70%] pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-xs text-[#4A5565] placeholder:text-search-placeholder"
             />
           </div>
         </div>
@@ -46,31 +46,31 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <div className="flex items-center space-x-4">
           {/* Bell Icon with Notification Badge */}
           <div className="relative">
-            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button className="p-1 text-muted-foreground hover:text-foreground transition-colors">
               <Image
                 src="/bell-icon.svg"
                 alt="Notifications"
                 width={15}
                 height={15}
-                className="w-6 h-6"
+                className="w-5 h-5"
               />
               {/* Notification Badge */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                 9+
               </span>
             </button>
           </div>
 
           {/* Profile Section */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1">
             {/* Profile Avatar */}
-            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-foreground">SJ</span>
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+              <span className="text-xs font-medium text-foreground">SJ</span>
             </div>
             
             {/* Profile Info */}
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-[#101828]">Dr. Sarah Johnson</span>
+              <span className="text-xs font-medium text-[#101828]">Dr. Sarah Johnson</span>
               <span className="text-xs text-[#667085]">Lead Audiologist</span>
             </div>
           </div>

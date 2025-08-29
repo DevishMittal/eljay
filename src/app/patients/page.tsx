@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { useRouter } from 'next/navigation';
-import { Patient, User } from '@/types';
+import { Patient } from '@/types';
 import { patientService } from '@/services/patientService';
-import AddPatientModal from '@/components/modals/add-patient-modal';
+
 
 
 export default function PatientsPage() {
@@ -16,7 +16,7 @@ export default function PatientsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPatients, setTotalPatients] = useState(0);
-  const [showAddModal, setShowAddModal] = useState(false);
+
 
   // Fetch patients on component mount and when page changes
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function PatientsPage() {
   };
 
   const handleAddPatient = () => {
-    setShowAddModal(true);
+    router.push('/patients/add');
   };
 
   const handleDeletePatient = async (patientId: string, e: React.MouseEvent) => {
@@ -393,12 +393,7 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Add Patient Modal */}
-        <AddPatientModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={fetchPatients}
-        />
+
       </div>
     </MainLayout>
   );

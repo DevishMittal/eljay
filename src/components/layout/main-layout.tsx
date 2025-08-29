@@ -32,7 +32,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         {/* Main Content */}
         <main className={cn(
           'flex-1 bg-muted/30', 
-          showTasksSidebar ? 'overflow-hidden' : 'p-6', 
+          showTasksSidebar ? 'overflow-hidden' : 'p-6',
           className
         )}>
           {children}
