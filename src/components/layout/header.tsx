@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { cn } from '@/utils';
 import Image from 'next/image';
+import { useNotification } from '@/contexts/NotificationContext';
+import NotificationDropdown from '@/components/ui/notification-dropdown';
 
 interface HeaderProps {
   className?: string;
@@ -10,6 +12,10 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ className }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const { getNotificationStats } = useNotification();
+  
+  const notificationStats = getNotificationStats();
 
   return (
     <header className={cn('w-full bg-white border-custom-b px-6 py-2', className)}>
@@ -46,7 +52,10 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <div className="flex items-center space-x-4">
           {/* Bell Icon with Notification Badge */}
           <div className="relative">
-            <button className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+            <button 
+              onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <Image
                 src="/bell-icon.svg"
                 alt="Notifications"
@@ -54,11 +63,19 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                 height={15}
                 className="w-5 h-5"
               />
-              {/* Notification Badge */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                9+
-              </span>
+              {/* Dynamic Notification Badge */}
+              {notificationStats.unread > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
+                </span>
+              )}
             </button>
+            
+            {/* Notification Dropdown */}
+            <NotificationDropdown
+              isOpen={isNotificationDropdownOpen}
+              onClose={() => setIsNotificationDropdownOpen(false)}
+            />
           </div>
 
           {/* Profile Section */}

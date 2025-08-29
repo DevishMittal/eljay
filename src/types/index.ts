@@ -361,6 +361,48 @@ export interface ProceduresResponse {
   data: Procedure[];
 }
 
+// Notification types
+export interface Notification {
+  id: string;
+  type: 'equipment_maintenance' | 'schedule_appointment' | 'payment_overdue' | 'new_patient_registration' | 'lab_results_ready' | 'task_reminder' | 'system_alert';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  title: string;
+  message: string;
+  isRead: boolean;
+  isActionRequired: boolean;
+  createdAt: Date;
+  readAt?: Date;
+  relatedEntityId?: string; // ID of related patient, appointment, etc.
+  relatedEntityType?: 'patient' | 'appointment' | 'invoice' | 'task' | 'equipment';
+  actionUrl?: string; // URL to navigate when clicked
+  metadata?: Record<string, any>; // Additional data specific to notification type
+}
+
+export interface NotificationStats {
+  total: number;
+  unread: number;
+  actionRequired: number;
+  byPriority: {
+    low: number;
+    medium: number;
+    high: number;
+    urgent: number;
+  };
+  byType: Record<Notification['type'], number>;
+}
+
+export interface CreateNotificationData {
+  type: Notification['type'];
+  priority: Notification['priority'];
+  title: string;
+  message: string;
+  isActionRequired?: boolean;
+  relatedEntityId?: string;
+  relatedEntityType?: Notification['relatedEntityType'];
+  actionUrl?: string;
+  metadata?: Record<string, any>;
+}
+
 // Breakpoint types
 export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
