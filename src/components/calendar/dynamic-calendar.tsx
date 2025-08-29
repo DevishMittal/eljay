@@ -224,7 +224,7 @@ export default function DynamicCalendar({
     const appointment = selectedAppointment;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
+      <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
         <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <div className="p-5">
             {/* Header */}
@@ -262,7 +262,7 @@ export default function DynamicCalendar({
             </div>
 
             {/* Patient Information Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100 shadow-lg">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -277,7 +277,7 @@ export default function DynamicCalendar({
                   </div>
                 </div>
                 <div className="text-right space-y-1">
-                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">Pending</div>
+                  <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium text-center">Pending</div>
                   <div className="flex items-center justify-end space-x-1 text-orange-600 text-xs">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />

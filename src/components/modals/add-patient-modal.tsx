@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CreatePatientData, CreateUserData } from '@/types';
+import { CreateUserData } from '@/types';
 import { patientService } from '@/services/patientService';
 
 interface AddPatientModalProps {
@@ -259,15 +259,17 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Customer Type *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.customerType}
                     onChange={(e) => handleInputChange('customerType', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="e.g., B2C, B2B, New"
                     disabled={loading}
                     required
-                  />
+                    aria-label="Select customer type"
+                  >
+                    <option value="B2C">B2C </option>
+                    <option value="B2B">B2B </option>
+                  </select>
                 </div>
 
                 <div>
