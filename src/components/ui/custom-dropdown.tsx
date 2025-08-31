@@ -33,6 +33,32 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Handler functions
+  const handleOptionSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setFocusedIndex(-1);
+    buttonRef.current?.focus();
+  };
+
+  // Calculate dropdown position when opening
+  const calculateDropdownPosition = () => {
+    if (!buttonRef.current) return 'bottom';
+    
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const dropdownHeight = Math.min(240, options.length * 48); // Approximate height
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    
+    // If there's not enough space below but enough space above, show on top
+    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+      return 'top';
+    }
+    
+    return 'bottom';
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,32 +109,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, focusedIndex, options]);
-
-  // Calculate dropdown position when opening
-  const calculateDropdownPosition = () => {
-    if (!buttonRef.current) return 'bottom';
-    
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const dropdownHeight = Math.min(240, options.length * 48); // Approximate height
-    const spaceBelow = viewportHeight - buttonRect.bottom;
-    const spaceAbove = buttonRect.top;
-    
-    // If there's not enough space below but enough space above, show on top
-    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-      return 'top';
-    }
-    
-    return 'bottom';
-  };
-
-  const handleOptionSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setFocusedIndex(-1);
-    buttonRef.current?.focus();
-  };
+  }, [isOpen, focusedIndex, options, handleOptionSelect]);
 
   const handleToggleDropdown = () => {
     if (!disabled) {
@@ -165,7 +166,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           "dropdown-menu absolute left-0 right-0 z-50",
           dropdownPosition === 'top' ? "bottom-full mb-1" : "top-full mt-1"
         )}>
-          <div role="listbox" className="max-h-60 overflow-auto">
+          <div role="listbox" className="max-h-60 overflow-auto" aria-label="Options list">
             {options.map((option, index) => (
               <button
                 key={option.value}

@@ -6,7 +6,10 @@ import {
   PatientUpdateResponse,
   UserLookupResponse,
   CreateUserData,
-  UserCreateResponse
+  UserCreateResponse,
+  UsersResponse,
+  UserResponse,
+  UserAppointmentsResponse
 } from '@/types';
 
 const BASE_URL = 'https://eljay-api.vizdale.com';
@@ -55,35 +58,10 @@ class PatientService {
     }
   }
 
-  // Get all users as patients - since there's no direct patients endpoint, we'll need to implement this differently
-  // For now, we'll create a mock response structure until you provide a users list endpoint
+  // Get all users as patients
   async getPatients(page: number = 1, limit: number = 10): Promise<PatientsResponse> {
     try {
-      // Since there's no direct endpoint to get all users, we'll return a mock structure
-      // You may need to implement a GET /api/v1/users endpoint on your backend
-      // For now, returning empty structure to prevent 404 errors
-      const mockResponse: PatientsResponse = {
-        status: 'success',
-        patients: [], // Empty for now since we don't have a users list endpoint
-        pagination: {
-          page: page,
-          limit: limit,
-          total: 0,
-          totalPages: 0
-        }
-      };
-      
-      return mockResponse;
-    } catch (error) {
-      console.error('Error fetching patients:', error);
-      throw error;
-    }
-  }
-
-  // Get individual patient by patient_id
-  async getPatientById(patientId: string): Promise<PatientResponse> {
-    try {
-      const response = await fetch(`${BASE_URL}/api/patients/${patientId}`, {
+      const response = await fetch(`${BASE_URL}/api/v1/users`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -91,10 +69,89 @@ class PatientService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch patient: ${response.statusText}`);
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
       }
 
-      return await response.json();
+      const usersResponse: UsersResponse = await response.json();
+      
+      // Convert users to patients format for compatibility
+      const patients = usersResponse.data.map(user => ({
+        id: user.id,
+        patient_id: user.id,
+        full_name: user.fullname,
+        mobile_number: user.phoneNumber,
+        email_address: user.email,
+        dob: user.dob,
+        gender: user.gender as 'Male' | 'Female',
+        occupation: user.occupation,
+        type: user.customerType,
+        status: 'Active', // Default status
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
+        alternative_number: user.alternateNumber,
+        countrycode: user.countrycode
+      }));
+
+      // Simple pagination (since API doesn't support it yet)
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedPatients = patients.slice(startIndex, endIndex);
+      
+      return {
+        status: 'success',
+        patients: paginatedPatients,
+        pagination: {
+          page: page,
+          limit: limit,
+          total: patients.length,
+          totalPages: Math.ceil(patients.length / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      throw error;
+    }
+  }
+
+  // Get individual user/patient by user ID
+  async getPatientById(userId: string): Promise<PatientResponse> {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user: ${response.statusText}`);
+      }
+
+      const userResponse: UserResponse = await response.json();
+      const user = userResponse.data;
+      
+      // Convert user to patient format for compatibility
+      const patient = {
+        id: user.id,
+        patient_id: user.id,
+        full_name: user.fullname,
+        mobile_number: user.phoneNumber,
+        email_address: user.email,
+        dob: user.dob,
+        gender: user.gender as 'Male' | 'Female',
+        occupation: user.occupation,
+        type: user.customerType,
+        status: 'Active', // Default status
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
+        alternative_number: user.alternateNumber,
+        countrycode: user.countrycode
+      };
+
+      return {
+        status: 'success',
+        patient: patient
+      };
     } catch (error) {
       console.error('Error fetching patient:', error);
       throw error;
@@ -180,6 +237,27 @@ class PatientService {
     return age;
   }
 
+  // Get user appointments
+  async getUserAppointments(userId: string): Promise<UserAppointmentsResponse> {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/appointments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user appointments: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user appointments:', error);
+      throw error;
+    }
+  }
+
   // Format date for display
   formatDate(dateString: string): string {
     const date = new Date(dateString);
@@ -187,6 +265,16 @@ class PatientService {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
+    });
+  }
+
+  // Format time for display
+  formatTime(timeString: string): string {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     });
   }
 }

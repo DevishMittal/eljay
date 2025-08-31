@@ -464,9 +464,11 @@ export default function AddPatientPage() {
                           <CustomDropdown
                             options={[
                               { value: '+91', label: '+91 (India)' },
-                              { value: '+82', label: '+82 (South Korea)' },
+                              { value: '+34', label: '+34 (Spain)' },
                               { value: '+1', label: '+1 (USA/Canada)' },
-                              { value: '+44', label: '+44 (UK)' }
+                              { value: '+44', label: '+44 (UK)' },
+                              { value: '+33', label: '+33 (France)' },
+                              { value: '+49', label: '+49 (Germany)' }
                             ]}
                             value={formData.countrycode}
                             onChange={(value) => handleInputChange('countrycode', value)}

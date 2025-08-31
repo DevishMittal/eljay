@@ -164,13 +164,11 @@ export interface Patient {
   dob?: string;
   gender: 'Male' | 'Female';
   age?: number;
-  address?: string;
-  city?: string;
-  pincode?: string;
+  countrycode?: string;
   type?: string;
   status?: string;
   last_visited?: string;
-  alternative_number?: string;
+  alternative_number?: string | null;
   occupation?: string;
   existing_hearing_aid_user?: boolean;
   previous_hearing_aid_model?: string;
@@ -194,7 +192,16 @@ export interface CreatePatientData {
   address: string;
 }
 
-export interface UpdatePatientData extends Partial<CreatePatientData> {}
+export interface UpdatePatientData {
+  full_name?: string;
+  mobile_number?: string;
+  email_address?: string;
+  dob?: string;
+  gender?: 'Male' | 'Female';
+  occupation?: string;
+  alternative_number?: string;
+  countrycode?: string;
+}
 
 export interface PatientsResponse {
   status: string;
@@ -224,11 +231,15 @@ export interface User {
   fullname: string;
   email: string;
   phoneNumber: string;
+  countrycode: string;
   dob: string;
   gender: string;
   alternateNumber?: string | null;
   occupation: string;
   customerType: string;
+  createdAt: string;
+  updatedAt: string;
+  appointments?: UserAppointment[];
 }
 
 export interface CreateUserData {
@@ -243,6 +254,16 @@ export interface CreateUserData {
   alternateNumber?: string;
 }
 
+export interface UsersResponse {
+  status: string;
+  data: User[];
+}
+
+export interface UserResponse {
+  status: string;
+  data: User;
+}
+
 export interface UserLookupResponse {
   code: number;
   status: string;
@@ -252,6 +273,32 @@ export interface UserLookupResponse {
 export interface UserCreateResponse {
   status: string;
   data: User;
+}
+
+// User Appointment types
+export interface UserAppointment {
+  id: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  appointmentDuration: number;
+  procedures: string;
+  referralSource: string;
+  createdAt: string;
+  updatedAt: string;
+  audiologist: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
+}
+
+export interface UserAppointmentsResponse {
+  status: string;
+  data: {
+    total: number;
+    appointments: UserAppointment[];
+  };
 }
 
 // Appointment types

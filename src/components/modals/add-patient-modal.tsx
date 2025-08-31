@@ -236,24 +236,26 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Country Code *
-                  </label>
-                  <CustomDropdown
-                    options={[
-                      { value: '+91', label: '+91 (India)' },
-
-                  
-                   
-                    ]}
-                    value={formData.countrycode}
-                    onChange={(value) => handleInputChange('countrycode', value)}
-                    placeholder="Select country code"
-                    disabled={loading}
-                    aria-label="Select country code"
-                  />
-                </div>
+                                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                            Country Code *
+                          </label>
+                          <CustomDropdown
+                            options={[
+                              { value: '+91', label: '+91 (India)' },
+                              { value: '+34', label: '+34 (Spain)' },
+                              { value: '+1', label: '+1 (USA/Canada)' },
+                              { value: '+44', label: '+44 (UK)' },
+                              { value: '+33', label: '+33 (France)' },
+                              { value: '+49', label: '+49 (Germany)' }
+                            ]}
+                            value={formData.countrycode}
+                            onChange={(value) => handleInputChange('countrycode', value)}
+                            placeholder="Select country code"
+                            disabled={loading}
+                            aria-label="Select country code"
+                          />
+                        </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
