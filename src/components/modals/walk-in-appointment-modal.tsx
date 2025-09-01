@@ -7,6 +7,7 @@ import { appointmentService } from '@/services/appointmentService';
 import { Audiologist, Procedure, CreateUserData, CreateAppointmentData, User } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NewAppointment {
   id: string;
@@ -59,6 +60,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   selectedTime,
   onAppointmentCreated,
 }) => {
+  const { token } = useAuth();
   const [currentStage, setCurrentStage] = useState<FormStage>(1);
   const [formData, setFormData] = useState<FormData>({
     phoneNumber: '',
@@ -127,7 +129,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   // Load audiologists from API
   const loadAudiologists = async () => {
     try {
-      const response = await appointmentService.getAvailableAudiologists();
+      const response = await appointmentService.getAvailableAudiologists(token || undefined);
       setAudiologists(response.data);
       // Set first audiologist as default
       if (response.data.length > 0) {
@@ -565,7 +567,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                 <div>
                   <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{audiologist.name}</div>
                   <div className="text-xs" style={{ color: '#717182' }}>
-                    {audiologist.availability.morning || audiologist.availability.afternoon || audiologist.availability.evening ? 'Available' : 'Not Available'}
+                    {audiologist.isAvailable ? 'Available' : 'Not Available'}
                   </div>
                 </div>
                 <div className={cn(

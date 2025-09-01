@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { TaskProvider } from '@/contexts/TaskContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+
 
 export const metadata: Metadata = {
   title: {
@@ -58,11 +60,13 @@ export default function RootLayout({
       <body
         className="antialiased min-h-screen bg-background text-foreground"
       >
-        <TaskProvider>
-          <NotificationProvider>
-            {children}
-          </NotificationProvider>
-        </TaskProvider>
+        <AuthProvider>
+          <TaskProvider>
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
+          </TaskProvider>
+        </AuthProvider>
       </body>
     </html>
   );

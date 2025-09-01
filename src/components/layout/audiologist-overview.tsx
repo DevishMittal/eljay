@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { cn } from '@/utils';
 import { appointmentService } from '@/services/appointmentService';
 import { Audiologist } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AudiologistWithStats extends Audiologist {
   initials: string;
@@ -16,6 +17,7 @@ interface AudiologistOverviewProps {
 }
 
 const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
+  const { token } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [audiologists, setAudiologists] = useState<AudiologistWithStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,28 +37,28 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
     try {
       if (!isRefresh) setLoading(true);
       setError(null);
-      const response = await appointmentService.getAvailableAudiologists();
+      const response = await appointmentService.getAvailableAudiologists(token || undefined);
       
-      // Transform API data to include stats
-      const audiologistsWithStats: AudiologistWithStats[] = response.data.map(audiologist => {
-        // Generate initials from name
-        const initials = audiologist.name
-          .split(' ')
-          .map(word => word.charAt(0))
-          .join('')
-          .toUpperCase()
-          .slice(0, 2);
-        
-        // Calculate available time slots based on availability
-        const availableSlots = Object.values(audiologist.availability).filter(Boolean).length;
-        
-        return {
-          ...audiologist,
-          initials,
-          totalAppointments: audiologist.bookedSlots.length,
-          availableSlots
-        };
-      });
+             // Transform API data to include stats
+       const audiologistsWithStats: AudiologistWithStats[] = response.data.map(audiologist => {
+         // Generate initials from name
+         const initials = audiologist.name
+           .split(' ')
+           .map(word => word.charAt(0))
+           .join('')
+           .toUpperCase()
+           .slice(0, 2);
+         
+         // Calculate available time slots based on availability
+         const availableSlots = audiologist.isAvailable ? 1 : 0;
+         
+         return {
+           ...audiologist,
+           initials,
+           totalAppointments: 0, // API doesn't provide booked slots count
+           availableSlots
+         };
+       });
       
       setAudiologists(audiologistsWithStats);
     } catch (err) {
@@ -168,35 +170,20 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
                       </div>
                     </div>
                     
-                    <div className="flex space-x-2">
-                      {/* Availability indicators */}
-                      {audiologist.availability.morning && (
-                        <div className="flex items-center space-x-1 bg-green-100 border border-green-200 rounded-md px-2 py-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs font-medium text-green-700">Morning</span>
-                        </div>
-                      )}
-                      {audiologist.availability.afternoon && (
-                        <div className="flex items-center space-x-1 bg-blue-100 border border-blue-200 rounded-md px-2 py-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-xs font-medium text-blue-700">Afternoon</span>
-                        </div>
-                      )}
-                      {audiologist.availability.evening && (
-                        <div className="flex items-center space-x-1 bg-purple-100 border border-purple-200 rounded-md px-2 py-1">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                          <span className="text-xs font-medium text-purple-700">Evening</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Show if no availability */}
-                    {!audiologist.availability.morning && !audiologist.availability.afternoon && !audiologist.availability.evening && (
-                      <div className="flex items-center space-x-1 bg-red-100 border border-red-200 rounded-md px-2 py-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className="text-xs font-medium text-red-700">Not Available</span>
-                      </div>
-                    )}
+                                         <div className="flex space-x-2">
+                       {/* Availability indicator */}
+                       {audiologist.isAvailable ? (
+                         <div className="flex items-center space-x-1 bg-green-100 border border-green-200 rounded-md px-2 py-1">
+                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                           <span className="text-xs font-medium text-green-700">Available</span>
+                         </div>
+                       ) : (
+                         <div className="flex items-center space-x-1 bg-red-100 border border-red-200 rounded-md px-2 py-1">
+                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                           <span className="text-xs font-medium text-red-700">Not Available</span>
+                         </div>
+                       )}
+                     </div>
                   </div>
                 ))}
               </div>

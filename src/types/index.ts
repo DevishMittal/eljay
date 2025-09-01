@@ -382,12 +382,13 @@ export interface Audiologist {
   id: string;
   name: string;
   email: string;
-  availability: {
-    morning: boolean;
-    afternoon: boolean;
-    evening: boolean;
-  };
-  bookedSlots: string[];
+  countrycode: string;
+  phoneNumber: string;
+  specialization: string;
+  organizationId: string;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AudiologistsResponse {
@@ -460,4 +461,39 @@ export interface ResponsiveValue<T> {
   lg?: T;
   xl?: T;
   '2xl'?: T;
+}
+
+// Authentication types
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  countrycode: string;
+  website: string;
+  gstNumber: string;
+  address: string;
+  logo: string;
+}
+
+export interface AuthResponse {
+  status: string;
+  data: {
+    token: string;
+    refreshToken: string;
+    organization: Organization;
+  };
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  token: string | null;
+  refreshToken: string | null;
+  organization: Organization | null;
+  loading: boolean;
 }

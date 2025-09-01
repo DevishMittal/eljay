@@ -74,13 +74,20 @@ class AppointmentService {
   }
 
   // Get available audiologists
-  async getAvailableAudiologists(): Promise<AudiologistsResponse> {
+  async getAvailableAudiologists(token?: string): Promise<AudiologistsResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/audiologists/available`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
