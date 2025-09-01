@@ -45,7 +45,7 @@ export default function LoginPage() {
             className="w-12 h-12"
           />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">
           Eljay Hearing Care
         </h1>
         <p className="text-gray-600">
@@ -55,9 +55,9 @@ export default function LoginPage() {
 
       {/* Login Card */}
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-400">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
               Sign In
             </h2>
             <p className="text-gray-600 text-sm">
@@ -170,10 +170,10 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="text-center mt-8">
-        <p className="text-sm text-gray-600">
-          © 2024 Eljay Hearing Care Management System
+        <p className="text-sm text-gray-400">
+          © 2025 Eljay Hearing Care Management System
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-400 mt-1">
           Secure • Reliable • Efficient
         </p>
       </div>
