@@ -28,7 +28,6 @@ interface TasksAnalyticsProps {
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmentCreated }) => {
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'today' | 'overdue' | 'pending' | 'done'>('today');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedDate, setSelectedDate] = useState(0); // 0 = today, 1 = tomorrow, etc.
   
@@ -54,60 +53,29 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
       const selectedDateData = dates[selectedDate];
       if (!selectedDateData) return [];
       
-      return tasks.filter(task => {
+      const selectedDateTasks = tasks.filter(task => {
         const taskDate = new Date(task.dueDate);
         const selectedDate = new Date(selectedDateData.date);
         return taskDate.toDateString() === selectedDate.toDateString();
       });
+      
+      // Include overdue and done tasks as well
+      return [...selectedDateTasks, ...overdueTasks, ...doneTasks];
     };
 
-    switch (currentView) {
-      case 'today':
-        return getTasksForSelectedDate();
-      case 'overdue':
-        return overdueTasks;
-      case 'pending':
-        return pendingTasks;
-      case 'done':
-        return doneTasks;
-      default:
-        return getTasksForSelectedDate();
-    }
+    return getTasksForSelectedDate();
   };
 
   const getViewTitle = () => {
-    const getTasksForSelectedDate = () => {
-      const dates = getCalendarDates();
-      const selectedDateData = dates[selectedDate];
-      if (!selectedDateData) return [];
-      
-      return tasks.filter(task => {
-        const taskDate = new Date(task.dueDate);
-        const selectedDate = new Date(selectedDateData.date);
-        return taskDate.toDateString() === selectedDate.toDateString();
-      });
-    };
-
-    switch (currentView) {
-      case 'today':
-        const selectedDateTasks = getTasksForSelectedDate();
-        const dates = getCalendarDates();
-        const selectedDateData = dates[selectedDate];
-        const dateLabel = selectedDateData?.label || 'Today';
-        return `Tasks for ${dateLabel} (${selectedDateTasks.length})`;
-      case 'overdue':
-        return `Overdue Tasks (${overdueTasks.length})`;
-      case 'pending':
-        return `Pending Tasks (${pendingTasks.length})`;
-      case 'done':
-        return `Done Tasks (${doneTasks.length})`;
-      default:
-        const defaultSelectedDateTasks = getTasksForSelectedDate();
-        const defaultDates = getCalendarDates();
-        const defaultSelectedDateData = defaultDates[selectedDate];
-        const defaultDateLabel = defaultSelectedDateData?.label || 'Today';
-        return `Tasks for ${defaultDateLabel} (${defaultSelectedDateTasks.length})`;
-    }
+    const currentTasks = getCurrentTasks();
+    const dates = getCalendarDates();
+    const selectedDateData = dates[selectedDate];
+    const dateLabel = selectedDateData?.label || 'Today';
+    const totalTasks = currentTasks.length;
+    const overdueCount = overdueTasks.length;
+    const doneCount = doneTasks.length;
+    
+    return `Tasks for ${dateLabel} (${totalTasks}) - Overdue: ${overdueCount}, Done: ${doneCount}`;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -164,21 +132,8 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
     toggleTaskCompletion(taskId);
   };
 
-  const getTasksForSelectedDate = () => {
-    const dates = getCalendarDates();
-    const selectedDateData = dates[selectedDate];
-    if (!selectedDateData) return [];
-    
-    return tasks.filter(task => {
-      const taskDate = new Date(task.dueDate);
-      const selectedDate = new Date(selectedDateData.date);
-      return taskDate.toDateString() === selectedDate.toDateString();
-    });
-  };
-
-  const selectedDateTasks = getTasksForSelectedDate();
-  const completedSelectedDateTasks = selectedDateTasks.filter(task => task.completed).length;
-  const completedPendingTasks = pendingTasks.filter(task => task.completed).length;
+  const currentTasks = getCurrentTasks();
+  const completedCurrentTasks = currentTasks.filter(task => task.completed).length;
 
   return (
     <div className={cn('bg-white border-l border-border flex flex-col h-full transition-all duration-300', 
@@ -255,12 +210,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
               </svg>
               <span className="text-xs font-medium text-foreground">Task View</span>
             </div>
-            <button 
-              onClick={() => setCurrentView('today')}
-              className="text-xs text-black hover:text-foreground hover:bg-gray-100 transition-colors px-2 py-1 border rounded"
-            >
+            <span className="text-xs text-black px-2 py-1 border rounded">
               Today
-            </button>
+            </span>
           </div>
         </div>
 
@@ -299,15 +251,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
           {/* Division Line 4 - After Today/Tomorrow Navigation */}
           <div className="border-t border-border"></div>
 
-          {/* Dynamic Task Summary */}
+          {/* Visual Progress Indicators - Non-clickable */}
           <div className="space-y-2">
-            <button
-              onClick={() => setCurrentView('today')}
-              className={cn(
-                "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'today' ? 'bg-red-50' : 'hover:bg-muted'
-              )}
-            >
+            <div className="w-full flex items-center justify-between p-2 rounded-md">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                 <span className="text-xs text-foreground">TODAY</span>
@@ -317,22 +263,16 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                   <div 
                     className="h-full bg-red-500 rounded-full transition-all duration-300"
                     style={{ 
-                      width: selectedDateTasks.length === 0 ? '0%' : 
-                      `${Math.min(((selectedDateTasks.length - completedSelectedDateTasks) / selectedDateTasks.length) * 100, 100)}%` 
+                      width: currentTasks.length === 0 ? '0%' : 
+                      `${Math.min(((currentTasks.length - completedCurrentTasks) / currentTasks.length) * 100, 100)}%` 
                     }}
                   ></div>
                 </div>
-                <span className="text-xs text-muted-foreground">{selectedDateTasks.length}</span>
+                <span className="text-xs text-muted-foreground">{currentTasks.length}</span>
               </div>
-            </button>
+            </div>
             
-            <button
-              onClick={() => setCurrentView('overdue')}
-              className={cn(
-                "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'overdue' ? 'bg-orange-50' : 'hover:bg-muted'
-              )}
-            >
+            <div className="w-full flex items-center justify-between p-2 rounded-md">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                 <span className="text-xs text-foreground">OVERDUE</span>
@@ -349,15 +289,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                 </div>
                 <span className="text-xs text-muted-foreground">{overdueTasks.length}</span>
               </div>
-            </button>
+            </div>
             
-            <button
-              onClick={() => setCurrentView('pending')}
-              className={cn(
-                "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'pending' ? 'bg-blue-50' : 'hover:bg-muted'
-              )}
-            >
+            <div className="w-full flex items-center justify-between p-2 rounded-md">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span className="text-xs text-foreground">PENDING</span>
@@ -374,15 +308,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                 </div>
                 <span className="text-xs text-muted-foreground">{pendingTasks.length}</span>
               </div>
-            </button>
+            </div>
             
-            <button
-              onClick={() => setCurrentView('done')}
-              className={cn(
-                "w-full flex items-center justify-between p-2 rounded-md transition-colors",
-                currentView === 'done' ? 'bg-green-50' : 'hover:bg-muted'
-              )}
-            >
+            <div className="w-full flex items-center justify-between p-2 rounded-md">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-xs text-foreground">DONE</span>
@@ -399,7 +327,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                 </div>
                 <span className="text-xs text-muted-foreground">{doneTasks.length}</span>
               </div>
-            </button>
+            </div>
           </div>
         </div>
         

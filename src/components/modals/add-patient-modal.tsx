@@ -112,7 +112,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2  shadow-lg">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold" style={{ color: '#101828' }}>Add New Patient</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#101828' }}>Add New Patient</h2>
             <button
               onClick={handleClose}
               disabled={loading}
@@ -128,7 +128,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+              <p className="text-red-600 text-xs">{error}</p>
             </div>
           )}
 
@@ -139,14 +139,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 <h3 className="font-semibold" style={{ color: '#0A0A0A' }}>Personal Information</h3>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Full Name *
                   </label>
                   <input
                     type="text"
                     value={formData.fullname}
                     onChange={(e) => handleInputChange('fullname', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter full name"
                     disabled={loading}
                     required
@@ -154,7 +154,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Date of Birth *
                   </label>
                   <DatePicker
@@ -169,7 +169,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Gender *
                   </label>
                   <CustomDropdown
@@ -187,14 +187,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Occupation *
                   </label>
                   <input
                     type="text"
                     value={formData.occupation}
                     onChange={(e) => handleInputChange('occupation', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter occupation"
                     disabled={loading}
                     required
@@ -207,14 +207,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 <h3 className="font-semibold" style={{ color: '#0A0A0A' }}>Contact Information</h3>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Phone Number *
                   </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter phone number"
                     disabled={loading}
                     required
@@ -222,14 +222,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Email Address *
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter email address"
                     disabled={loading}
                     required
@@ -237,7 +237,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                                         <div>
-                          <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                          <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                             Country Code *
                           </label>
                           <CustomDropdown
@@ -258,7 +258,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                         </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Customer Type *
                   </label>
                   <CustomDropdown
@@ -275,14 +275,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
                     Alternate Number
                   </label>
                   <input
                     type="tel"
                     value={formData.alternateNumber}
                     onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter alternate number (optional)"
                     disabled={loading}
                   />
@@ -295,14 +295,14 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 type="button"
                 onClick={handleClose}
                 disabled={loading}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-xs text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
               >
                 {loading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

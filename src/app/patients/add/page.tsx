@@ -303,13 +303,13 @@ export default function AddPatientPage() {
                         <path d="M17.125 18.875V17.125C17.125 16.1967 16.7563 15.3065 16.0999 14.6501C15.4435 13.9937 14.5533 13.625 13.625 13.625H8.375C7.44674 13.625 6.5565 13.9937 5.90013 14.6501C5.24375 15.3065 4.875 16.1967 4.875 17.125V18.875" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                         <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Patient Information</h2>
+                      <h2 className="text-md font-semibold text-gray-900">Patient Information</h2>
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={handleCancel}
                         disabled={loading}
-                        className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -346,8 +346,8 @@ export default function AddPatientPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <h4 className="text-red-800 font-medium text-sm mb-1">Error Creating Patient</h4>
-                        <p className="text-red-600 text-sm">{error}</p>
+                        <h4 className="text-red-800 font-medium text-xs mb-1">Error Creating Patient</h4>
+                        <p className="text-red-600 text-xs">{error}</p>
                       </div>
                     </div>
                   </div>
@@ -360,8 +360,8 @@ export default function AddPatientPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <h4 className="text-green-800 font-medium text-sm mb-1">Success!</h4>
-                        <p className="text-green-600 text-sm">{success}</p>
+                        <h4 className="text-green-800 font-medium text-xs mb-1">Success!</h4>
+                        <p className="text-green-600 text-xs">{success}</p>
                       </div>
                     </div>
                   </div>
@@ -373,12 +373,12 @@ export default function AddPatientPage() {
                       <h3 className="font-medium text-gray-900 mb-4">Personal Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
                           <input
                             type="text"
                             value={formData.fullname}
                             onChange={(e) => handleInputChange('fullname', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter full name"
                             disabled={loading}
                             required
@@ -386,7 +386,7 @@ export default function AddPatientPage() {
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth *</label>
                           <DatePicker
                             value={formData.dob}
                             onChange={(date) => handleInputChange('dob', date)}
@@ -399,7 +399,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender *</label>
                           <CustomDropdown
                             options={[
                               { value: 'Male', label: 'Male' },
@@ -415,12 +415,12 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Occupation *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation *</label>
                           <input
                             type="text"
                             value={formData.occupation}
                             onChange={(e) => handleInputChange('occupation', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter occupation"
                             disabled={loading}
                             required
@@ -434,12 +434,12 @@ export default function AddPatientPage() {
                       <h3 className="font-medium text-gray-900 mb-4">Contact Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Mobile Number *</label>
                           <input
                             type="tel"
                             value={formData.phoneNumber}
                             onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter mobile number"
                             disabled={loading}
                             required
@@ -447,12 +447,12 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
                           <input
                             type="email"
                             value={formData.email}
                             onChange={(e) => handleInputChange('email', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter email address"
                             disabled={loading}
                             required
@@ -460,7 +460,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Country Code *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code *</label>
                           <CustomDropdown
                             options={[
                               { value: '+91', label: '+91 (India)' },
@@ -479,7 +479,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type *</label>
                           <CustomDropdown
                             options={[
                               { value: 'B2C', label: 'B2C' },
@@ -494,12 +494,12 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Number</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Alternate Number</label>
                           <input
                             type="tel"
                             value={formData.alternateNumber}
                             onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter alternate number (optional)"
                             disabled={loading}
                           />
@@ -516,11 +516,11 @@ export default function AddPatientPage() {
                       <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Appointment History</h2>
+                      <h2 className="text-md font-semibold text-gray-900">Appointment History</h2>
                     </div>
                     <button 
                       onClick={handleBookAppointment}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-800 transition-colors"
+                      className="text-sm bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-800 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -536,11 +536,11 @@ export default function AddPatientPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-medium mb-2 text-gray-900">No appointments yet</h3>
+                    <h3 className="text-sm font-medium mb-2 text-gray-900">No appointments yet</h3>
                     <p className="text-gray-500 mb-6">Schedule the first appointment for this patient</p>
                     <button 
                       onClick={handleBookAppointment}
-                      className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-800 transition-colors"
+                      className="text-sm bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-800 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -566,7 +566,7 @@ export default function AddPatientPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-md font-medium mb-2 text-gray-900">No appointments yet</h3>
+                  <h3 className="text-sm font-medium mb-2 text-gray-900">No appointments yet</h3>
                   <p className="text-gray-500 mb-6">Schedule the first appointment for this patient.</p>
                   <button className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-800 transition-colors">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

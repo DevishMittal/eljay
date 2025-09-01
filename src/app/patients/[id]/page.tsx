@@ -4,16 +4,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Patient, UpdatePatientData, UserAppointment } from '@/types';
 import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
+import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const [activeSection, setActiveSection] = useState<'profile' | 'emr' | 'billing'>('profile');
   const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(true);
+  const [activeProfileButton, setActiveProfileButton] = useState<'information' | 'appointments'>('information');
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<UserAppointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
@@ -22,6 +25,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [success, setSuccess] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<UpdatePatientData>({});
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
   const fetchPatient = useCallback(async () => {
     try {
@@ -132,8 +136,34 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   };
 
   const handleBookAppointment = () => {
-    // TODO: Implement appointment booking modal
-    console.log('Book appointment for patient:', patient?.patient_id);
+    setShowAppointmentModal(true);
+  };
+
+  const handleCloseAppointmentModal = () => {
+    setShowAppointmentModal(false);
+  };
+
+  const handleAppointmentCreated = (appointment: { id: string; date: Date; time: string; patient: string; type: string; duration: number; audiologist: string; notes: string; phoneNumber: string; email: string }) => {
+    console.log('Appointment created:', appointment);
+    setShowAppointmentModal(false);
+    // Refresh appointments list
+    if (patient) {
+      fetchAppointments();
+    }
+  };
+
+  const scrollToAppointmentHistory = () => {
+    const appointmentHistoryElement = document.getElementById('appointment-history');
+    if (appointmentHistoryElement) {
+      appointmentHistoryElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToPatientInformation = () => {
+    const patientInformationElement = document.getElementById('patient-information');
+    if (patientInformationElement) {
+      patientInformationElement.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (loading) {
@@ -238,9 +268,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 }`}>
                   <div className="mt-2 space-y-1">
                     <button
-                      onClick={() => setActiveSubTab('information')}
+                      onClick={() => {
+                        setActiveSubTab('information');
+                        setActiveProfileButton('information');
+                        scrollToPatientInformation();
+                      }}
                       className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
-                        activeSubTab === 'information'
+                        activeProfileButton === 'information'
                           ? 'text-orange-700 bg-orange-100'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
@@ -254,9 +288,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       </div>
                     </button>
                     <button
-                      onClick={() => setActiveSubTab('appointments')}
+                      onClick={() => {
+                        setActiveSubTab('information');
+                        setActiveProfileButton('appointments');
+                        scrollToAppointmentHistory();
+                      }}
                       className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
-                        activeSubTab === 'appointments'
+                        activeProfileButton === 'appointments'
                           ? 'text-orange-700 bg-orange-100'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
@@ -360,20 +398,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
             {activeSection === 'profile' && activeSubTab === 'information' && (
               <div className="space-y-6">
                 {/* Patient Information Section */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div id="patient-information" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-2">
                       <svg width="16" height="16" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.125 18.875V17.125C17.125 16.1967 16.7563 15.3065 16.0999 14.6501C15.4435 13.9937 14.5533 13.625 13.625 13.625H8.375C7.44674 13.625 6.5565 13.9937 5.90013 14.6501C5.24375 15.3065 4.875 16.1967 4.875 17.125V18.875" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                         <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Patient Information</h2>
+                      <h2 className="text-md font-semibold text-gray-900">Patient Information</h2>
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={handleEditToggle}
                         disabled={loading}
-                        className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         {isEditing ? 'Cancel' : 'Edit'}
                       </button>
@@ -412,8 +450,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <h4 className="text-red-800 font-medium text-sm mb-1">Error Updating Patient</h4>
-                        <p className="text-red-600 text-sm">{error}</p>
+                        <h4 className="text-red-800 font-medium text-xs mb-1">Error Updating Patient</h4>
+                        <p className="text-red-600 text-xs">{error}</p>
                       </div>
                     </div>
                   </div>
@@ -426,8 +464,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <h4 className="text-green-800 font-medium text-sm mb-1">Success!</h4>
-                        <p className="text-green-600 text-sm">{success}</p>
+                        <h4 className="text-green-800 font-medium text-xs mb-1">Success!</h4>
+                        <p className="text-green-600 text-xs">{success}</p>
                       </div>
                     </div>
                   </div>
@@ -436,28 +474,28 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   <div className="space-y-6">
                     {/* Personal Details Section */}
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-4">Personal Details</h3>
+                      <h3 className="font-medium text-gray-900 mb-4 text-sm">Personal Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
                           {isEditing ? (
                             <input
                               type="text"
                               value={editFormData.full_name || ''}
                               onChange={(e) => handleInputChange('full_name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter full name"
                               aria-label="Full name"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-900">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-900">
                               {patient.full_name}
                             </div>
                           )}
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth *</label>
                           {isEditing ? (
                             <DatePicker
                               value={editFormData.dob || ''}
@@ -468,14 +506,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               aria-label="Date of birth"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.dob ? `${patientService.formatDate(patient.dob)} (${patientService.calculateAge(patient.dob)} years)` : 'Not provided'}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender *</label>
                           {isEditing ? (
                             <CustomDropdown
                               options={[
@@ -486,29 +524,29 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               value={editFormData.gender || 'Male'}
                               onChange={(value) => handleInputChange('gender', value as 'Male' | 'Female')}
                               placeholder="Select gender"
-                              disabled={loading}
+                              disabled={loading}  
                               aria-label="Select gender"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-900">
                               {patient.gender}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Occupation *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation *</label>
                           {isEditing ? (
                             <input
                               type="text"
                               value={editFormData.occupation || ''}
                               onChange={(e) => handleInputChange('occupation', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter occupation"
                               aria-label="Occupation"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.occupation || 'Not provided'}
                             </div>
                           )}
@@ -518,28 +556,28 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
                     {/* Contact Information Section */}
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-4">Contact Information</h3>
+                      <h3 className="font-medium text-gray-900 mb-4 text-sm">Contact Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
                           {isEditing ? (
                             <input
                               type="tel"
                               value={editFormData.mobile_number || ''}
                               onChange={(e) => handleInputChange('mobile_number', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter phone number"
                               aria-label="Phone number"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.mobile_number}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Country Code *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code *</label>
                           {isEditing ? (
                             <CustomDropdown
                               options={[
@@ -557,32 +595,32 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               aria-label="Select country code"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.countrycode ? `${patient.countrycode} (${getCountryName(patient.countrycode)})` : 'Not provided'}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Number</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Alternate Number</label>
                           {isEditing ? (
                             <input
                               type="tel"
                               value={editFormData.alternative_number || ''}
                               onChange={(e) => handleInputChange('alternative_number', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter alternate number (optional)"
                               aria-label="Alternate number"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.alternative_number || 'Not provided'}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
                           {isEditing ? (
                             <input
                               type="email"
@@ -593,15 +631,15 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               aria-label="Email address"
                             />
                           ) : (
-                            <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                            <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                               {patient.email_address}
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type *</label>
-                          <div className="w-full px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type *</label>
+                          <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                             {patient.type || 'Regular'}
                           </div>
                         </div>
@@ -611,13 +649,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Appointment History Section */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div id="appointment-history" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-2">
                       <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Appointment History</h2>
+                      <h2 className="text-sm font-semibold text-gray-900">Appointment History</h2>
                       {appointments.length > 0 && (
                         <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                           {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
@@ -626,7 +664,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     </div>
                     <button 
                       onClick={handleBookAppointment}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-800 transition-colors"
+                      className="bg-orange-600 text-white px-4 py-2 text-xs rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-800 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -647,11 +685,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-medium mb-2 text-gray-900">No appointments yet</h3>
+                      <h3 className="text-sm font-medium mb-2 text-gray-900">No appointments yet</h3>
                       <p className="text-gray-500 mb-6">Schedule the first appointment for this patient</p>
                       <button 
                         onClick={handleBookAppointment}
-                        className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-800 transition-colors"
+                        className="bg-orange-600 text-white px-6 py-3 text-xs rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-800 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -671,7 +709,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 </svg>
                               </div>
                               <div>
-                                <h3 className="font-medium text-gray-900">{appointment.procedures}</h3>
+                                <h3 className="font-medium text-xs text-gray-900">{appointment.procedures}</h3>
                                 <p className="text-sm text-gray-500">
                                   {patientService.formatDate(appointment.appointmentDate)} at {patientService.formatTime(appointment.appointmentTime)}
                                 </p>
@@ -728,7 +766,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Electronic Medical Records</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">Electronic Medical Records</h2>
                 </div>
                 <div className="text-center py-16">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -736,7 +774,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium mb-2 text-gray-900">EMR Coming Soon</h3>
+                  <h3 className="text-sm font-medium mb-2 text-gray-900">EMR Coming Soon</h3>
                   <p className="text-gray-500">Electronic Medical Records functionality will be available soon.</p>
                 </div>
               </div>
@@ -748,7 +786,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Billing Information</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">Billing Information</h2>
                 </div>
                 <div className="text-center py-16">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -756,7 +794,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium mb-2 text-gray-900">Billing Coming Soon</h3>
+                  <h3 className="text-sm font-medium mb-2 text-gray-900">Billing Coming Soon</h3>
                   <p className="text-gray-500">Billing functionality will be available soon.</p>
                 </div>
               </div>
@@ -765,6 +803,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       </div>
+
+      {/* Walk-in Appointment Modal */}
+      <WalkInAppointmentModal
+        isOpen={showAppointmentModal}
+        onClose={handleCloseAppointmentModal}
+        onAppointmentCreated={handleAppointmentCreated}
+      />
     </MainLayout>
   );
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Patient } from '@/types';
 import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 
 
 
@@ -27,6 +28,7 @@ export default function PatientsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
 
   const fetchPatients = useCallback(async () => {
@@ -84,6 +86,21 @@ export default function PatientsPage() {
 
   const handleAddPatient = () => {
     router.push('/patients/add');
+  };
+
+  const handleBookAppointment = () => {
+    setShowAppointmentModal(true);
+  };
+
+  const handleCloseAppointmentModal = () => {
+    setShowAppointmentModal(false);
+  };
+
+  const handleAppointmentCreated = (appointment: { id: string; date: Date; time: string; patient: string; type: string; duration: number; audiologist: string; notes: string; phoneNumber: string; email: string }) => {
+    console.log('Appointment created:', appointment);
+    setShowAppointmentModal(false);
+    // Refresh the patients list to show any updates
+    fetchPatients();
   };
 
   const handleDeletePatient = async (patientId: string, e: React.MouseEvent) => {
@@ -408,6 +425,15 @@ export default function PatientsPage() {
               </svg>
               <span>Add Patient</span>
             </button>
+            <button 
+              onClick={handleBookAppointment}
+              className="text-xs bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Book Appointment</span>
+            </button>
           </div>
         </div>
 
@@ -724,6 +750,13 @@ export default function PatientsPage() {
           </div>
         </div>
       </div>
+
+      {/* Walk-in Appointment Modal */}
+      <WalkInAppointmentModal
+        isOpen={showAppointmentModal}
+        onClose={handleCloseAppointmentModal}
+        onAppointmentCreated={handleAppointmentCreated}
+      />
     </MainLayout>
   );
 }

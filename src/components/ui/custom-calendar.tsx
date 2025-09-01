@@ -133,7 +133,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-xs font-semibold text-gray-900">
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </h2>
           {showToday && (
@@ -194,7 +194,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
               onClick={() => handleDateClick(date)}
               disabled={disabled}
               className={cn(
-                "h-8 w-8 flex items-center justify-center text-sm rounded transition-all duration-200",
+                "h-6 w-6 flex items-center justify-center text-xs rounded transition-all duration-200",
                 "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50",
                 {
                   // Current month dates
@@ -225,8 +225,8 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
       {/* Footer with selected date info */}
       {value && (
-        <div className="mt-4 pt-3 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center">
+        <div className="mt-4 pt-3 !border-t border-gray-200">
+          <p className="text-xs text-gray-600 text-center">
             Selected: <span className="font-medium text-gray-900">{value.toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
