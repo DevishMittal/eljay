@@ -303,10 +303,10 @@ const SettingsPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+          <h1 className="text-s font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
             Settings
           </h1>
-          <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+          <p className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
             Manage your organization settings and configurations
           </p>
         </div>
@@ -319,7 +319,7 @@ const SettingsPage = () => {
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                  'flex items-center space-x-2 px-4 py-3 text-xs font-medium transition-all duration-200 rounded-full flex-1 justify-center',
                   activeTab === tab.id
                     ? 'text-[#0A0A0A] bg-white shadow-sm'
                     : 'text-[#0A0A0A] hover:bg-white/50'
@@ -338,7 +338,7 @@ const SettingsPage = () => {
         {activeTab === 'profile' && organization && (
           <div className="bg-white rounded-lg border border-border p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+              <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                 Organization Profile
               </h2>
               {!isEditing && (
@@ -384,13 +384,13 @@ const SettingsPage = () => {
                     </svg>
                   </div>
                 </div>
-                <p className="text-sm text-[#4A5565] mt-2 text-center" style={{ fontFamily: 'Segoe UI' }}>
+                <p className="text-xs text-[#4A5565] mt-2 text-center" style={{ fontFamily: 'Segoe UI' }}>
                   Organization Logo
                 </p>
               </div>
               
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-[#101828] mb-1" style={{ fontFamily: 'Segoe UI' }}>
+                <h3 className="text-s font-semibold text-[#101828] mb-1" style={{ fontFamily: 'Segoe UI' }}>
                   {organization.name}
                 </h3>
               </div>
@@ -401,7 +401,7 @@ const SettingsPage = () => {
               {/* Left Column */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Organization Name
                   </label>
                   <input
@@ -411,7 +411,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"
@@ -422,7 +422,7 @@ const SettingsPage = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Email Address
                   </label>
                   <input
@@ -432,7 +432,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"
@@ -443,7 +443,7 @@ const SettingsPage = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     GST Number
                   </label>
                   <input
@@ -453,7 +453,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"
@@ -464,7 +464,7 @@ const SettingsPage = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Address
                   </label>
                   <input
@@ -488,7 +488,7 @@ const SettingsPage = () => {
               {/* Right Column */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Phone Number
                   </label>
                   <input
@@ -498,7 +498,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"
@@ -509,7 +509,7 @@ const SettingsPage = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Country Code
                   </label>
                   <input
@@ -519,7 +519,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"
@@ -530,7 +530,7 @@ const SettingsPage = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Website
                   </label>
                   <input
@@ -540,7 +540,7 @@ const SettingsPage = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={cn(
-                      "w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
+                      "text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent",
                       isEditing 
                         ? "bg-white text-[#101828]" 
                         : "bg-[#F3F3F5] text-[#717182] cursor-not-allowed"

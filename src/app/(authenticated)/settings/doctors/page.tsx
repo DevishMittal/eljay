@@ -1,24 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
+import { doctorService } from '@/services/doctorService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Doctor, CreateDoctorData } from '@/types';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 const DoctorsPage = () => {
   const pathname = usePathname();
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('doctors');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    specialization: '',
-    hospitalClinic: '',
-    location: '',
-    phone: '',
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<CreateDoctorData>({
+    name: '',
     email: '',
-    bdmName: '',
-    bdmContact: ''
+    phoneNumber: '',
+    countrycode: '+1',
+    specialization: ''
   });
 
   const tabs = [
@@ -97,31 +104,6 @@ const DoctorsPage = () => {
     }
   ];
 
-  const doctorsData = [
-    {
-      id: 1,
-      name: 'Dr. Robert Thompson',
-      specialization: 'ENT (Otolaryngology)',
-      hospitalClinic: 'City General Hospital',
-      location: 'Downtown Medical Center',
-      phone: '+1 (555) 987-6543',
-      email: 'r.thompson@citygeneral.com',
-      bdmName: 'Alex Kumar',
-      bdmContact: '+1 (555) 111-2222'
-    },
-    {
-      id: 2,
-      name: 'Dr. Lisa Anderson',
-      specialization: 'Neurology',
-      hospitalClinic: 'Northside Medical Associates',
-      location: 'Northside Clinic',
-      phone: '+1 (555) 876-5432',
-      email: 'l.anderson@northsidemedical.com',
-      bdmName: 'David Wilson',
-      bdmContact: '+1 (555) 333-4444'
-    }
-  ];
-
   const specializations = [
     'ENT (Otolaryngology)',
     'Neurology',
@@ -135,6 +117,38 @@ const DoctorsPage = () => {
     'Psychiatry'
   ];
 
+  const specializationOptions = specializations.map(spec => ({
+    value: spec,
+    label: spec
+  }));
+
+  const countryCodeOptions = [
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+91', label: '+91 (India)' },
+    { value: '+86', label: '+86 (China)' }
+  ];
+
+  // Fetch doctors data
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await doctorService.getDoctors(token || undefined);
+      setDoctors(response.data);
+    } catch (err) {
+      setError('Failed to load doctors');
+      console.error('Error fetching doctors:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -143,35 +157,86 @@ const DoctorsPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically save the data to your backend
-    console.log('New doctor:', formData);
-    setShowAddModal(false);
-    setFormData({
-      fullName: '',
-      specialization: '',
-      hospitalClinic: '',
-      location: '',
-      phone: '',
-      email: '',
-      bdmName: '',
-      bdmContact: ''
-    });
+    try {
+      await doctorService.createDoctor(formData, token || undefined);
+      await fetchDoctors(); // Refresh the list
+      setShowAddModal(false);
+      setFormData({
+        name: '',
+        email: '',
+        phoneNumber: '',
+        countrycode: '+1',
+        specialization: ''
+      });
+    } catch (err) {
+      console.error('Error creating doctor:', err);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleCancel = () => {
     setShowAddModal(false);
+    setShowEditModal(false);
+    setEditingDoctor(null);
     setFormData({
-      fullName: '',
-      specialization: '',
-      hospitalClinic: '',
-      location: '',
-      phone: '',
+      name: '',
       email: '',
-      bdmName: '',
-      bdmContact: ''
+      phoneNumber: '',
+      countrycode: '+1',
+      specialization: ''
     });
+  };
+
+  const handleEdit = (doctor: Doctor) => {
+    setEditingDoctor(doctor);
+    setFormData({
+      name: doctor.name,
+      email: doctor.email,
+      phoneNumber: doctor.phoneNumber,
+      countrycode: doctor.countrycode,
+      specialization: doctor.specialization
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDoctor) return;
+    
+    try {
+      const updateData = {
+        specialization: formData.specialization,
+        phoneNumber: formData.phoneNumber
+      };
+      await doctorService.updateDoctor(editingDoctor.id, updateData, token || undefined);
+      await fetchDoctors(); // Refresh the list
+      setShowEditModal(false);
+      setEditingDoctor(null);
+      setFormData({
+        name: '',
+        email: '',
+        phoneNumber: '',
+        countrycode: '+1',
+        specialization: ''
+      });
+    } catch (err) {
+      console.error('Error updating doctor:', err);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this doctor?')) {
+      try {
+        await doctorService.deleteDoctor(id, token || undefined);
+        await fetchDoctors(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting doctor:', err);
+        // You might want to show an error message to the user here
+      }
+    }
   };
 
   return (
@@ -179,10 +244,10 @@ const DoctorsPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+          <h1 className="text-s font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
             Settings
           </h1>
-          <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+          <p className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
             Manage your organization settings and configurations
           </p>
         </div>
@@ -195,7 +260,7 @@ const DoctorsPage = () => {
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                  'flex items-center space-x-2 px-4 py-3 text-xs font-medium transition-all duration-200 rounded-full flex-1 justify-center',
                   activeTab === tab.id
                     ? 'text-[#0A0A0A] bg-white shadow-sm'
                     : 'text-[#0A0A0A] hover:bg-white/50'
@@ -213,7 +278,7 @@ const DoctorsPage = () => {
         {/* Doctors Content */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
               Doctor Network
             </h2>
             <button
@@ -234,10 +299,10 @@ const DoctorsPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               <div>
-                <h3 className="text-sm font-semibold text-blue-900 mb-1" style={{ fontFamily: 'Segoe UI' }}>
+                <h3 className="text-xs font-semibold text-blue-900 mb-1" style={{ fontFamily: 'Segoe UI' }}>
                   Doctor Referral Management
                 </h3>
-                <p className="text-sm text-blue-700" style={{ fontFamily: 'Segoe UI' }}>
+                <p className="text-xs text-blue-700" style={{ fontFamily: 'Segoe UI' }}>
                   Manage your basic doctor contact information here. For referral tracking, commission management, and detailed referral analytics, visit the dedicated{' '}
                   <span className="font-semibold text-blue-900 cursor-pointer hover:underline">
                     Doctor Referrals module
@@ -250,177 +315,292 @@ const DoctorsPage = () => {
 
           {/* Doctors Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Doctor Name
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Specialization
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Hospital/Clinic
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Location
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Contact
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    BDM
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {doctorsData.map((doctor) => (
-                  <tr key={doctor.id} className="border-b border-border hover:bg-muted/30">
-                    <td className="py-3 px-4 text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {doctor.name}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                        {doctor.specialization}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {doctor.hospitalClinic}
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {doctor.location}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                        <div>{doctor.phone}</div>
-                        <div className="text-sm">{doctor.email}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                        <div>{doctor.bdmName}</div>
-                        <div className="text-sm">{doctor.bdmContact}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                          aria-label={`Edit ${doctor.name}`}
-                        >
-                          <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button 
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                          aria-label={`Delete ${doctor.name}`}
-                        >
-                          <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="ml-3 text-gray-600">Loading doctors...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{error}</p>
+                <button 
+                  onClick={fetchDoctors}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : doctors.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No doctors found</p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Add your first doctor
+                </button>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Doctor Name
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Specialization
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Contact
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Availability
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {doctors.map((doctor) => (
+                    <tr key={doctor.id} className="border-b border-border hover:bg-muted/30">
+                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {doctor.name}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                          {doctor.specialization}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                          <div>{doctor.countrycode} {doctor.phoneNumber}</div>
+                          <div className="text-xs">{doctor.email}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {doctor.isAvailable ? (
+                          <div className="flex items-center space-x-1 bg-green-100 border border-green-200 rounded-md px-2 py-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-green-700">Available</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-1 bg-red-100 border border-red-200 rounded-md px-2 py-1">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-red-700">Not Available</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => handleEdit(doctor)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Edit ${doctor.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(doctor.id)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Delete ${doctor.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
         {/* Add Doctor Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-[#101828] mb-1" style={{ fontFamily: 'Segoe UI' }}>
-                    Add New Doctor Referral
-                  </h3>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    Fill in the details to add a new doctor to your referral network.
-                  </p>
-                </div>
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Add New Doctor Referral</h2>
                 <button
                   onClick={handleCancel}
-                  className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                   aria-label="Close modal"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Form */}
+              <div className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="fullName" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Full Name
                       </label>
                       <input
                         type="text"
-                        id="fullName"
-                        name="fullName"
-                        value={formData.fullName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
+                        placeholder="Enter full name..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                         required
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="hospitalClinic" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Hospital/Clinic Name
-                      </label>
-                      <input
-                        type="text"
-                        id="hospitalClinic"
-                        name="hospitalClinic"
-                        value={formData.hospitalClinic}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Phone
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Phone Number
                       </label>
                       <input
                         type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
+                        placeholder="Enter phone number..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                        required
+                      />
+                    </div>
+
+                                         <div>
+                       <label className="block text-xs font-medium text-gray-700 mb-2">
+                         Country Code
+                       </label>
+                       <CustomDropdown
+                         options={countryCodeOptions}
+                         value={formData.countrycode}
+                         onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                         placeholder="Select country code"
+                         aria-label="Select country code"
+                       />
+                     </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                                         <div>
+                       <label className="block text-xs font-medium text-gray-700 mb-2">
+                         Specialization
+                       </label>
+                       <CustomDropdown
+                         options={specializationOptions}
+                         value={formData.specialization}
+                         onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
+                         placeholder="Select specialization"
+                         aria-label="Select specialization"
+                       />
+                     </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="Enter email address..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Add Doctor
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Doctor Modal */}
+        {showEditModal && editingDoctor && (
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Edit Doctor</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleInputChange}
+                        placeholder="Enter phone number..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                         required
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="bdmName" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        BDM Name
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Country Code
                       </label>
                       <input
                         type="text"
-                        id="bdmName"
-                        name="bdmName"
-                        value={formData.bdmName}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
+                        name="countrycode"
+                        value={formData.countrycode}
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
                       />
                     </div>
                   </div>
@@ -428,99 +608,49 @@ const DoctorsPage = () => {
                   {/* Right Column */}
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="specialization" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Specialization
                       </label>
-                      <select
-                        id="specialization"
-                        name="specialization"
+                      <CustomDropdown
+                        options={specializationOptions}
                         value={formData.specialization}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
-                      >
-                        <option value="">Select specialization</option>
-                        {specializations.map((spec) => (
-                          <option key={spec} value={spec}>
-                            {spec}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="location" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Location
-                      </label>
-                      <input
-                        type="text"
-                        id="location"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
+                        onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
+                        placeholder="Select specialization"
+                        aria-label="Select specialization"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="email" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Email
                       </label>
                       <input
                         type="email"
-                        id="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="bdmContact" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        BDM Contact
-                      </label>
-                      <input
-                        type="tel"
-                        id="bdmContact"
-                        name="bdmContact"
-                        value={formData.bdmContact}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                        required
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
                       />
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="flex items-center space-x-2 px-4 py-2 border border-[#E5E7EB] text-[#4A5565] rounded-md hover:bg-muted transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Cancel</span>
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-2 bg-[#f97316] text-white px-4 py-2 rounded-md hover:bg-[#ea580c] transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Doctor</span>
-                  </button>
-                </div>
-              </form>
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Update Doctor
+                </button>
+              </div>
             </div>
           </div>
         )}

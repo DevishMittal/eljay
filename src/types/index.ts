@@ -396,17 +396,106 @@ export interface AudiologistsResponse {
   data: Audiologist[];
 }
 
-// Procedure types
-export interface Procedure {
+// Diagnostic types
+export interface Diagnostic {
   id: string;
   name: string;
+  category: string;
+  price: number;
   description: string;
-  duration: number;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ProceduresResponse {
+export interface DiagnosticsResponse {
   status: string;
-  data: Procedure[];
+  data: Diagnostic[];
+}
+
+export interface DiagnosticResponse {
+  status: string;
+  data: Diagnostic;
+}
+
+export interface CreateDiagnosticData {
+  name: string;
+  category: string;
+  price: number;
+  description: string;
+}
+
+// Staff types
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phoneNumber: string;
+  countrycode: string;
+  specialization: string;
+  permissions: string[];
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffResponse {
+  status: string;
+  data: Staff[];
+}
+
+export interface StaffSingleResponse {
+  status: string;
+  data: Staff;
+}
+
+export interface CreateStaffData {
+  name: string;
+  email: string;
+  role: string;
+  phoneNumber: string;
+  countrycode: string;
+  specialization: string;
+  permissions: string[];
+}
+
+// Doctor types
+export interface Doctor {
+  id: string;
+  name: string;
+  email: string;
+  countrycode: string;
+  phoneNumber: string;
+  specialization: string;
+  organizationId: string;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+  appointments: any[];
+}
+
+export interface DoctorsResponse {
+  status: string;
+  data: Doctor[];
+}
+
+export interface DoctorSingleResponse {
+  status: string;
+  data: Doctor;
+}
+
+export interface CreateDoctorData {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  countrycode: string;
+  specialization: string;
+}
+
+export interface UpdateDoctorData {
+  specialization: string;
+  phoneNumber: string;
 }
 
 // Notification types

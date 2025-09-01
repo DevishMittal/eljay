@@ -1,27 +1,33 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
+import { staffService } from '@/services/staffService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Staff, CreateStaffData } from '@/types';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 const StaffPage = () => {
   const pathname = usePathname();
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('staff');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    role: '',
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<CreateStaffData>({
+    name: '',
     email: '',
-    phone: '',
+    role: '',
+    phoneNumber: '',
+    countrycode: '+1',
     specialization: '',
-    permissions: {
-      patientManagement: false,
-      appointmentsCalendar: false,
-      diagnosticsTesting: false,
-      inventoryManagement: false
-    }
+    permissions: []
   });
 
   const tabs = [
@@ -100,45 +106,6 @@ const StaffPage = () => {
     }
   ];
 
-  const staffData = [
-    {
-      id: 1,
-      name: 'Dr. Sarah Johnson',
-      role: 'Senior Audiologist',
-      email: 'sarah.johnson@eljayhearing.com',
-      phone: '+1 (555) 123-4568',
-      specialization: 'Pediatric Audiology',
-      permissions: ['Patient', 'Appointments', 'Diagnostics', '+3']
-    },
-    {
-      id: 2,
-      name: 'Dr. Michael Brown',
-      role: 'Audiologist',
-      email: 'michael.brown@eljayhearing.com',
-      phone: '+1 (555) 123-4569',
-      specialization: 'Hearing Aids',
-      permissions: ['Patient', 'Appointments', 'Diagnostics', '+2']
-    },
-    {
-      id: 3,
-      name: 'Jennifer Lee',
-      role: 'Hearing Aid Specialist',
-      email: 'jennifer.lee@eljayhearing.com',
-      phone: '+1 (555) 123-4570',
-      specialization: '',
-      permissions: ['Patient', 'Appointments', 'HAT', '+1']
-    },
-    {
-      id: 4,
-      name: 'Maria Garcia',
-      role: 'Administrative Staff',
-      email: 'maria.garcia@eljayhearing.com',
-      phone: '+1 (555) 123-4571',
-      specialization: '',
-      permissions: ['Appointments', 'Billing', 'Expense', '+1']
-    }
-  ];
-
   const roles = [
     'Senior Audiologist',
     'Audiologist',
@@ -148,6 +115,48 @@ const StaffPage = () => {
     'Technician'
   ];
 
+  const roleOptions = roles.map(role => ({
+    value: role,
+    label: role
+  }));
+
+  const countryCodeOptions = [
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+91', label: '+91 (India)' },
+    { value: '+86', label: '+86 (China)' }
+  ];
+
+  // Available permissions
+  const availablePermissions = [
+    'Patient',
+    'Appointments',
+    'Diagnostics',
+    'HAT',
+    'Billing',
+    'Expense'
+  ];
+
+  // Fetch staff data
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await staffService.getStaff(token || undefined);
+      setStaff(response.data);
+    } catch (err) {
+      setError('Failed to load staff');
+      console.error('Error fetching staff:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -156,52 +165,104 @@ const StaffPage = () => {
     }));
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
+  const handlePermissionChange = (permission: string) => {
     setFormData(prev => ({
       ...prev,
-      permissions: {
-        ...prev.permissions,
-        [name]: checked
-      }
+      permissions: prev.permissions.includes(permission)
+        ? prev.permissions.filter(p => p !== permission)
+        : [...prev.permissions, permission]
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically save the data to your backend
-    console.log('New staff member:', formData);
-    setShowAddModal(false);
-    setFormData({
-      fullName: '',
-      role: '',
-      email: '',
-      phone: '',
-      specialization: '',
-      permissions: {
-        patientManagement: false,
-        appointmentsCalendar: false,
-        diagnosticsTesting: false,
-        inventoryManagement: false
-      }
-    });
+    try {
+      await staffService.createStaff(formData, token || undefined);
+      await fetchStaff(); // Refresh the list
+      setShowAddModal(false);
+      setFormData({
+        name: '',
+        email: '',
+        role: '',
+        phoneNumber: '',
+        countrycode: '+1',
+        specialization: '',
+        permissions: []
+      });
+    } catch (err) {
+      console.error('Error creating staff member:', err);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleCancel = () => {
     setShowAddModal(false);
+    setShowEditModal(false);
+    setEditingStaff(null);
     setFormData({
-      fullName: '',
-      role: '',
+      name: '',
       email: '',
-      phone: '',
+      role: '',
+      phoneNumber: '',
+      countrycode: '+1',
       specialization: '',
-      permissions: {
-        patientManagement: false,
-        appointmentsCalendar: false,
-        diagnosticsTesting: false,
-        inventoryManagement: false
-      }
+      permissions: []
     });
+  };
+
+  const handleEdit = (staffMember: Staff) => {
+    setEditingStaff(staffMember);
+    setFormData({
+      name: staffMember.name,
+      email: staffMember.email,
+      role: staffMember.role,
+      phoneNumber: staffMember.phoneNumber,
+      countrycode: staffMember.countrycode,
+      specialization: staffMember.specialization,
+      permissions: staffMember.permissions
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    
+    try {
+      const updateData = {
+        role: formData.role,
+        specialization: formData.specialization,
+        permissions: formData.permissions
+      };
+      await staffService.updateStaff(editingStaff.id, updateData, token || undefined);
+      await fetchStaff(); // Refresh the list
+      setShowEditModal(false);
+      setEditingStaff(null);
+      setFormData({
+        name: '',
+        email: '',
+        role: '',
+        phoneNumber: '',
+        countrycode: '+1',
+        specialization: '',
+        permissions: []
+      });
+    } catch (err) {
+      console.error('Error updating staff member:', err);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this staff member?')) {
+      try {
+        await staffService.deleteStaff(id, token || undefined);
+        await fetchStaff(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting staff member:', err);
+        // You might want to show an error message to the user here
+      }
+    }
   };
 
   return (
@@ -209,10 +270,10 @@ const StaffPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+          <h1 className="text-s font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
             Settings
           </h1>
-          <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+          <p className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
             Manage your organization settings and configurations
           </p>
         </div>
@@ -225,7 +286,7 @@ const StaffPage = () => {
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                  'flex items-center space-x-2 px-4 py-3 text-xs font-medium transition-all duration-200 rounded-full flex-1 justify-center',
                   activeTab === tab.id
                     ? 'text-[#0A0A0A] bg-white shadow-sm'
                     : 'text-[#0A0A0A] hover:bg-white/50'
@@ -243,7 +304,7 @@ const StaffPage = () => {
         {/* Staff Content */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
               Staff
             </h2>
             <button
@@ -259,315 +320,429 @@ const StaffPage = () => {
 
           {/* Staff Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Name
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Role
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Email
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Phone
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Specialization
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Permissions
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {staffData.map((staff) => (
-                  <tr key={staff.id} className="border-b border-border hover:bg-muted/30">
-                    <td className="py-3 px-4 text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {staff.name}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                        {staff.role}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {staff.email}
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {staff.phone}
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {staff.specialization || '-'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {staff.permissions.map((permission, index) => (
-                          <span 
-                            key={index}
-                            className="inline-block bg-[#F3F3F5] text-[#717182] px-2 py-1 rounded-full text-xs" 
-                            style={{ fontFamily: 'Segoe UI' }}
-                          >
-                            {permission}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                          aria-label={`Edit ${staff.name}`}
-                        >
-                          <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button 
-                          className="p-1 hover:bg-muted rounded transition-colors"
-                          aria-label={`Delete ${staff.name}`}
-                        >
-                          <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="ml-3 text-gray-600">Loading staff...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{error}</p>
+                <button 
+                  onClick={fetchStaff}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : staff.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No staff members found</p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Add your first staff member
+                </button>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Name
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Role
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Email
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Phone
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Specialization
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Permissions
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {staff.map((staffMember) => (
+                    <tr key={staffMember.id} className="border-b border-border hover:bg-muted/30">
+                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {staffMember.name}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                          {staffMember.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {staffMember.email}
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {staffMember.countrycode} {staffMember.phoneNumber}
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {staffMember.specialization || '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {staffMember.permissions.map((permission, index) => (
+                            <span 
+                              key={index}
+                              className="inline-block bg-[#F3F3F5] text-[#717182] px-2 py-1 rounded-full text-xs" 
+                              style={{ fontFamily: 'Segoe UI' }}
+                            >
+                              {permission}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => handleEdit(staffMember)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Edit ${staffMember.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(staffMember.id)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Delete ${staffMember.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
         {/* Add Staff Member Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-[#101828] mb-1" style={{ fontFamily: 'Segoe UI' }}>
-                    Add New Staff Member
-                  </h3>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    Fill in the details to add a new staff member to your team.
-                  </p>
-                </div>
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Add New Staff Member</h2>
                 <button
                   onClick={handleCancel}
-                  className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                   aria-label="Close modal"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Form */}
+              <div className="p-6 space-y-6">
                 {/* Personal Details Section */}
                 <div className="space-y-4">
-                  <h4 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Personal Details
-                  </h4>
+                  <h4 className="text-xs font-semibold text-gray-900">Personal Details</h4>
                   
                   <div>
-                    <label htmlFor="fullName" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Full Name
                     </label>
                     <input
                       type="text"
-                      id="fullName"
-                      name="fullName"
-                      value={formData.fullName}
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                      style={{ fontFamily: 'Segoe UI' }}
+                      placeholder="Enter full name..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       required
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor="role" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                      Role
-                    </label>
-                    <select
-                      id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                      style={{ fontFamily: 'Segoe UI' }}
-                      required
-                    >
-                      <option value="">Select role</option>
-                      {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                                     <div>
+                     <label className="block text-xs font-medium text-gray-700 mb-2">
+                       Role
+                     </label>
+                     <CustomDropdown
+                       options={roleOptions}
+                       value={formData.role}
+                       onChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+                       placeholder="Select role"
+                       aria-label="Select staff role"
+                     />
+                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Email
                     </label>
                     <input
                       type="email"
-                      id="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                      style={{ fontFamily: 'Segoe UI' }}
+                      placeholder="Enter email address..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                      Phone
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Phone Number
                     </label>
                     <input
                       type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                      style={{ fontFamily: 'Segoe UI' }}
+                      placeholder="Enter phone number..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       required
                     />
                   </div>
 
+                                     <div>
+                     <label className="block text-xs font-medium text-gray-700 mb-2">
+                       Country Code
+                     </label>
+                     <CustomDropdown
+                       options={countryCodeOptions}
+                       value={formData.countrycode}
+                       onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                       placeholder="Select country code"
+                       aria-label="Select country code"
+                     />
+                   </div>
+
                   <div>
-                    <label htmlFor="specialization" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Specialization (Optional)
                     </label>
                     <input
                       type="text"
-                      id="specialization"
                       name="specialization"
                       value={formData.specialization}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                      style={{ fontFamily: 'Segoe UI' }}
+                      placeholder="Enter specialization..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     />
                   </div>
                 </div>
 
                 {/* Module Permissions Section */}
                 <div className="space-y-4">
-                  <h4 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Module Permissions
-                  </h4>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                  <h4 className="text-xs font-semibold text-gray-900">Module Permissions</h4>
+                  <p className="text-xs text-gray-600">
                     Select the modules and features this staff member can access.
                   </p>
                   
                   <div className="space-y-3">
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="patientManagement"
-                        checked={formData.permissions.patientManagement}
-                        onChange={handleCheckboxChange}
-                        className="mt-1 w-4 h-4 text-[#f97316] border-[#E5E7EB] rounded focus:ring-[#f97316] focus:ring-2"
-                      />
-                      <div>
-                        <span className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                          Patient Management
-                        </span>
-                        <p className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                          View and manage patient records
-                        </p>
-                      </div>
-                    </label>
+                    {availablePermissions.map((permission) => (
+                      <label key={permission} className="flex items-start space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.includes(permission)}
+                          onChange={() => handlePermissionChange(permission)}
+                          className="mt-1 w-4 h-4 text-gray-600 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
+                        />
+                        <div>
+                          <span className="text-xs font-medium text-gray-900">
+                            {permission}
+                          </span>
+                          <p className="text-xs text-gray-600">
+                            Access to {permission.toLowerCase()} module
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="appointmentsCalendar"
-                        checked={formData.permissions.appointmentsCalendar}
-                        onChange={handleCheckboxChange}
-                        className="mt-1 w-4 h-4 text-[#f97316] border-[#E5E7EB] rounded focus:ring-[#f97316] focus:ring-2"
-                      />
-                      <div>
-                        <span className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                          Appointments & Calendar
-                        </span>
-                        <p className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                          Schedule and manage appointments
-                        </p>
-                      </div>
-                    </label>
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Add Staff Member
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="diagnosticsTesting"
-                        checked={formData.permissions.diagnosticsTesting}
-                        onChange={handleCheckboxChange}
-                        className="mt-1 w-4 h-4 text-[#f97316] border-[#E5E7EB] rounded focus:ring-[#f97316] focus:ring-2"
-                      />
-                      <div>
-                        <span className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                          Diagnostics & Testing
-                        </span>
-                        <p className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                          Perform and review diagnostic tests
-                        </p>
-                      </div>
-                    </label>
+        {/* Edit Staff Member Modal */}
+        {showEditModal && editingStaff && (
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Edit Staff Member</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="inventoryManagement"
-                        checked={formData.permissions.inventoryManagement}
-                        onChange={handleCheckboxChange}
-                        className="mt-1 w-4 h-4 text-[#f97316] border-[#E5E7EB] rounded focus:ring-[#f97316] focus:ring-2"
-                      />
-                      <div>
-                        <span className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                          Inventory Management
-                        </span>
-                        <p className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                          Manage stock and inventory items
-                        </p>
-                      </div>
+              {/* Form */}
+              <div className="p-6 space-y-6">
+                {/* Personal Details Section */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-semibold text-gray-900">Personal Details</h4>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Full Name
                     </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Role
+                    </label>
+                    <CustomDropdown
+                      options={roleOptions}
+                      value={formData.role}
+                      onChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+                      placeholder="Select role"
+                      aria-label="Select staff role"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Country Code
+                    </label>
+                    <input
+                      type="text"
+                      name="countrycode"
+                      value={formData.countrycode}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Specialization (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="specialization"
+                      value={formData.specialization}
+                      onChange={handleInputChange}
+                      placeholder="Enter specialization..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    />
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="flex items-center space-x-2 px-4 py-2 border border-[#E5E7EB] text-[#4A5565] rounded-md hover:bg-muted transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Cancel</span>
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-2 bg-[#f97316] text-white px-4 py-2 rounded-md hover:bg-[#ea580c] transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Staff Member</span>
-                  </button>
+                {/* Module Permissions Section */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-semibold text-gray-900">Module Permissions</h4>
+                  <p className="text-xs text-gray-600">
+                    Select the modules and features this staff member can access.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {availablePermissions.map((permission) => (
+                      <label key={permission} className="flex items-start space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.includes(permission)}
+                          onChange={() => handlePermissionChange(permission)}
+                          className="mt-1 w-4 h-4 text-gray-600 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
+                        />
+                        <div>
+                          <span className="text-xs font-medium text-gray-900">
+                            {permission}
+                          </span>
+                          <p className="text-xs text-gray-600">
+                            Access to {permission.toLowerCase()} module
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </form>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Update Staff Member
+                </button>
+              </div>
             </div>
           </div>
         )}

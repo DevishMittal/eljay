@@ -1,19 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
+import { diagnosticsService } from '@/services/diagnosticsService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Diagnostic, CreateDiagnosticData } from '@/types';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 const DiagnosticsPage = () => {
   const pathname = usePathname();
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('diagnostics');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingDiagnostic, setEditingDiagnostic] = useState<Diagnostic | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<CreateDiagnosticData>({
     name: '',
     category: '',
-    price: '',
+    price: 0,
     description: ''
   });
 
@@ -91,52 +101,7 @@ const DiagnosticsPage = () => {
         </svg>
       )
     }
-  ];
-
-  const diagnosticsData = [
-    {
-      id: 1,
-      name: 'Pure Tone Audiometry',
-      category: 'Hearing Assessment',
-      price: '$150',
-      description: 'Standard hearing test'
-    },
-    {
-      id: 2,
-      name: 'Tympanometry',
-      category: 'Hearing Assessment',
-      price: '$100',
-      description: 'Middle ear function test'
-    },
-    {
-      id: 3,
-      name: 'OAE Testing',
-      category: 'Hearing Assessment',
-      price: '$120',
-      description: 'Otoacoustic emissions test'
-    },
-    {
-      id: 4,
-      name: 'Hearing Aid Fitting',
-      category: 'Hearing Aid Services',
-      price: '$250',
-      description: 'Initial hearing aid fitting and programming'
-    },
-    {
-      id: 5,
-      name: 'Balance Assessment',
-      category: 'Balance Testing',
-      price: '$200',
-      description: 'Comprehensive balance evaluation'
-    },
-    {
-      id: 6,
-      name: 'Tinnitus Consultation',
-      category: 'Tinnitus Evaluation',
-      price: '$180',
-      description: 'Tinnitus assessment and management'
-    }
-  ];
+    ];
 
   const categories = [
     'Hearing Assessment',
@@ -145,25 +110,95 @@ const DiagnosticsPage = () => {
     'Tinnitus Evaluation'
   ];
 
+  const categoryOptions = categories.map(category => ({
+    value: category,
+    label: category
+  }));
+
+  // Fetch diagnostics data
+  useEffect(() => {
+    fetchDiagnostics();
+  }, []);
+
+  const fetchDiagnostics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await diagnosticsService.getDiagnostics(token || undefined);
+      setDiagnostics(response.data);
+    } catch (err) {
+      setError('Failed to load diagnostics');
+      console.error('Error fetching diagnostics:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'price' ? parseFloat(value) || 0 : value
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically save the data to your backend
-    console.log('New diagnostic:', formData);
-    setShowAddModal(false);
-    setFormData({ name: '', category: '', price: '', description: '' });
+    try {
+      await diagnosticsService.createDiagnostic(formData, token || undefined);
+      await fetchDiagnostics(); // Refresh the list
+      setShowAddModal(false);
+      setFormData({ name: '', category: '', price: 0, description: '' });
+    } catch (err) {
+      console.error('Error creating diagnostic:', err);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleCancel = () => {
     setShowAddModal(false);
-    setFormData({ name: '', category: '', price: '', description: '' });
+    setShowEditModal(false);
+    setEditingDiagnostic(null);
+    setFormData({ name: '', category: '', price: 0, description: '' });
+  };
+
+  const handleEdit = (diagnostic: Diagnostic) => {
+    setEditingDiagnostic(diagnostic);
+    setFormData({
+      name: diagnostic.name,
+      category: diagnostic.category,
+      price: diagnostic.price,
+      description: diagnostic.description
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDiagnostic) return;
+    
+    try {
+      await diagnosticsService.updateDiagnostic(editingDiagnostic.id, formData, token || undefined);
+      await fetchDiagnostics(); // Refresh the list
+      setShowEditModal(false);
+      setEditingDiagnostic(null);
+      setFormData({ name: '', category: '', price: 0, description: '' });
+    } catch (err) {
+      console.error('Error updating diagnostic:', err);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this diagnostic?')) {
+      try {
+        await diagnosticsService.deleteDiagnostic(id, token || undefined);
+        await fetchDiagnostics(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting diagnostic:', err);
+        // You might want to show an error message to the user here
+      }
+    }
   };
 
   return (
@@ -171,10 +206,10 @@ const DiagnosticsPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+          <h1 className="text-s font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
             Settings
           </h1>
-          <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+          <p className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
             Manage your organization settings and configurations
           </p>
         </div>
@@ -187,7 +222,7 @@ const DiagnosticsPage = () => {
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center',
+                  'flex items-center space-x-2 px-4 py-3 text-xs font-medium transition-all duration-200 rounded-full flex-1 justify-center',
                   activeTab === tab.id
                     ? 'text-[#0A0A0A] bg-white shadow-sm'
                     : 'text-[#0A0A0A] hover:bg-white/50'
@@ -205,7 +240,7 @@ const DiagnosticsPage = () => {
         {/* Diagnostics Content */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
               Diagnostics
             </h2>
             <button
@@ -221,186 +256,295 @@ const DiagnosticsPage = () => {
 
           {/* Diagnostics Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Diagnostic Name
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Category
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Price
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Description
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {diagnosticsData.map((diagnostic) => (
-                  <tr key={diagnostic.id} className="border-b border-border hover:bg-muted/30">
-                    <td className="py-3 px-4 text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {diagnostic.name}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                        {diagnostic.category}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-[#101828] font-semibold" style={{ fontFamily: 'Segoe UI' }}>
-                      {diagnostic.price}
-                    </td>
-                    <td className="py-3 px-4 text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {diagnostic.description}
-                    </td>
-                                         <td className="py-3 px-4">
-                       <div className="flex items-center space-x-2">
-                         <button 
-                           className="p-1 hover:bg-muted rounded transition-colors"
-                           aria-label={`Edit ${diagnostic.name}`}
-                         >
-                           <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                           </svg>
-                         </button>
-                         <button 
-                           className="p-1 hover:bg-muted rounded transition-colors"
-                           aria-label={`Delete ${diagnostic.name}`}
-                         >
-                           <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                           </svg>
-                         </button>
-                       </div>
-                     </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="ml-3 text-gray-600">Loading diagnostics...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{error}</p>
+                <button 
+                  onClick={fetchDiagnostics}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : diagnostics.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No diagnostics found</p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="text-orange-600 hover:text-orange-700 underline"
+                >
+                  Add your first diagnostic
+                </button>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Diagnostic Name
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Category
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Price
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Description
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {diagnostics.map((diagnostic) => (
+                    <tr key={diagnostic.id} className="border-b border-border hover:bg-muted/30">
+                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {diagnostic.name}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                          {diagnostic.category}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-[#101828] font-semibold text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        ${diagnostic.price}
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {diagnostic.description}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => handleEdit(diagnostic)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Edit ${diagnostic.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(diagnostic.id)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label={`Delete ${diagnostic.name}`}
+                          >
+                            <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
         {/* Add Diagnostic Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-[#101828] mb-1" style={{ fontFamily: 'Segoe UI' }}>
-                    Add New Diagnostic
-                  </h3>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    Fill in the details to add a new diagnostic to your catalog.
-                  </p>
-                </div>
-                                 <button
-                   onClick={handleCancel}
-                   className="text-[#4A5565] hover:text-[#101828] transition-colors"
-                   aria-label="Close modal"
-                 >
-                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                   </svg>
-                 </button>
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Add New Diagnostic</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Form */}
+              <div className="p-6 space-y-6">
+                {/* Diagnostic Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
                     Diagnostic Name
                   </label>
                   <input
                     type="text"
-                    id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                    style={{ fontFamily: 'Segoe UI' }}
-                    required
+                    placeholder="Enter diagnostic name..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="category" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                    Category
-                  </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                    style={{ fontFamily: 'Segoe UI' }}
-                    required
-                  >
-                    <option value="">Select category</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                                 {/* Category */}
+                 <div>
+                   <label className="block text-xs font-medium text-gray-700 mb-2">
+                     Category
+                   </label>
+                   <CustomDropdown
+                     options={categoryOptions}
+                     value={formData.category}
+                     onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                     placeholder="Select category"
+                     aria-label="Select diagnostic category"
+                   />
+                 </div>
 
+                {/* Price */}
                 <div>
-                  <label htmlFor="price" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
                     Price ($)
                   </label>
                   <input
                     type="number"
-                    id="price"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent"
-                    style={{ fontFamily: 'Segoe UI' }}
+                    placeholder="Enter price..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required
                   />
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label htmlFor="description" className="block text-sm font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
                     Description (Optional)
                   </label>
                   <textarea
-                    id="description"
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
+                    placeholder="Enter description..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md bg-[#F3F3F5] text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent resize-none"
-                    style={{ fontFamily: 'Segoe UI' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Add Diagnostic
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Diagnostic Modal */}
+        {showEditModal && editingDiagnostic && (
+          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-sm font-semibold text-gray-900">Edit Diagnostic</h2>
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="p-6 space-y-6">
+                {/* Diagnostic Name */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Diagnostic Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter diagnostic name..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="flex items-center space-x-2 px-4 py-2 border border-[#E5E7EB] text-[#4A5565] rounded-md hover:bg-muted transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Cancel</span>
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-2 bg-[#f97316] text-white px-4 py-2 rounded-md hover:bg-[#ea580c] transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Diagnostic</span>
-                  </button>
+                {/* Category */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <CustomDropdown
+                    options={categoryOptions}
+                    value={formData.category}
+                    onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                    placeholder="Select category"
+                    aria-label="Select diagnostic category"
+                  />
                 </div>
-              </form>
+
+                {/* Price */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    placeholder="Enter price..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter description..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Update Diagnostic
+                </button>
+              </div>
             </div>
           </div>
         )}
