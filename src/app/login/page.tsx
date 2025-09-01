@@ -40,9 +40,9 @@ export default function LoginPage() {
           <Image
             src="/logo.svg"
             alt="Eljay Hearing Care"
-            width={60}
-            height={60}
-            className="w-15 h-15"
+            width={35}
+            height={36}
+            className="w-12 h-12"
           />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">
@@ -109,28 +109,18 @@ export default function LoginPage() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    {showPassword ? (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                      />
-                    ) : (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    )}
-                  </svg>
+                  {showPassword ? (
+                    // Cross icon when password is visible
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="#717182"/>
+                    </svg>
+                  ) : (
+                    // Eye icon when password is hidden
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1.70516 7.31503C1.65655 7.18406 1.65655 7.03999 1.70516 6.90903C2.17865 5.76094 2.98238 4.7793 4.01445 4.08855C5.04651 3.3978 6.26044 3.02905 7.50233 3.02905C8.74422 3.02905 9.95815 3.3978 10.9902 4.08855C12.0223 4.7793 12.826 5.76094 13.2995 6.90903C13.3481 7.03999 13.3481 7.18406 13.2995 7.31503C12.826 8.46311 12.0223 9.44475 10.9902 10.1355C9.95815 10.8263 8.74422 11.195 7.50233 11.195C6.26044 11.195 5.04651 10.8263 4.01445 10.1355C2.98238 9.44475 2.17865 8.46311 1.70516 7.31503Z" stroke="#717182" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7.50244 8.86206C8.46894 8.86206 9.25244 8.07856 9.25244 7.11206C9.25244 6.14556 8.46894 5.36206 7.50244 5.36206C6.53594 5.36206 5.75244 6.14556 5.75244 7.11206C5.75244 8.07856 6.53594 8.86206 7.50244 8.86206Z" stroke="#717182" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>

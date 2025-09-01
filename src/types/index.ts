@@ -425,6 +425,13 @@ export interface CreateDiagnosticData {
   description: string;
 }
 
+export interface UpdateDiagnosticData {
+  name: string;
+  category: string;
+  price: number;
+  description: string;
+}
+
 // Staff types
 export interface Staff {
   id: string;
@@ -456,6 +463,12 @@ export interface CreateStaffData {
   role: string;
   phoneNumber: string;
   countrycode: string;
+  specialization: string;
+  permissions: string[];
+}
+
+export interface UpdateStaffData {
+  role: string;
   specialization: string;
   permissions: string[];
 }
@@ -586,3 +599,9 @@ export interface AuthState {
   organization: Organization | null;
   loading: boolean;
 }
+
+// Procedure type (alias for Diagnostic)
+export type Procedure = Diagnostic;
+
+// ProceduresResponse type (alias for DiagnosticsResponse)
+export type ProceduresResponse = DiagnosticsResponse;

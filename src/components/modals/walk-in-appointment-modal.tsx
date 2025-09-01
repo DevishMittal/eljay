@@ -805,10 +805,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                     : [...selectedProcedureIds, procedure.id];
                   setSelectedProcedureIds(updatedIds);
                   
-                  // Calculate total duration
+
+                  // Calculate total duration (30 minutes per procedure as default)
                   const totalDuration = updatedIds.reduce((sum, id) => {
-                    const proc = procedures.find(p => p.id === id);
-                    return sum + (proc?.duration || 0);
+                    return sum + 30; // Default 30 minutes per procedure
                   }, 0);
                   setTotalProcedureDuration(totalDuration);
                   
@@ -843,7 +843,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{procedure.name}</div>
                       <div className="text-xs font-medium px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>
-                        {procedure.duration} min
+                        30 min
                       </div>
                     </div>
                     <div className="text-xs" style={{ color: '#717182' }}>{procedure.description}</div>
@@ -908,7 +908,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                 {selectedProcedureIds.map((procedureId) => {
                   const procedure = procedures.find(p => p.id === procedureId);
                   return procedure ? (
-                    <p key={procedureId}>• {procedure.name} ({procedure.duration} min)</p>
+                    <p key={procedureId}>• {procedure.name} (30 min)</p>
                   ) : null;
                 })}
                 <p className="font-medium text-blue-600 mt-2">

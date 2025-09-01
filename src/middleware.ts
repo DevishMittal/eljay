@@ -4,6 +4,11 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Skip middleware for static files
+  if (pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|webp|css|js)$/)) {
+    return NextResponse.next();
+  }
+  
   // Check if user is authenticated by looking for auth token in cookies
   const authToken = request.cookies.get('auth_token')?.value;
   
