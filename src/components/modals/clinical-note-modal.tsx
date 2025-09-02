@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -20,7 +21,8 @@ export default function ClinicalNoteModal({
   onClose, 
   onSuccess, 
   note, 
-  isEditing = false 
+  isEditing = false,
+  userId
 }: ClinicalNoteModalProps) {
   const { token } = useAuth();
   const [formData, setFormData] = useState<CreateClinicalNoteData>({

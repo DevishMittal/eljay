@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ClinicalNote, CreateClinicalNoteData, UpdateClinicalNoteData } from '@/types';
 
 const API_BASE_URL = 'https://eljay-api.vizdale.com/api/v1';

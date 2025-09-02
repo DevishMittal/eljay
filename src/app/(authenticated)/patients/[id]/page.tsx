@@ -6,11 +6,13 @@ import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Patient, UpdatePatientData, UserAppointment } from '@/types';
+import { Patient, UpdatePatientData, UserAppointment, ClinicalNote } from '@/types';
 import { patientService } from '@/services/patientService';
+import { clinicalNotesService } from '@/services/clinicalNotesService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
+import ClinicalNoteModal from '@/components/modals/clinical-note-modal';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +21,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const pathname = usePathname();
   const { token } = useAuth();
   const [activeSection, setActiveSection] = useState<'profile' | 'emr' | 'billing'>('profile');
-  const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
+  const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments' | 'diagnostics' | 'clinical-notes' | 'patient-files' | 'medical-history'>('information');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(true);
   const [activeProfileButton, setActiveProfileButton] = useState<'information' | 'appointments'>('information');
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -31,6 +33,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<UpdatePatientData>({});
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  
+  // Clinical Notes state
+  const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>([]);
+  const [clinicalNotesLoading, setClinicalNotesLoading] = useState(false);
+  const [showClinicalNoteModal, setShowClinicalNoteModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<ClinicalNote | null>(null);
+  const [isEditingNote, setIsEditingNote] = useState(false);
 
   const fetchPatient = useCallback(async () => {
     try {
@@ -61,6 +70,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [patient, token]);
 
+  const fetchClinicalNotes = useCallback(async () => {
+    if (!patient || !token) return;
+    
+    try {
+      setClinicalNotesLoading(true);
+      const response = await clinicalNotesService.getClinicalNotes(patient.id, 1, 50, token);
+      setClinicalNotes(response.clinicalNotes);
+    } catch (err) {
+      console.error('Error fetching clinical notes:', err);
+      // Don't show error for clinical notes, just log it
+    } finally {
+      setClinicalNotesLoading(false);
+    }
+  }, [patient, token]);
+
   useEffect(() => {
     fetchPatient();
   }, [fetchPatient]);
@@ -70,6 +94,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       fetchAppointments();
     }
   }, [fetchAppointments, activeSection, activeSubTab, patient]);
+
+  useEffect(() => {
+    if (patient && activeSection === 'emr') {
+      // Fetch clinical notes when EMR section is opened
+      fetchClinicalNotes();
+    }
+  }, [fetchClinicalNotes, activeSection, patient]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -161,6 +192,67 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     const patientInformationElement = document.getElementById('patient-information');
     if (patientInformationElement) {
       patientInformationElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToSection = (section: string) => {
+    const element = document.getElementById(section);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Clinical Notes handlers
+  const handleAddClinicalNote = () => {
+    setEditingNote(null);
+    setIsEditingNote(false);
+    setShowClinicalNoteModal(true);
+  };
+
+  const handleEditClinicalNote = (note: ClinicalNote) => {
+    setEditingNote(note);
+    setIsEditingNote(true);
+    setShowClinicalNoteModal(true);
+  };
+
+  const handleDeleteClinicalNote = async (noteId: string) => {
+    if (!patient || !token) return;
+    
+    if (!confirm('Are you sure you want to delete this clinical note?')) return;
+    
+    try {
+      await clinicalNotesService.deleteClinicalNote(patient.id, noteId, token);
+      // Refresh the list
+      fetchClinicalNotes();
+    } catch (err) {
+      console.error('Error deleting clinical note:', err);
+      alert('Failed to delete clinical note');
+    }
+  };
+
+  const handleClinicalNoteSuccess = (note: ClinicalNote) => {
+    // Refresh the list
+    fetchClinicalNotes();
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Diagnosis':
+        return 'bg-blue-100 text-blue-800';
+      case 'Follow-up':
+        return 'bg-purple-100 text-purple-800';
+      case 'Treatment':
+        return 'bg-green-100 text-green-800';
+      case 'Test Results':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Prescription':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'Referral':
+        return 'bg-pink-100 text-pink-800';
+      case 'General':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -309,24 +401,131 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               </div>
 
               {/* EMR Section */}
-              <Link
-                href={`/patients/${patient.id}/emr`}
-                className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors rounded-lg ${
-                  pathname?.includes('/emr')
-                    ? 'bg-orange-50 text-orange-700'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div>
+                <button
+                  onClick={() => {
+                    setActiveSection('emr');
+                    setIsProfileDropdownOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors rounded-lg ${
+                    activeSection === 'emr'
+                      ? 'bg-orange-50 text-orange-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-xs font-medium">EMR</span>
+                  </div>
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-200 ${activeSection === 'emr' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <span className="text-xs font-medium">EMR</span>
+                </button>
+
+                {/* EMR Dropdown Content */}
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out !border-l-2 !border-orange-200 ${
+                  activeSection === 'emr' ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  <div className="mt-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('diagnostics');
+                        scrollToSection('diagnostics');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'diagnostics'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_44808)">
+                            <path d="M12.9333 7.65023H11.4866C11.2317 7.64968 10.9836 7.73266 10.7803 7.88646C10.5769 8.04026 10.4296 8.25643 10.3608 8.50189L8.98993 13.3786C8.9811 13.4089 8.96268 13.4355 8.93743 13.4544C8.91219 13.4733 8.88149 13.4836 8.84993 13.4836C8.81838 13.4836 8.78768 13.4733 8.76243 13.4544C8.73719 13.4355 8.71877 13.4089 8.70993 13.3786L5.48993 1.92189C5.4811 1.8916 5.46268 1.86499 5.43743 1.84606C5.41219 1.82713 5.38149 1.81689 5.34993 1.81689C5.31838 1.81689 5.28768 1.82713 5.26243 1.84606C5.23719 1.86499 5.21877 1.8916 5.20993 1.92189L3.8391 6.79856C3.77054 7.04307 3.62407 7.25853 3.42194 7.41224C3.2198 7.56594 2.97304 7.6495 2.7191 7.65023H1.2666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Diagnostics</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('clinical-notes');
+                        scrollToSection('clinical-notes');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'clinical-notes'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_44814)">
+                            <path d="M8.84993 1.81689H5.34993C5.02777 1.81689 4.7666 2.07806 4.7666 2.40023V3.56689C4.7666 3.88906 5.02777 4.15023 5.34993 4.15023H8.84993C9.1721 4.15023 9.43327 3.88906 9.43327 3.56689V2.40023C9.43327 2.07806 9.1721 1.81689 8.84993 1.81689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43359 2.98389H10.6003C10.9097 2.98389 11.2064 3.1068 11.4252 3.3256C11.644 3.54439 11.7669 3.84113 11.7669 4.15055V12.3172C11.7669 12.6266 11.644 12.9234 11.4252 13.1422C11.2064 13.361 10.9097 13.4839 10.6003 13.4839H3.60026C3.29084 13.4839 2.99409 13.361 2.7753 13.1422C2.55651 12.9234 2.43359 12.6266 2.43359 12.3172V4.15055C2.43359 3.84113 2.55651 3.54439 2.7753 3.3256C2.99409 3.1068 3.29084 2.98389 3.60026 2.98389H4.76693" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M7.1001 7.06689H9.43343" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M7.1001 9.98389H9.43343" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M4.7666 7.06689H4.77244" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M4.7666 9.98389H4.77244" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Clinical Notes</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('patient-files');
+                        scrollToSection('patient-files');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'patient-files'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_44820)">
+                            <path d="M8.85026 1.81689H3.60026C3.29084 1.81689 2.99409 1.93981 2.7753 2.1586C2.55651 2.3774 2.43359 2.67414 2.43359 2.98356V12.3169C2.43359 12.6263 2.55651 12.9231 2.7753 13.1419C2.99409 13.3606 3.29084 13.4836 3.60026 13.4836H10.6003C10.9097 13.4836 11.2064 13.3606 11.4252 13.1419C11.644 12.9231 11.7669 12.6263 11.7669 12.3169V4.73356L8.85026 1.81689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M8.2666 1.81689V4.15023C8.2666 4.45965 8.38952 4.75639 8.60831 4.97519C8.8271 5.19398 9.12385 5.31689 9.43327 5.31689H11.7666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M5.93327 5.90039H4.7666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43327 8.23389H4.7666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43327 10.5669H4.7666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Patient Files</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('medical-history');
+                        scrollToSection('medical-history');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'medical-history'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_44826)">
+                            <path d="M11.1833 8.81706C12.0524 7.96539 12.9333 6.94456 12.9333 5.60872C12.9333 4.75782 12.5952 3.94177 11.9936 3.34009C11.3919 2.73841 10.5758 2.40039 9.72493 2.40039C8.69827 2.40039 7.97493 2.69206 7.09993 3.56706C6.22493 2.69206 5.5016 2.40039 4.47493 2.40039C3.62403 2.40039 2.80798 2.73841 2.2063 3.34009C1.60462 3.94177 1.2666 4.75782 1.2666 5.60872C1.2666 6.95039 2.1416 7.97122 3.0166 8.81706L7.09993 12.9004L11.1833 8.81706Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Medical History</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+              </div>
 
               {/* Billing Section */}
               <Link
@@ -760,6 +959,184 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
 
 
+            {activeSection === 'emr' && (
+              <div className="space-y-6">
+                {/* Diagnostics Section */}
+                <div id="diagnostics" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <h2 className="text-lg font-semibold text-gray-900">Diagnostics</h2>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">5 Plans</span>
+                    </div>
+                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Create Diagnostic Plan</span>
+                    </button>
+                  </div>
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-medium mb-2 text-gray-900">Diagnostics Coming Soon</h3>
+                    <p className="text-gray-500 text-sm">Diagnostic functionality will be available soon.</p>
+                  </div>
+                </div>
+
+                {/* Clinical Notes Section */}
+                <div id="clinical-notes" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Clinical Notes</h2>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="text"
+                        placeholder="Search notes..."
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <select 
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        aria-label="Filter by category"
+                      >
+                        <option>All Categories</option>
+                        <option>General</option>
+                        <option>Diagnosis</option>
+                        <option>Treatment</option>
+                        <option>Follow-up</option>
+                        <option>Test Results</option>
+                        <option>Prescription</option>
+                        <option>Referral</option>
+                      </select>
+                      <button 
+                        onClick={handleAddClinicalNote}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add Note</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {clinicalNotesLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    </div>
+                  ) : clinicalNotes.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-sm font-medium mb-2 text-gray-900">No clinical notes yet</h3>
+                      <p className="text-gray-500 text-sm mb-6">Start documenting patient care with your first clinical note</p>
+                      <button 
+                        onClick={handleAddClinicalNote}
+                        className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add First Note</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {clinicalNotes.map((note) => (
+                        <div key={note.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="font-medium text-gray-900">{note.title}</h3>
+                                <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
+                                  {note.category}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{note.content}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(note.createdAt).toLocaleDateString()} at {new Date(note.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button 
+                                onClick={() => handleEditClinicalNote(note)}
+                                className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+                                title="Edit note"
+                                aria-label="Edit note"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClinicalNote(note.id)}
+                                className="p-1 hover:bg-gray-200 rounded-md transition-colors"
+                                title="Delete note"
+                                aria-label="Delete note"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Patient Files Section */}
+                <div id="patient-files" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
+                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span>Upload File</span>
+                    </button>
+                  </div>
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-medium mb-2 text-gray-900">No files uploaded</h3>
+                    <p className="text-gray-500 text-sm mb-6">Upload patient files and documents</p>
+                    <button className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span>Upload Files</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Medical History Section */}
+                <div id="medical-history" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold mb-6 text-gray-900">Medical History Timeline</h2>
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-medium mb-2 text-gray-900">Medical History Coming Soon</h3>
+                    <p className="text-gray-500 text-sm">Medical history functionality will be available soon.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeSection === 'billing' && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center space-x-2 mb-6">
@@ -789,6 +1166,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         isOpen={showAppointmentModal}
         onClose={handleCloseAppointmentModal}
         onAppointmentCreated={handleAppointmentCreated}
+      />
+
+      {/* Clinical Note Modal */}
+      <ClinicalNoteModal
+        isOpen={showClinicalNoteModal}
+        onClose={() => setShowClinicalNoteModal(false)}
+        onSuccess={handleClinicalNoteSuccess}
+        note={editingNote}
+        isEditing={isEditingNote}
+        userId={patient?.id || ''}
       />
     </MainLayout>
   );
