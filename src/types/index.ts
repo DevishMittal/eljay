@@ -534,6 +534,7 @@ export interface Doctor {
   bdmContact?: string | null;
   commissionRate?: number | null;
   facilityName?: string | null;
+  location?: string | null;
   organizationId: string;
   isAvailable: boolean;
   createdAt: string;
@@ -561,6 +562,7 @@ export interface CreateDoctorData {
   bdmContact?: string;
   commissionRate?: number;
   facilityName?: string;
+  location?: string;
 }
 
 export interface UpdateDoctorData {
@@ -570,6 +572,7 @@ export interface UpdateDoctorData {
   bdmContact?: string;
   commissionRate?: number;
   facilityName?: string;
+  location?: string;
 }
 
 // Notification types
