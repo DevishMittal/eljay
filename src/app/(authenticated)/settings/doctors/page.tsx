@@ -25,7 +25,11 @@ const DoctorsPage = () => {
     email: '',
     phoneNumber: '',
     countrycode: '+1',
-    specialization: ''
+    specialization: '',
+    bdmName: '',
+    bdmContact: '',
+    commissionRate: 0,
+    facilityName: ''
   });
 
   const tabs = [
@@ -153,7 +157,7 @@ const DoctorsPage = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'commissionRate' ? parseFloat(value) || 0 : value
     }));
   };
 
@@ -168,7 +172,11 @@ const DoctorsPage = () => {
         email: '',
         phoneNumber: '',
         countrycode: '+1',
-        specialization: ''
+        specialization: '',
+        bdmName: '',
+        bdmContact: '',
+        commissionRate: 0,
+        facilityName: ''
       });
     } catch (err) {
       console.error('Error creating doctor:', err);
@@ -185,7 +193,11 @@ const DoctorsPage = () => {
       email: '',
       phoneNumber: '',
       countrycode: '+1',
-      specialization: ''
+      specialization: '',
+      bdmName: '',
+      bdmContact: '',
+      commissionRate: 0,
+      facilityName: ''
     });
   };
 
@@ -196,7 +208,11 @@ const DoctorsPage = () => {
       email: doctor.email,
       phoneNumber: doctor.phoneNumber,
       countrycode: doctor.countrycode,
-      specialization: doctor.specialization
+      specialization: doctor.specialization,
+      bdmName: doctor.bdmName || '',
+      bdmContact: doctor.bdmContact || '',
+      commissionRate: doctor.commissionRate || 0,
+      facilityName: doctor.facilityName || ''
     });
     setShowEditModal(true);
   };
@@ -208,7 +224,11 @@ const DoctorsPage = () => {
     try {
       const updateData = {
         specialization: formData.specialization,
-        phoneNumber: formData.phoneNumber
+        phoneNumber: formData.phoneNumber,
+        bdmName: formData.bdmName,
+        bdmContact: formData.bdmContact,
+        commissionRate: formData.commissionRate,
+        facilityName: formData.facilityName
       };
       await doctorService.updateDoctor(editingDoctor.id, updateData, token || undefined);
       await fetchDoctors(); // Refresh the list
@@ -219,7 +239,11 @@ const DoctorsPage = () => {
         email: '',
         phoneNumber: '',
         countrycode: '+1',
-        specialization: ''
+        specialization: '',
+        bdmName: '',
+        bdmContact: '',
+        commissionRate: 0,
+        facilityName: ''
       });
     } catch (err) {
       console.error('Error updating doctor:', err);
@@ -351,10 +375,19 @@ const DoctorsPage = () => {
                       Specialization
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Hospital/Clinic
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Country Code
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                       Contact
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Availability
+                      BDM
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Commission
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                       Actions
@@ -372,6 +405,12 @@ const DoctorsPage = () => {
                           {doctor.specialization}
                         </span>
                       </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {doctor.facilityName || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {doctor.countrycode}
+                      </td>
                       <td className="py-3 px-4">
                         <div className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                           <div>{doctor.countrycode} {doctor.phoneNumber}</div>
@@ -379,17 +418,19 @@ const DoctorsPage = () => {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {doctor.isAvailable ? (
-                          <div className="flex items-center space-x-1 bg-green-100 border border-green-200 rounded-md px-2 py-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs font-medium text-green-700">Available</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-1 bg-red-100 border border-red-200 rounded-md px-2 py-1">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            <span className="text-xs font-medium text-red-700">Not Available</span>
-                          </div>
-                        )}
+                        <div className="text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                          {doctor.bdmName ? (
+                            <>
+                              <div className="font-medium">{doctor.bdmName}</div>
+                              <div>{doctor.bdmContact}</div>
+                            </>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {doctor.commissionRate ? `${doctor.commissionRate}%` : '-'}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
@@ -461,6 +502,20 @@ const DoctorsPage = () => {
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Hospital/Clinic Name
+                      </label>
+                      <input
+                        type="text"
+                        name="facilityName"
+                        value={formData.facilityName}
+                        onChange={handleInputChange}
+                        placeholder="Enter hospital/clinic name..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Phone Number
                       </label>
                       <input
@@ -474,34 +529,48 @@ const DoctorsPage = () => {
                       />
                     </div>
 
-                                         <div>
-                       <label className="block text-xs font-medium text-gray-700 mb-2">
-                         Country Code
-                       </label>
-                       <CustomDropdown
-                         options={countryCodeOptions}
-                         value={formData.countrycode}
-                         onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
-                         placeholder="Select country code"
-                         aria-label="Select country code"
-                       />
-                     </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        BDM Name
+                      </label>
+                      <input
+                        type="text"
+                        name="bdmName"
+                        value={formData.bdmName}
+                        onChange={handleInputChange}
+                        placeholder="Enter BDM name..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      />
+                    </div>
                   </div>
 
                   {/* Right Column */}
                   <div className="space-y-4">
-                                         <div>
-                       <label className="block text-xs font-medium text-gray-700 mb-2">
-                         Specialization
-                       </label>
-                       <CustomDropdown
-                         options={specializationOptions}
-                         value={formData.specialization}
-                         onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
-                         placeholder="Select specialization"
-                         aria-label="Select specialization"
-                       />
-                     </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Specialization
+                      </label>
+                      <CustomDropdown
+                        options={specializationOptions}
+                        value={formData.specialization}
+                        onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
+                        placeholder="Select specialization"
+                        aria-label="Select specialization"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Country Code
+                      </label>
+                      <CustomDropdown
+                        options={countryCodeOptions}
+                        value={formData.countrycode}
+                        onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                        placeholder="Select country code"
+                        aria-label="Select country code"
+                      />
+                    </div>
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -515,6 +584,37 @@ const DoctorsPage = () => {
                         placeholder="Enter email address..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                         required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        BDM Contact
+                      </label>
+                      <input
+                        type="tel"
+                        name="bdmContact"
+                        value={formData.bdmContact}
+                        onChange={handleInputChange}
+                        placeholder="Enter BDM contact..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Commission Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        name="commissionRate"
+                        value={formData.commissionRate}
+                        onChange={handleInputChange}
+                        placeholder="Enter commission rate..."
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
                     </div>
                   </div>
@@ -578,6 +678,20 @@ const DoctorsPage = () => {
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Hospital/Clinic Name
+                      </label>
+                      <input
+                        type="text"
+                        name="facilityName"
+                        value={formData.facilityName}
+                        onChange={handleInputChange}
+                        placeholder="Enter hospital/clinic name..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Phone Number
                       </label>
                       <input
@@ -593,14 +707,15 @@ const DoctorsPage = () => {
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Country Code
+                        BDM Name
                       </label>
                       <input
                         type="text"
-                        name="countrycode"
-                        value={formData.countrycode}
-                        disabled
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                        name="bdmName"
+                        value={formData.bdmName}
+                        onChange={handleInputChange}
+                        placeholder="Enter BDM name..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
                     </div>
                   </div>
@@ -622,6 +737,19 @@ const DoctorsPage = () => {
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Country Code
+                      </label>
+                      <CustomDropdown
+                        options={countryCodeOptions}
+                        value={formData.countrycode}
+                        onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                        placeholder="Select country code"
+                        aria-label="Select country code"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
                         Email
                       </label>
                       <input
@@ -630,6 +758,37 @@ const DoctorsPage = () => {
                         value={formData.email}
                         disabled
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        BDM Contact
+                      </label>
+                      <input
+                        type="tel"
+                        name="bdmContact"
+                        value={formData.bdmContact}
+                        onChange={handleInputChange}
+                        placeholder="Enter BDM contact..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Commission Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        name="commissionRate"
+                        value={formData.commissionRate}
+                        onChange={handleInputChange}
+                        placeholder="Enter commission rate..."
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
                     </div>
                   </div>

@@ -15,6 +15,7 @@ interface StockEntry {
 interface AddStockModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {

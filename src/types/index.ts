@@ -529,6 +529,11 @@ export interface Doctor {
   countrycode: string;
   phoneNumber: string;
   specialization: string;
+  qualification?: string | null;
+  bdmName?: string | null;
+  bdmContact?: string | null;
+  commissionRate?: number | null;
+  facilityName?: string | null;
   organizationId: string;
   isAvailable: boolean;
   createdAt: string;
@@ -552,11 +557,19 @@ export interface CreateDoctorData {
   phoneNumber: string;
   countrycode: string;
   specialization: string;
+  bdmName?: string;
+  bdmContact?: string;
+  commissionRate?: number;
+  facilityName?: string;
 }
 
 export interface UpdateDoctorData {
   specialization: string;
   phoneNumber: string;
+  bdmName?: string;
+  bdmContact?: string;
+  commissionRate?: number;
+  facilityName?: string;
 }
 
 // Notification types
@@ -646,6 +659,84 @@ export interface AuthState {
   refreshToken: string | null;
   organization: Organization | null;
   loading: boolean;
+}
+
+// Inventory types
+export interface InventoryItem {
+  id: string;
+  itemName: string;
+  itemCode: string;
+  brand: string;
+  itemType: string;
+  category: string;
+  description: string;
+  mrp: number;
+  color: string;
+  currentStock: number;
+  minimumStock: number;
+  maximumStock: number;
+  status: string;
+  expiresAt: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  type: 'addition' | 'consumption';
+  quantity: number;
+  itemId: string;
+  batchNumber?: string;
+  expiryDate?: string;
+  supplierName?: string;
+  supplierContact?: string;
+  purchasePrice?: number;
+  warranty?: string;
+  authorizedBy?: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+  item: {
+    itemName: string;
+    itemCode: string;
+    brand: string;
+  };
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Clinical Notes types
+export interface ClinicalNote {
+  id: string;
+  title: string;
+  content: string;
+  category: 'General' | 'Diagnosis' | 'Treatment' | 'Follow-up' | 'Test Results' | 'Prescription' | 'Referral';
+  userId: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+  referralSourcesId?: string | null;
+}
+
+export interface CreateClinicalNoteData {
+  title: string;
+  content: string;
+  category: 'General' | 'Diagnosis' | 'Treatment' | 'Follow-up' | 'Test Results' | 'Prescription' | 'Referral';
+}
+
+export interface UpdateClinicalNoteData {
+  title?: string;
+  content?: string;
+  category?: 'General' | 'Diagnosis' | 'Treatment' | 'Follow-up' | 'Test Results' | 'Prescription' | 'Referral';
 }
 
 // Procedure type (alias for Diagnostic)

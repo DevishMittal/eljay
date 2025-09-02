@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 interface ConsumeStockModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModalProps) {

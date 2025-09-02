@@ -1,15 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ClinicalNote } from '@/types';
+import { clinicalNotesService } from '@/services/clinicalNotesService';
+import { useAuth } from '@/contexts/AuthContext';
+import ClinicalNoteModal from '@/components/modals/clinical-note-modal';
 
 export default function PatientEMRPage({ params }: { params: { id: string } }) {
+  const { token } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'diagnostics' | 'clinical-notes' | 'patient-files' | 'medical-history'>('diagnostics');
+  const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showClinicalNoteModal, setShowClinicalNoteModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<ClinicalNote | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  
   const pathname = usePathname();
   const patient = {
-    id: 'PAT008',
+    id: params.id,
     name: 'Anna Rodriguez',
     type: 'B2C',
     status: 'New',
@@ -59,29 +71,7 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
     }
   ];
 
-  const clinicalNotes = [
-    {
-      title: 'Initial Hearing Assessment Results',
-      category: 'Diagnosis',
-      description: 'Patient presents with moderate sensorineural hearing loss bilateral. Audiogram shows 40-50 dB loss in speech frequencies. Recommending hearing aid trial',
-      author: 'Dr. Sarah Johnson',
-      date: '15/6/2025 at 10:30 am'
-    },
-    {
-      title: 'Follow-up Appointment Recommendation',
-      category: 'Followup',
-      description: 'Schedule follow-up in 2 weeks to assess hearing aid adjustment. Patient reports some improvement but needs fine-tuning for speech clarity.',
-      author: 'Dr. Sarah Johnson',
-      date: '20/6/2025 at 02:15 pm'
-    },
-    {
-      title: 'Insurance Authorization Required',
-      category: 'General',
-      description: 'Patient insurance requires pre-authorization for hearing aids. Documentation submitted to insurance company. Pending approval.',
-      author: 'Admin Staff',
-      date: '18/6/2025 at 09:45 am'
-    }
-  ];
+
 
   const medicalHistory = [
     {
@@ -179,12 +169,83 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Fetch clinical notes
+  const fetchClinicalNotes = useCallback(async () => {
+    if (!token || !patient.id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await clinicalNotesService.getClinicalNotes(patient.id, 1, 50, token);
+      setClinicalNotes(response.clinicalNotes);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch clinical notes');
+      console.error('Error fetching clinical notes:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, patient.id]);
+
+  // Load clinical notes when component mounts or tab changes
+  useEffect(() => {
+    if (activeSubTab === 'clinical-notes') {
+      fetchClinicalNotes();
+    }
+  }, [activeSubTab, fetchClinicalNotes]);
+
+  const handleAddClinicalNote = () => {
+    setEditingNote(null);
+    setIsEditing(false);
+    setShowClinicalNoteModal(true);
+  };
+
+  const handleEditClinicalNote = (note: ClinicalNote) => {
+    setEditingNote(note);
+    setIsEditing(true);
+    setShowClinicalNoteModal(true);
+  };
+
+  const handleDeleteClinicalNote = async (noteId: string) => {
+    if (!token || !patient.id) return;
+    
+    if (window.confirm('Are you sure you want to delete this clinical note?')) {
+      try {
+        await clinicalNotesService.deleteClinicalNote(patient.id, noteId, token);
+        fetchClinicalNotes(); // Refresh the list
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete clinical note');
+        console.error('Error deleting clinical note:', err);
+      }
+    }
+  };
+
+  const handleClinicalNoteSuccess = (note: ClinicalNote) => {
+    if (isEditing) {
+      // Update existing note in the list
+      setClinicalNotes(prev => prev.map(n => n.id === note.id ? note : n));
+    } else {
+      // Add new note to the list
+      setClinicalNotes(prev => [note, ...prev]);
+    }
+    setShowClinicalNoteModal(false);
+    setEditingNote(null);
+    setIsEditing(false);
+  };
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Diagnosis':
         return 'bg-blue-100 text-blue-800';
-      case 'Followup':
+      case 'Follow-up':
         return 'bg-purple-100 text-purple-800';
+      case 'Treatment':
+        return 'bg-green-100 text-green-800';
+      case 'Test Results':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Prescription':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'Referral':
+        return 'bg-pink-100 text-pink-800';
       case 'General':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -378,13 +439,24 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Clinical Notes</h2>
               <div className="flex items-center space-x-3">
-                <select className="px-3 py-2 border border-border rounded-lg text-sm" style={{ backgroundColor: '#F3F3F5', color: '#717182' }}>
+                <select 
+                  className="px-3 py-2 border border-border rounded-lg text-sm" 
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                  aria-label="Filter by category"
+                >
                   <option>All Categories</option>
                   <option>Diagnosis</option>
-                  <option>Followup</option>
+                  <option>Treatment</option>
+                  <option>Follow-up</option>
+                  <option>Test Results</option>
+                  <option>Prescription</option>
+                  <option>Referral</option>
                   <option>General</option>
                 </select>
-                <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors">
+                <button 
+                  onClick={handleAddClinicalNote}
+                  className="bg-primary text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-primary/90 transition-colors"
+                >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -393,44 +465,89 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {clinicalNotes.map((note, index) => (
-                <div key={index} className="border border-border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="font-medium" style={{ color: '#0A0A0A' }}>{note.title}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
-                          {note.category}
-                        </span>
-                      </div>
-                      <p className="text-sm mb-2" style={{ color: '#717182' }}>{note.description}</p>
-                      <p className="text-xs" style={{ color: '#717182' }}>
-                        {note.author} • {note.date}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <h4 className="text-red-800 font-medium text-sm mb-1">Error Loading Notes</h4>
+                    <p className="text-red-600 text-sm">{error}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading clinical notes...</p>
+              </div>
+            ) : clinicalNotes.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2 text-gray-900">No clinical notes yet</h3>
+                <p className="text-sm mb-6 text-gray-500">Start documenting patient care with clinical notes</p>
+                <button 
+                  onClick={handleAddClinicalNote}
+                  className="bg-primary text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-primary/90 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Add First Note</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {clinicalNotes.map((note) => (
+                  <div key={note.id} className="border border-border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="font-medium" style={{ color: '#0A0A0A' }}>{note.title}</h3>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
+                            {note.category}
+                          </span>
+                        </div>
+                        <p className="text-sm mb-2" style={{ color: '#717182' }}>{note.content}</p>
+                        <p className="text-xs" style={{ color: '#717182' }}>
+                          Created: {new Date(note.createdAt).toLocaleDateString()} • 
+                          Updated: {new Date(note.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => handleEditClinicalNote(note)}
+                          className="p-1 hover:bg-muted rounded-md transition-colors"
+                          title="Edit note"
+                          aria-label="Edit note"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClinicalNote(note.id)}
+                          className="p-1 hover:bg-muted rounded-md transition-colors"
+                          title="Delete note"
+                          aria-label="Delete note"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -543,6 +660,16 @@ export default function PatientEMRPage({ params }: { params: { id: string } }) {
         </div>
         )}
       </div>
+
+      {/* Clinical Note Modal */}
+      <ClinicalNoteModal
+        isOpen={showClinicalNoteModal}
+        onClose={() => setShowClinicalNoteModal(false)}
+        onSuccess={handleClinicalNoteSuccess}
+        note={editingNote}
+        isEditing={isEditing}
+        userId={patient.id}
+      />
     </MainLayout>
   );
 }

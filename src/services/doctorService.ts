@@ -94,6 +94,34 @@ class DoctorService {
     }
   }
 
+  // Get available audiologists
+  async getAvailableAudiologists(token?: string): Promise<DoctorsResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/audiologists/available`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch available audiologists: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching available audiologists:', error);
+      throw error;
+    }
+  }
+
   // Delete doctor
   async deleteDoctor(id: string, token?: string): Promise<void> {
     try {

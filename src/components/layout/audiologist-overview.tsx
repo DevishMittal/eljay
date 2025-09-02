@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/utils';
-import { appointmentService } from '@/services/appointmentService';
-import { Audiologist } from '@/types';
+import { doctorService } from '@/services/doctorService';
+import { Doctor } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface AudiologistWithStats extends Audiologist {
+interface AudiologistWithStats extends Doctor {
   initials: string;
   totalAppointments: number;
   availableSlots: number;
@@ -37,28 +37,28 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
     try {
       if (!isRefresh) setLoading(true);
       setError(null);
-      const response = await appointmentService.getAvailableAudiologists(token || undefined);
+      const response = await doctorService.getAvailableAudiologists(token || undefined);
       
-             // Transform API data to include stats
-       const audiologistsWithStats: AudiologistWithStats[] = response.data.map(audiologist => {
-         // Generate initials from name
-         const initials = audiologist.name
-           .split(' ')
-           .map(word => word.charAt(0))
-           .join('')
-           .toUpperCase()
-           .slice(0, 2);
-         
-         // Calculate available time slots based on availability
-         const availableSlots = audiologist.isAvailable ? 1 : 0;
-         
-         return {
-           ...audiologist,
-           initials,
-           totalAppointments: 0, // API doesn't provide booked slots count
-           availableSlots
-         };
-       });
+      // Transform API data to include stats
+      const audiologistsWithStats: AudiologistWithStats[] = response.data.map((audiologist: Doctor) => {
+        // Generate initials from name
+        const initials = audiologist.name
+          .split(' ')
+          .map((word: string) => word.charAt(0))
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+        
+        // Calculate available time slots based on availability
+        const availableSlots = audiologist.isAvailable ? 1 : 0;
+        
+        return {
+          ...audiologist,
+          initials,
+          totalAppointments: 0, // API doesn't provide booked slots count
+          availableSlots
+        };
+      });
       
       setAudiologists(audiologistsWithStats);
     } catch (err) {
