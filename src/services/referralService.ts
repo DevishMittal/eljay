@@ -1,0 +1,121 @@
+import { ReferralSourceResponse, ReferralSource } from '@/types';
+
+const BASE_URL = 'https://eljay-api.vizdale.com';
+
+class ReferralService {
+  // Get all referral sources
+  async getReferrals(token?: string): Promise<ReferralSourceResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/referrals`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch referrals: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching referrals:', error);
+      throw error;
+    }
+  }
+
+  // Create new referral source
+  async createReferral(referralData: Omit<ReferralSource, 'id' | 'createdAt' | 'updatedAt' | 'organizationId'>, token?: string): Promise<ReferralSource> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/referrals`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(referralData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create referral: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error creating referral:', error);
+      throw error;
+    }
+  }
+
+  // Update referral source
+  async updateReferral(id: string, referralData: Partial<ReferralSource>, token?: string): Promise<ReferralSource> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/referrals/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(referralData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update referral: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error updating referral:', error);
+      throw error;
+    }
+  }
+
+  // Delete referral source
+  async deleteReferral(id: string, token?: string): Promise<void> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/referrals/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete referral: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error deleting referral:', error);
+      throw error;
+    }
+  }
+}
+
+export const referralService = new ReferralService();

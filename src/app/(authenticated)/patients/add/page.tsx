@@ -10,22 +10,24 @@ import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AddPatientPage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [activeSection, setActiveSection] = useState<'profile' | 'emr' | 'billing'>('profile');
   const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(true);
   const [formData, setFormData] = useState<CreateUserData>({
     fullname: '',
     email: '',
-    countrycode: '+91',
     phoneNumber: '',
     dob: '',
     gender: 'Male',
     occupation: '',
     customerType: 'B2C',
-    alternateNumber: ''
+    alternateNumber: '',
+    countrycode: '+91'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,25 +44,8 @@ export default function AddPatientPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
-    if (!formData.fullname.trim()) {
-      setError('Full name is required');
-      return;
-    }
-    if (!formData.phoneNumber.trim()) {
-      setError('Phone number is required');
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError('Email address is required');
-      return;
-    }
-    if (!formData.dob) {
-      setError('Date of birth is required');
-      return;
-    }
-    if (!formData.occupation.trim()) {
-      setError('Occupation is required');
+    if (!formData.fullname.trim() || !formData.phoneNumber.trim()) {
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -68,40 +53,21 @@ export default function AddPatientPage() {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      const response = await patientService.createUser(formData);
+      const response = await patientService.createUser(formData, token || undefined);
       
-      // Show success message briefly before navigation
-      setSuccess('Patient created successfully!');
-      
-      // Navigate back to patients list after a short delay
-      setTimeout(() => {
-        router.push('/patients');
-      }, 1500);
-    } catch (error: any) {
-      console.error('Error creating patient:', error);
-      
-      // Handle specific error cases
-      let errorMessage = 'Failed to create patient. Please try again.';
-      
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
-        // Check for common error patterns
-        const message = error.message.toLowerCase();
-        if (message.includes('email') && (message.includes('already') || message.includes('exists') || message.includes('duplicate'))) {
-          errorMessage = 'This email address is already registered. Please use a different email.';
-        } else if (message.includes('phone') && (message.includes('already') || message.includes('exists') || message.includes('duplicate'))) {
-          errorMessage = 'This phone number is already registered. Please use a different phone number.';
-        } else if (message.includes('duplicate') || message.includes('already exists')) {
-          errorMessage = 'A patient with these details already exists. Please check the information and try again.';
-        } else {
-          errorMessage = error.message;
-        }
+      if (response.status === 'success') {
+        setSuccess('Patient created successfully!');
+        
+        // Navigate back to patients list after a short delay
+        setTimeout(() => {
+          router.push('/patients');
+        }, 1500);
+      } else {
+        setError('Failed to create patient. Please try again.');
       }
-      
-      setError(errorMessage);
+    } catch (error: any) {
+      setError(error.message || 'Failed to create patient. Please try again.');
+      console.error('Error creating patient:', error);
     } finally {
       setLoading(false);
     }

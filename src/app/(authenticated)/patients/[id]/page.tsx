@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -10,9 +11,11 @@ import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const { token } = useAuth();
   const [activeSection, setActiveSection] = useState<'profile' | 'emr' | 'billing'>('profile');
   const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments'>('information');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(true);
@@ -31,7 +34,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     try {
       setLoading(true);
       setError(null);
-      const response = await patientService.getPatientById(resolvedParams.id);
+      const response = await patientService.getPatientById(resolvedParams.id, token || undefined);
       setPatient(response.patient);
     } catch (err) {
       setError('Failed to fetch patient details. Please try again.');
@@ -39,14 +42,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     } finally {
       setLoading(false);
     }
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, token]);
 
   const fetchAppointments = useCallback(async () => {
     if (!patient) return;
     
     try {
       setAppointmentsLoading(true);
-      const response = await patientService.getUserAppointments(patient.id);
+      const response = await patientService.getUserAppointments(patient.id, token || undefined);
       setAppointments(response.data.appointments);
     } catch (err) {
       console.error('Error fetching appointments:', err);
@@ -54,7 +57,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     } finally {
       setAppointmentsLoading(false);
     }
-  }, [patient]);
+  }, [patient, token]);
 
   useEffect(() => {
     fetchPatient();
@@ -111,25 +114,18 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEdit = async () => {
-    if (!patient) return;
-    
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      await patientService.updatePatient(patient.patient_id, editFormData);
+      await patientService.updateUser(patient?.id || '', editFormData, token || undefined);
       await fetchPatient(); // Refresh patient data
       setIsEditing(false);
-      setEditFormData({});
       setSuccess('Patient information updated successfully!');
-      
-      // Clear success message after a delay
-      setTimeout(() => {
-        setSuccess(null);
-      }, 3000);
-    } catch (err) {
-      console.error('Error updating patient:', err);
-      setError('Failed to update patient. Please try again.');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      setError(error.message || 'Failed to update patient information');
+      console.error('Error updating patient:', error);
     } finally {
       setLoading(false);
     }
@@ -718,7 +714,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             <div className="text-right">
                               <div className="text-sm font-medium text-gray-900">{appointment.appointmentDuration} minutes</div>
                               <div className="text-xs text-gray-500">
-                                {appointment.referralSource}
+                                {appointment.referralSource ? appointment.referralSource.sourceName : 'Direct'}
                               </div>
                             </div>
                           </div>

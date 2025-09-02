@@ -1,19 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
-import { cn } from '@/utils';
 import AddDoctorModal from '@/components/modals/add-doctor-modal';
+import { referralService } from '@/services/referralService';
+import { useAuth } from '@/contexts/AuthContext';
+import { ReferralSource } from '@/types';
 import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 export default function DoctorReferralsPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
+  const [referrals, setReferrals] = useState<ReferralSource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
 
-  // Mock data for charts
+  // Fetch referrals from API
+  useEffect(() => {
+    const fetchReferrals = async () => {
+      try {
+        setLoading(true);
+        const response = await referralService.getReferrals(token || undefined);
+        if (response.status === 'success') {
+          setReferrals(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching referrals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchReferrals();
+    }
+  }, [token]);
+
+  // Filter doctor referrals only (excluding direct/walk-in)
+  const doctorReferrals = referrals.filter(ref => ref.type === 'doctor');
+
+  // Calculate metrics from real data
+  const totalReferrals = referrals.length;
+  const totalDoctorReferrals = doctorReferrals.length;
+
+  // Mock data for charts (keeping as is since API doesn't provide this data)
   const referralTrendsData = [
     { month: 'Jul', referrals: 16 },
     { month: 'Aug', referrals: 24 },
@@ -31,10 +64,93 @@ export default function DoctorReferralsPage() {
     { name: 'Hearing Aid Fitting', value: 1, color: '#8B5CF6' }
   ];
 
+  // Mock data for revenue and commissions (keeping as is since API doesn't provide this data)
+  const totalRevenue = '₹1,67,700';
+  const totalCommissions = '₹16,770';
+  const pendingPayments = '₹12,000';
+  const paidThisMonth = '₹18,500';
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'referrals', label: 'Referrals' },
     { id: 'commission-statements', label: 'Commission Statements' }
+  ];
+
+  // Generate mock patient data for referrals table (keeping UI the same)
+  const mockReferralData = [
+    {
+      id: '1',
+      date: '15 Dec 2024',
+      patient: { name: 'John Smith', id: 'PAT001' },
+      doctor: 'Dr. Robert Thompson',
+      services: [
+        { name: 'Pure Tone Audiometry', type: 'Diagnostic', status: 'completed' },
+        { name: 'Tympanometry', type: 'Diagnostic', status: 'completed' }
+      ],
+      amount: '₹2,500',
+      commission: '₹250',
+      status: 'completed'
+    },
+    {
+      id: '2',
+      date: '20 Dec 2024',
+      patient: { name: 'Sarah Johnson', id: 'PAT002' },
+      doctor: 'Dr. Robert Thompson',
+      services: [
+        { name: 'OAE Testing', type: 'Diagnostic', status: 'pending' },
+        { name: 'Siemens Pure Charg...', type: 'Hearing Aid', status: 'pending' }
+      ],
+      amount: '₹86,200',
+      commission: '₹8,620',
+      status: 'active'
+    },
+    {
+      id: '3',
+      date: '18 Dec 2024',
+      patient: { name: 'Michael Brown', id: 'PAT003' },
+      doctor: 'Dr. Lisa Anderson',
+      services: [
+        { name: 'Balance Assessment', type: 'Diagnostic', status: 'completed' }
+      ],
+      amount: '₹2,000',
+      commission: '₹200',
+      status: 'completed'
+    },
+    {
+      id: '4',
+      date: '22 Dec 2024',
+      patient: { name: 'Emma Wilson', id: 'PAT004' },
+      doctor: 'Dr. Robert Thompson',
+      services: [
+        { name: 'Hearing Aid Consult...', type: 'Service', status: 'completed' },
+        { name: 'Phonak Audéo Para...', type: 'Hearing Aid', status: 'completed' }
+      ],
+      amount: '₹77,000',
+      commission: '₹7,700',
+      status: 'completed'
+    }
+  ];
+
+  // Mock commission statements data (keeping as is since API doesn't provide this data)
+  const mockCommissionStatements = [
+    {
+      doctor: 'Dr. Robert Thompson',
+      period: 'December 2024',
+      referrals: 8,
+      revenue: '₹18,500',
+      commission: '₹1,850',
+      status: 'sent',
+      dueDate: '15/1/2025'
+    },
+    {
+      doctor: 'Dr. Lisa Anderson',
+      period: 'December 2024',
+      referrals: 5,
+      revenue: '₹12,000',
+      commission: '₹1,200',
+      status: 'draft',
+      dueDate: '15/1/2025'
+    }
   ];
 
   return (
@@ -108,7 +224,7 @@ export default function DoctorReferralsPage() {
                         </svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>4</div>
+                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalReferrals}</div>
                     <div className="text-sm" style={{ color: '#717182' }}>Total referrals this month</div>
                   </div>
 
@@ -122,8 +238,8 @@ export default function DoctorReferralsPage() {
                         </svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>3</div>
-                    <div className="text-sm" style={{ color: '#717182' }}>Completed referrals</div>
+                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalDoctorReferrals}</div>
+                    <div className="text-sm" style={{ color: '#717182' }}>Doctor referrals</div>
                   </div>
 
                   {/* Revenue Generated */}
@@ -136,7 +252,7 @@ export default function DoctorReferralsPage() {
                         </svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹1,67,700</div>
+                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalRevenue}</div>
                     <div className="text-sm" style={{ color: '#717182' }}>Total revenue from referrals</div>
                   </div>
 
@@ -150,7 +266,7 @@ export default function DoctorReferralsPage() {
                         </svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹16,770</div>
+                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalCommissions}</div>
                     <div className="text-sm" style={{ color: '#717182' }}>Total commissions paid</div>
                   </div>
                 </div>
@@ -206,51 +322,37 @@ export default function DoctorReferralsPage() {
                       <p className="text-sm" style={{ color: '#717182' }}>This month&apos;s leading referrers</p>
                     </div>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-semibold text-blue-600">1</span>
-                          </div>
-                          <div>
-                            <div className="font-medium" style={{ color: '#101828' }}>Dr. Robert Thompson</div>
-                            <div className="text-sm" style={{ color: '#717182' }}>ENT (Otolaryngology)</div>
-                          </div>
+                      {loading ? (
+                        <div className="text-center py-4">
+                          <div className="text-sm text-gray-500">Loading...</div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>3 referrals</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>₹16,570</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-semibold text-green-600">2</span>
+                      ) : doctorReferrals.length > 0 ? (
+                        doctorReferrals.slice(0, 3).map((referral, index) => (
+                          <div key={referral.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                index === 0 ? 'bg-blue-100' : index === 1 ? 'bg-green-100' : 'bg-orange-100'
+                              }`}>
+                                <span className={`text-sm font-semibold ${
+                                  index === 0 ? 'text-blue-600' : index === 1 ? 'text-green-600' : 'text-orange-600'
+                                }`}>{index + 1}</span>
+                              </div>
+                              <div>
+                                <div className="font-medium" style={{ color: '#101828' }}>{referral.sourceName}</div>
+                                <div className="text-sm" style={{ color: '#717182' }}>{referral.specialization || 'General'}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium" style={{ color: '#101828' }}>1 referral</div>
+                              <div className="text-sm" style={{ color: '#717182' }}>₹200</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium" style={{ color: '#101828' }}>Dr. Lisa Anderson</div>
-                            <div className="text-sm" style={{ color: '#717182' }}>Neurology</div>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <div className="text-sm text-gray-500">No doctor referrals found</div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>1 referral</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>₹200</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-semibold text-orange-600">3</span>
-                          </div>
-                          <div>
-                            <div className="font-medium" style={{ color: '#101828' }}>Dr. Michael Chen</div>
-                            <div className="text-sm" style={{ color: '#717182' }}>Family Medicine</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>0 referrals</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>₹0</div>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -272,7 +374,7 @@ export default function DoctorReferralsPage() {
                           <span className="font-medium" style={{ color: '#101828' }}>Pending Payments</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>₹12,000</div>
+                          <div className="font-medium" style={{ color: '#101828' }}>{pendingPayments}</div>
                           <div className="text-sm" style={{ color: '#717182' }}>2 statements</div>
                         </div>
                       </div>
@@ -284,7 +386,7 @@ export default function DoctorReferralsPage() {
                           <span className="font-medium" style={{ color: '#101828' }}>Paid This Month</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>₹18,500</div>
+                          <div className="font-medium" style={{ color: '#101828' }}>{paidThisMonth}</div>
                           <div className="text-sm" style={{ color: '#717182' }}>3 statements</div>
                         </div>
                       </div>
@@ -310,8 +412,8 @@ export default function DoctorReferralsPage() {
                               paddingAngle={5}
                               dataKey="value"
                             >
-                              {topServicesData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              {topServicesData.map((service, index) => (
+                                <Cell key={`cell-${index}`} fill={service.color} />
                               ))}
                             </Pie>
                             <Tooltip />
@@ -342,7 +444,7 @@ export default function DoctorReferralsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Referrals</h2>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">4</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{totalReferrals}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     {/* Search Bar */}
@@ -364,9 +466,15 @@ export default function DoctorReferralsPage() {
                       aria-label="Filter by doctor"
                     >
                       <option>All Doctors</option>
-                      <option>Dr. Robert Thompson</option>
-                      <option>Dr. Lisa Anderson</option>
-                      <option>Dr. Michael Chen</option>
+                      {loading ? (
+                        <option>Loading...</option>
+                      ) : (
+                        doctorReferrals.map((referral) => (
+                          <option key={referral.id} value={referral.id}>
+                            {referral.sourceName}
+                          </option>
+                        ))
+                      )}
                     </select>
                     
                     {/* Status Filter */}
@@ -399,156 +507,64 @@ export default function DoctorReferralsPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Row 1 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>15 Dec 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium" style={{ color: '#101828' }}>John Smith</div>
-                              <div className="text-sm" style={{ color: '#717182' }}>PAT001</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>Dr. Robert Thom...</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Pure Tone Audiomet...</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Diagnostic</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Tympanometry</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Diagnostic</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹2,500</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹250</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* Row 2 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>20 Dec 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium" style={{ color: '#101828' }}>Sarah Johnson</div>
-                              <div className="text-sm" style={{ color: '#717182' }}>PAT002</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>Dr. Robert Thom...</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>OAE Testing</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Diagnostic</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">pending</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Siemens Pure Charg...</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Hearing Aid</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">pending</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹86,200</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹8,620</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">active</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* Row 3 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>18 Dec 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium" style={{ color: '#101828' }}>Michael Brown</div>
-                              <div className="text-sm" style={{ color: '#717182' }}>PAT003</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>Dr. Lisa Anderson</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Balance Assessment</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Diagnostic</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹2,000</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹200</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* Row 4 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>22 Dec 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium" style={{ color: '#101828' }}>Emma Wilson</div>
-                              <div className="text-sm" style={{ color: '#717182' }}>PAT004</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>Dr. Robert Thom...</td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Hearing Aid Consult...</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Service</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm" style={{ color: '#101828' }}>Phonak Audéo Para...</span>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>Hearing Aid</span>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹77,000</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹7,700</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">completed</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-gray-400 hover:text-gray-600">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
+                        {loading ? (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                              Loading referrals...
+                            </td>
+                          </tr>
+                        ) : mockReferralData.length > 0 ? (
+                          mockReferralData.map((referral) => (
+                            <tr key={referral.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{referral.date}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium" style={{ color: '#101828' }}>{referral.patient.name}</div>
+                                  <div className="text-sm" style={{ color: '#717182' }}>{referral.patient.id}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{referral.doctor}</td>
+                              <td className="px-6 py-4">
+                                <div className="space-y-1">
+                                  {referral.services.map((service, index) => (
+                                    <div key={index} className="flex items-center space-x-2">
+                                      <span className="text-sm" style={{ color: '#101828' }}>{service.name}</span>
+                                      <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>{service.type}</span>
+                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        service.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                      }`}>{service.status}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{referral.amount}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>{referral.commission}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  referral.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                }`}>{referral.status}</span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600"
+                                  aria-label="View referral details"
+                                  title="View referral details"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                              No referrals found
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -557,12 +573,12 @@ export default function DoctorReferralsPage() {
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}><strong>4 referrals</strong></span>
+                        <span style={{ color: '#101828' }}><strong>{totalReferrals} referrals</strong></span>
                         <span style={{ color: '#717182' }}>Services & Products: <strong>7 items</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}>Total Amount: <strong>₹1,67,700</strong></span>
-                        <span style={{ color: '#717182' }}>Total Commission: <strong>₹16,770</strong></span>
+                        <span style={{ color: '#101828' }}>Total Amount: <strong>{totalRevenue}</strong></span>
+                        <span style={{ color: '#717182' }}>Total Commission: <strong>{totalCommissions}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -571,7 +587,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Showing 1 to 4 of 4</span>
+                        <span className="text-sm text-gray-700">Showing 1 to {Math.min(totalReferrals, 4)} of {totalReferrals}</span>
                         <select 
                           className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
                           aria-label="Items per page"
@@ -602,7 +618,7 @@ export default function DoctorReferralsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Commission Statements</h2>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">2</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{mockCommissionStatements.length}</span>
                   </div>
                 </div>
 
@@ -623,77 +639,44 @@ export default function DoctorReferralsPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Row 1 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>Dr. Robert Thompson</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>December 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>8</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹18,500</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹1,850</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">sent</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>15/1/2025</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="View statement"
-                                title="View statement"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              </button>
-                              <button 
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Download statement"
-                                title="Download statement"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-
-                        {/* Row 2 */}
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>Dr. Lisa Anderson</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>December 2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>5</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>₹12,000</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>₹1,200</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">draft</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>15/1/2025</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="View statement"
-                                title="View statement"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              </button>
-                              <button 
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Download statement"
-                                title="Download statement"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                        {mockCommissionStatements.map((statement, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{statement.doctor}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.period}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.referrals}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{statement.revenue}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>{statement.commission}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                statement.status === 'sent' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>{statement.status}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.dueDate}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600"
+                                  aria-label="View statement"
+                                  title="View statement"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </button>
+                                <button 
+                                  className="text-gray-400 hover:text-gray-600"
+                                  aria-label="Download statement"
+                                  title="Download statement"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -703,7 +686,7 @@ export default function DoctorReferralsPage() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>Total</strong></span>
-                        <span style={{ color: '#717182' }}>Statements: <strong>2 statements</strong></span>
+                        <span style={{ color: '#717182' }}>Statements: <strong>{mockCommissionStatements.length} statements</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}>Total Referrals: <strong>13</strong></span>
@@ -717,7 +700,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Showing 1 to 2 of 2</span>
+                        <span className="text-sm text-gray-700">Showing 1 to {mockCommissionStatements.length} of {mockCommissionStatements.length}</span>
                         <select 
                           className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
                           aria-label="Items per page"

@@ -8,6 +8,7 @@ import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-moda
 import { Appointment as CalendarAppointment, CalendarView } from '@/utils/calendar';
 import { Appointment, AppointmentsResponse } from '@/types';
 import { appointmentService } from '@/services/appointmentService';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define the type for new appointments from modal
 interface NewAppointment {
@@ -24,6 +25,7 @@ interface NewAppointment {
 }
 
 export default function AppointmentsPage() {
+  const { token } = useAuth();
   // State for walk-in appointment modal
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -39,13 +41,13 @@ export default function AppointmentsPage() {
   // Fetch appointments from API
   useEffect(() => {
     fetchAppointments();
-  }, [currentPage]);
+  }, [currentPage, token]);
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await appointmentService.getAppointments(currentPage, 50); // Get more appointments for calendar
+      const response = await appointmentService.getAppointments(currentPage, 50, token || undefined); // Get more appointments for calendar
       setApiAppointments(response.data.appointments);
       
       // Convert API appointments to calendar format

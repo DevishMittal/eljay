@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -5,6 +6,7 @@ import { CreateUserData } from '@/types';
 import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddPatientModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface AddPatientModalProps {
 }
 
 export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatientModalProps) {
+  const { token } = useAuth();
   const [formData, setFormData] = useState<CreateUserData>({
     fullname: '',
     email: '',
@@ -37,51 +40,30 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
-    if (!formData.fullname.trim()) {
-      setError('Full name is required');
-      return;
-    }
-    if (!formData.phoneNumber.trim()) {
-      setError('Phone number is required');
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError('Email address is required');
-      return;
-    }
-    if (!formData.dob) {
-      setError('Date of birth is required');
-      return;
-    }
-    if (!formData.occupation.trim()) {
-      setError('Occupation is required');
+    if (!formData.fullname.trim() || !formData.phoneNumber.trim()) {
+      setError('Please fill in all required fields');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await patientService.createUser(formData);
+      const response = await patientService.createUser(formData, token || undefined);
       
-      // Reset form
-      setFormData({
-        fullname: '',
-        email: '',
-        countrycode: '+82',
-        phoneNumber: '',
-        dob: '',
-        gender: 'Male',
-        occupation: '',
-        customerType: 'B2C',
-        alternateNumber: ''
-      });
-      
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setError('Failed to create patient. Please try again.');
-      console.error('Error creating patient:', err);
+      if (response.status === 'success') {
+        // Call the callback with the created patient
+        if (onSuccess) {
+          onSuccess();
+        }
+
+        // Close modal and reset form
+        handleClose();
+      } else {
+        setError('Failed to create patient. Please try again.');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to create patient. Please try again.');
+      console.error('Error creating patient:', error);
     } finally {
       setLoading(false);
     }
@@ -153,18 +135,15 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                   />
                 </div>
 
+                {/* Date of Birth */}
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Date of Birth *
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Date of Birth
                   </label>
                   <DatePicker
                     value={formData.dob}
-                    onChange={(date) => handleInputChange('dob', date)}
-                    placeholder="Select date of birth"
-                    maxDate={new Date()} // Can't select future dates for DOB
-                    disabled={loading}
-                    required
-                    aria-label="Date of birth"
+                    onChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                    placeholder="Select date of birth..."
                   />
                 </div>
 

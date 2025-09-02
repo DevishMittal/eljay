@@ -239,6 +239,10 @@ export interface User {
   customerType: string;
   createdAt: string;
   updatedAt: string;
+  organization?: {
+    id: string;
+    name: string;
+  };
   appointments?: UserAppointment[];
 }
 
@@ -254,9 +258,29 @@ export interface CreateUserData {
   alternateNumber?: string;
 }
 
+export interface UpdateUserData {
+  fullname?: string;
+  email?: string;
+  countrycode?: string;
+  phoneNumber?: string;
+  dob?: string;
+  gender?: string;
+  occupation?: string;
+  customerType?: string;
+  alternateNumber?: string;
+}
+
 export interface UsersResponse {
   status: string;
-  data: User[];
+  data: {
+    users: User[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
 }
 
 export interface UserResponse {
@@ -275,21 +299,37 @@ export interface UserCreateResponse {
   data: User;
 }
 
-// User Appointment types
+export interface ReferralSource {
+  id?: string;
+  type: string;
+  sourceName: string;
+  contactNumber: string;
+  hospital: string;
+  specialization: string;
+  organizationId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ReferralSourceResponse {
+  status: string;
+  data: ReferralSource[];
+}
+
 export interface UserAppointment {
   id: string;
   appointmentDate: string;
   appointmentTime: string;
   appointmentDuration: number;
   procedures: string;
-  referralSource: string;
+  referralSource?: ReferralSource;
   createdAt: string;
   updatedAt: string;
   audiologist: {
     id: string;
     name: string;
-    email: string;
-    phoneNumber: string;
+    email?: string;
+    phoneNumber?: string;
   };
 }
 
@@ -306,7 +346,8 @@ export interface Appointment {
   id: string;
   audiologistId: string;
   userId: string;
-  referralSource: string;
+  referralSourceId?: string;
+  referralSource?: ReferralSource;
   appointmentDate: string;
   appointmentDuration: number;
   appointmentTime: string;
@@ -332,7 +373,7 @@ export interface AppointmentSummary {
   time: string;
   duration: number;
   procedures: string;
-  referralSource: string;
+  referralSource?: ReferralSource;
   patient: {
     id: string;
     fullname: string;
@@ -356,7 +397,14 @@ export interface CreateAppointmentData {
   appointmentTime: string;
   appointmentDuration: number;
   procedures: string;
-  referralSource: string;
+  referralSource?: {
+    type: string;
+    sourceName: string;
+    contactNumber: string;
+    hospital: string;
+    specialization: string;
+  };
+  referralSourceId?: string;
 }
 
 export interface AppointmentsResponse {

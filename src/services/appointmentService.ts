@@ -10,13 +10,20 @@ const BASE_URL = 'https://eljay-api.vizdale.com';
 
 class AppointmentService {
   // Get all appointments with pagination
-  async getAppointments(page: number = 1, limit: number = 10): Promise<AppointmentsResponse> {
+  async getAppointments(page: number = 1, limit: number = 10, token?: string): Promise<AppointmentsResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/appointments?page=${page}&limit=${limit}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -31,13 +38,20 @@ class AppointmentService {
   }
 
   // Get appointment by ID with summary
-  async getAppointmentSummary(appointmentId: string): Promise<AppointmentResponse> {
+  async getAppointmentSummary(appointmentId: string, token?: string): Promise<AppointmentResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/appointments/${appointmentId}/summary`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -52,13 +66,20 @@ class AppointmentService {
   }
 
   // Create new appointment
-  async createAppointment(appointmentData: CreateAppointmentData): Promise<AppointmentResponse> {
+  async createAppointment(appointmentData: CreateAppointmentData, token?: string): Promise<AppointmentResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/appointments`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(appointmentData),
       });
 
@@ -102,13 +123,20 @@ class AppointmentService {
   }
 
   // Get available procedures
-  async getProcedures(): Promise<ProceduresResponse> {
+  async getProcedures(token?: string): Promise<ProceduresResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/procedures`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {

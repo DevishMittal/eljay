@@ -1,28 +1,36 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
-  CreatePatientData, 
-  UpdatePatientData, 
+  CreateUserData, 
+  UpdateUserData, 
   PatientsResponse, 
   PatientResponse, 
   PatientUpdateResponse,
   UserLookupResponse,
-  CreateUserData,
   UserCreateResponse,
   UsersResponse,
   UserResponse,
-  UserAppointmentsResponse
+  UserAppointmentsResponse,
+  Patient
 } from '@/types';
 
 const BASE_URL = 'https://eljay-api.vizdale.com';
 
 class PatientService {
   // Lookup user by phone number only
-  async lookupUser(phoneNumber: string): Promise<UserLookupResponse> {
+  async lookupUser(phoneNumber: string, token?: string): Promise<UserLookupResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/users/lookup?phone=${phoneNumber}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -37,13 +45,20 @@ class PatientService {
   }
 
   // Create new user
-  async createUser(userData: CreateUserData): Promise<UserCreateResponse> {
+  async createUser(userData: CreateUserData, token?: string): Promise<UserCreateResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/users`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(userData),
       });
 
@@ -59,13 +74,20 @@ class PatientService {
   }
 
   // Get all users as patients
-  async getPatients(page: number = 1, limit: number = 10): Promise<PatientsResponse> {
+  async getPatients(page: number = 1, limit: number = 10, token?: string): Promise<PatientsResponse> {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/users`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/users?page=${page}&limit=${limit}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -75,7 +97,7 @@ class PatientService {
       const usersResponse: UsersResponse = await response.json();
       
       // Convert users to patients format for compatibility
-      const patients = usersResponse.data.map(user => ({
+      const patients: Patient[] = usersResponse.data.users.map(user => ({
         id: user.id,
         patient_id: user.id,
         full_name: user.fullname,
@@ -92,19 +114,14 @@ class PatientService {
         countrycode: user.countrycode
       }));
 
-      // Simple pagination (since API doesn't support it yet)
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedPatients = patients.slice(startIndex, endIndex);
-      
       return {
         status: 'success',
-        patients: paginatedPatients,
+        patients: patients,
         pagination: {
-          page: page,
-          limit: limit,
-          total: patients.length,
-          totalPages: Math.ceil(patients.length / limit)
+          page: usersResponse.data.pagination.page,
+          limit: usersResponse.data.pagination.limit,
+          total: usersResponse.data.pagination.total,
+          totalPages: usersResponse.data.pagination.totalPages
         }
       };
     } catch (error) {
@@ -114,13 +131,20 @@ class PatientService {
   }
 
   // Get individual user/patient by user ID
-  async getPatientById(userId: string): Promise<PatientResponse> {
+  async getPatientById(userId: string, token?: string): Promise<PatientResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -131,7 +155,7 @@ class PatientService {
       const user = userResponse.data;
       
       // Convert user to patient format for compatibility
-      const patient = {
+      const patient: Patient = {
         id: user.id,
         patient_id: user.id,
         full_name: user.fullname,
@@ -158,67 +182,59 @@ class PatientService {
     }
   }
 
-  // Create new patient (keeping for backward compatibility)
-  async createPatient(patientData: CreatePatientData): Promise<PatientResponse> {
+  // Update user
+  async updateUser(userId: string, userData: UpdateUserData, token?: string): Promise<UserResponse> {
     try {
-      const response = await fetch(`${BASE_URL}/api/patients`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(patientData),
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to create patient: ${response.statusText}`);
+        throw new Error(`Failed to update user: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error creating patient:', error);
+      console.error('Error updating user:', error);
       throw error;
     }
   }
 
-  // Update patient
-  async updatePatient(patientId: string, patientData: UpdatePatientData): Promise<PatientUpdateResponse> {
+  // Delete user
+  async deleteUser(userId: string, token?: string): Promise<{ success: boolean }> {
     try {
-      const response = await fetch(`${BASE_URL}/api/patients/${patientId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(patientData),
-      });
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
 
-      if (!response.ok) {
-        throw new Error(`Failed to update patient: ${response.statusText}`);
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating patient:', error);
-      throw error;
-    }
-  }
-
-  // Delete patient
-  async deletePatient(patientId: string): Promise<{ success: boolean }> {
-    try {
-      const response = await fetch(`${BASE_URL}/api/patients/${patientId}`, {
+      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to delete patient: ${response.statusText}`);
+        throw new Error(`Failed to delete user: ${response.statusText}`);
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting patient:', error);
+      console.error('Error deleting user:', error);
       throw error;
     }
   }
@@ -238,13 +254,20 @@ class PatientService {
   }
 
   // Get user appointments
-  async getUserAppointments(userId: string): Promise<UserAppointmentsResponse> {
+  async getUserAppointments(userId: string, token?: string): Promise<UserAppointmentsResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/appointments`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -276,6 +299,22 @@ class PatientService {
       minute: '2-digit',
       hour12: true
     });
+  }
+
+  // Legacy methods for backward compatibility
+  async createPatient(patientData: any, token?: string): Promise<any> {
+    // Redirect to createUser for backward compatibility
+    return this.createUser(patientData, token);
+  }
+
+  async updatePatient(patientId: string, patientData: any, token?: string): Promise<any> {
+    // Redirect to updateUser for backward compatibility
+    return this.updateUser(patientId, patientData, token);
+  }
+
+  async deletePatient(patientId: string, token?: string): Promise<{ success: boolean }> {
+    // Redirect to deleteUser for backward compatibility
+    return this.deleteUser(patientId, token);
   }
 }
 

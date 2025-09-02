@@ -7,11 +7,12 @@ import { Patient } from '@/types';
 import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
-
+import { useAuth } from '@/contexts/AuthContext';
 
 
 export default function PatientsPage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function PatientsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await patientService.getPatients(currentPage, 10);
+      const response = await patientService.getPatients(currentPage, 10, token || undefined);
       setPatients(response.patients);
       setTotalPages(response.pagination.totalPages);
       setTotalPatients(response.pagination.total);
@@ -45,7 +46,7 @@ export default function PatientsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, token]);
 
   // Fetch patients on component mount and when page changes
   useEffect(() => {
@@ -107,11 +108,11 @@ export default function PatientsPage() {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this patient?')) {
       try {
-        await patientService.deletePatient(patientId);
+        await patientService.deleteUser(patientId, token || undefined);
         fetchPatients(); // Refresh the list
       } catch (err) {
+        setError('Failed to delete patient. Please try again.');
         console.error('Error deleting patient:', err);
-        alert('Failed to delete patient. Please try again.');
       }
     }
   };

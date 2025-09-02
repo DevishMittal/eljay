@@ -147,9 +147,21 @@ class NotificationService {
   }
 
   // Future API methods (for when backend is implemented)
-  async getNotifications(page = 1, limit = 50): Promise<{ notifications: Notification[]; total: number }> {
+  async getNotifications(page = 1, limit = 50, token?: string): Promise<{ notifications: Notification[]; total: number }> {
     try {
-      const response = await fetch(`${this.baseUrl}?page=${page}&limit=${limit}`);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${this.baseUrl}?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers,
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
@@ -160,10 +172,20 @@ class NotificationService {
     }
   }
 
-  async markAsRead(notificationId: string): Promise<void> {
+  async markAsRead(notificationId: string, token?: string): Promise<void> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${this.baseUrl}/${notificationId}/read`, {
         method: 'PATCH',
+        headers,
       });
       if (!response.ok) {
         throw new Error('Failed to mark notification as read');
@@ -174,10 +196,20 @@ class NotificationService {
     }
   }
 
-  async deleteNotification(notificationId: string): Promise<void> {
+  async deleteNotification(notificationId: string, token?: string): Promise<void> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${this.baseUrl}/${notificationId}`, {
         method: 'DELETE',
+        headers,
       });
       if (!response.ok) {
         throw new Error('Failed to delete notification');
@@ -188,13 +220,20 @@ class NotificationService {
     }
   }
 
-  async createNotification(data: CreateNotificationData): Promise<Notification> {
+  async createNotification(data: CreateNotificationData, token?: string): Promise<Notification> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
       if (!response.ok) {

@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
-import { Audiologist, Procedure, CreateUserData, CreateAppointmentData, User } from '@/types';
+import { Audiologist, Procedure, CreateAppointmentData, User, ReferralSource } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
+import { referralService } from '@/services/referralService';
 
 interface NewAppointment {
   id: string;
@@ -47,10 +48,17 @@ interface FormData {
   appointmentDate: string;
   appointmentTime: string;
   notes: string;
-  referralSource: string;
+  referralSource: string; // "Direct", "Doctor Referral", or "Hear.com"
   directSource: string;
   duration: string;
   selectedProcedures: string;
+  referralDetails: {
+    sourceName: string;
+    contactNumber: string;
+    hospital: string;
+    specialization: string;
+  };
+  selectedReferralId: string;
 }
 
 const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
@@ -81,6 +89,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     directSource: 'Walk-in',
     duration: '30',
     selectedProcedures: '',
+    referralDetails: {
+      sourceName: '',
+      contactNumber: '',
+      hospital: '',
+      specialization: ''
+    },
+    selectedReferralId: ''
   });
 
   // API data states
@@ -91,6 +106,41 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const [userLookupLoading, setUserLookupLoading] = useState(false);
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([]);
   const [totalProcedureDuration, setTotalProcedureDuration] = useState(0);
+  const [referrals, setReferrals] = useState<ReferralSource[]>([]); // State for referrals
+
+  // Load audiologists from API
+  const loadAudiologists = useCallback(async () => {
+    try {
+      const response = await appointmentService.getAvailableAudiologists(token || undefined);
+      setAudiologists(response.data);
+      // Set first audiologist as default
+      if (response.data.length > 0) {
+        setFormData(prev => ({ ...prev, selectedAudiologist: response.data[0].id }));
+      }
+    } catch (error) {
+      console.error('Error loading audiologists:', error);
+    }
+  }, [token]);
+
+  // Load procedures from API
+  const loadProcedures = useCallback(async () => {
+    try {
+      const response = await appointmentService.getProcedures(token || undefined);
+      setProcedures(response.data);
+    } catch (error) {
+      console.error('Error loading procedures:', error);
+    }
+  }, [token]);
+
+  // Load referrals from API
+  const loadReferrals = useCallback(async () => {
+    try {
+      const response = await referralService.getReferrals(token || undefined);
+      setReferrals(response.data);
+    } catch (error) {
+      console.error('Error loading referrals:', error);
+    }
+  }, [token]);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -115,6 +165,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         directSource: 'Walk-in',
         duration: '30',
         selectedProcedures: '',
+        referralDetails: {
+          sourceName: '',
+          contactNumber: '',
+          hospital: '',
+          specialization: ''
+        },
+        selectedReferralId: ''
       });
       setExistingUser(null);
       setSelectedProcedureIds([]);
@@ -123,32 +180,9 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       // Load audiologists and procedures
       loadAudiologists();
       loadProcedures();
+      loadReferrals(); // Load referrals when modal opens
     }
-  }, [isOpen]);
-
-  // Load audiologists from API
-  const loadAudiologists = async () => {
-    try {
-      const response = await appointmentService.getAvailableAudiologists(token || undefined);
-      setAudiologists(response.data);
-      // Set first audiologist as default
-      if (response.data.length > 0) {
-        setFormData(prev => ({ ...prev, selectedAudiologist: response.data[0].id }));
-      }
-    } catch (error) {
-      console.error('Error loading audiologists:', error);
-    }
-  };
-
-  // Load procedures from API
-  const loadProcedures = async () => {
-    try {
-      const response = await appointmentService.getProcedures();
-      setProcedures(response.data);
-    } catch (error) {
-      console.error('Error loading procedures:', error);
-    }
-  };
+  }, [isOpen, loadAudiologists, loadProcedures, loadReferrals]);
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
@@ -178,7 +212,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       // Extract phone number (remove any formatting)
       const cleanPhone = formData.phoneNumber.replace(/[^\d]/g, '');
       
-      const response = await patientService.lookupUser(cleanPhone);
+      const response = await patientService.lookupUser(cleanPhone, token || undefined);
       
       if (response.code === 200) {
         // User found, populate form with existing data
@@ -213,8 +247,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   // ];
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
+
+
 
   const handleNext = async () => {
     // Handle phone lookup on stage 1
@@ -234,31 +273,78 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
-    
     try {
       let userId = existingUser?.id;
-      
-      // Create user if not existing
-      if (!existingUser) {
-        const userData: CreateUserData = {
+
+      // If no existing user, create one
+      if (!userId) {
+        const userData = {
           fullname: formData.fullName,
           email: formData.email,
-          countrycode: '+82', // Default country code, make dynamic if needed
-          phoneNumber: formData.mobileNumber || formData.phoneNumber,
+          countrycode: '+91', // Default country code
+          phoneNumber: formData.phoneNumber,
           dob: formData.dateOfBirth,
           gender: formData.gender,
           occupation: formData.occupation,
           customerType: formData.customerType,
-          alternateNumber: formData.alternateNumber || undefined,
+          alternateNumber: formData.alternateNumber || undefined
         };
-        
-        const userResponse = await patientService.createUser(userData);
+
+        const userResponse = await patientService.createUser(userData, token || undefined);
         userId = userResponse.data.id;
       }
-      
+
       if (!userId) {
         throw new Error('Failed to get user ID');
+      }
+      
+      // Prepare referral source data
+      let referralSourceData = undefined;
+      
+      if (formData.referralSource === 'Direct') {
+        // For Direct referrals, send a referral source object
+        referralSourceData = {
+          type: 'direct',
+          sourceName: 'Walk-in',
+          contactNumber: '',
+          hospital: '',
+          specialization: ''
+        };
+      } else if (formData.referralSource === 'Doctor Referral') {
+        if (formData.selectedReferralId) {
+          // Use existing referral - get the referral details and send as referralSource object
+          const selectedReferral = referrals.find(r => r.id === formData.selectedReferralId);
+          if (selectedReferral) {
+            referralSourceData = {
+              type: 'doctor',
+              sourceName: selectedReferral.sourceName,
+              contactNumber: selectedReferral.contactNumber,
+              hospital: selectedReferral.hospital,
+              specialization: selectedReferral.specialization
+            };
+          }
+        } else {
+          // Use custom referral details - send as new referral source
+          referralSourceData = {
+            type: 'doctor',
+            sourceName: 'Self-referral',
+            contactNumber: formData.referralDetails.contactNumber,
+            hospital: formData.referralDetails.hospital,
+            specialization: formData.referralDetails.specialization
+          };
+        }
+      } else if (formData.referralSource === 'Hear.com') {
+        // For Hear.com referrals, send as a new referral source
+        referralSourceData = {
+          type: 'doctor',
+          sourceName: 'Hear.com',
+          contactNumber: '',
+          hospital: '',
+          specialization: ''
+        };
       }
       
       // Create appointment
@@ -269,10 +355,15 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.duration),
         procedures: formData.selectedProcedures || 'General Consultation',
-        referralSource: formData.referralSource, // Only send the main referral source (Direct, Doctor Referral, Hear.com)
+        referralSource: referralSourceData
       };
       
-      const appointmentResponse = await appointmentService.createAppointment(appointmentData);
+      // Ensure we have referralSource data
+      if (!referralSourceData) {
+        throw new Error('Referral source information is required');
+      }
+      
+      const appointmentResponse = await appointmentService.createAppointment(appointmentData, token || undefined);
       
       // Create new appointment object for calendar
       const newAppointment = {
@@ -299,6 +390,86 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const validateForm = () => {
+    if (currentStage === 1) {
+      if (!formData.phoneNumber) {
+        alert('Please enter a patient phone number.');
+        return false;
+      }
+      if (userLookupLoading) {
+        alert('Looking up patient... Please wait.');
+        return false;
+      }
+    }
+    if (currentStage === 2) {
+      if (!formData.fullName) {
+        alert('Please enter patient full name.');
+        return false;
+      }
+      if (!formData.email) {
+        alert('Please enter patient email address.');
+        return false;
+      }
+      if (!formData.mobileNumber) {
+        alert('Please enter patient mobile number.');
+        return false;
+      }
+      if (!formData.dateOfBirth) {
+        alert('Please select patient date of birth.');
+        return false;
+      }
+      if (!formData.gender) {
+        alert('Please select patient gender.');
+        return false;
+      }
+    }
+    if (currentStage === 3) {
+      if (!formData.selectedAudiologist) {
+        alert('Please select an audiologist.');
+        return false;
+      }
+    }
+    if (currentStage === 4) {
+      if (!formData.referralSource) {
+        alert('Please select how the patient was referred.');
+        return false;
+      }
+      if (formData.referralSource === 'Doctor Referral' && !formData.selectedReferralId) {
+        alert('Please select a doctor referral source from the dropdown.');
+        return false;
+      }
+    }
+    if (currentStage === 5) {
+      if (!formData.appointmentDate) {
+        alert('Please select appointment date.');
+        return false;
+      }
+      if (!formData.appointmentTime) {
+        alert('Please select appointment time.');
+        return false;
+      }
+      if (!formData.duration) {
+        alert('Please select appointment duration.');
+        return false;
+      }
+    }
+    if (currentStage === 6) {
+      if (!formData.selectedProcedures) {
+        alert('Please select at least one procedure.');
+        return false;
+      }
+    }
+    if (currentStage === 7) {
+      // Stage 7 is confirmation - no validation needed
+      return true;
+    }
+    if (currentStage === 8) {
+      // Stage 8 is notes - notes are optional, so no validation needed
+      return true;
+    }
+    return true;
   };
 
   if (!isOpen) return null;
@@ -591,91 +762,171 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const renderStage4 = () => (
     <div className="space-y-4">
       <div className="flex items-center space-x-3 mb-3">
-        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
           <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Referral Source</h2>
-          <p className="text-xs" style={{ color: '#4A5565' }}>Specify how the patient was referred to us</p>
+          <p className="text-xs" style={{ color: '#4A5565' }}>Select how the patient was referred to the clinic</p>
         </div>
       </div>
 
       <div className="space-y-3">
-        <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-          How was this patient referred to us? *
-        </label>
-        
-        {/* Main 3 referral options */}
-        <div className="grid grid-cols-1 gap-2">
-          {[
-            { value: 'Direct', description: 'Patient came directly' },
-            { value: 'Doctor Referral', description: 'Referred by a medical professional' },
-            { value: 'Hear.com', description: 'Online hearing platform referral' }
-          ].map((option) => (
-            <div
-              key={option.value}
-              onClick={() => {
-                handleInputChange('referralSource', option.value);
-                // Reset direct source when changing main referral
-                if (option.value !== 'Direct') {
-                  handleInputChange('directSource', '');
-                }
-              }}
-              className={cn(
-                'p-3 rounded-lg border cursor-pointer transition-all duration-200',
-                formData.referralSource === option.value
-                  ? 'bg-blue-50 border-blue-300'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{option.value}</div>
-                  <div className="text-xs" style={{ color: '#717182' }}>{option.description}</div>
+        {/* Main referral options */}
+        {[
+          { value: 'Direct', description: 'Patient came directly (Walk-in)' },
+          { value: 'Doctor Referral', description: 'Referred by a medical professional (Self-referral)' },
+          { value: 'Hear.com', description: 'Referred through Hear.com' }
+        ].map((option) => (
+          <div
+            key={option.value}
+            onClick={() => {
+              handleInputChange('referralSource', option.value);
+              // Reset selectedReferralId when changing main referral
+              if (option.value === 'Direct') {
+                handleInputChange('selectedReferralId', '');
+                setFormData(prev => ({
+                  ...prev,
+                  referralDetails: { sourceName: '', contactNumber: '', hospital: '', specialization: '' }
+                }));
+              }
+            }}
+            className={cn(
+              'p-3 border rounded-lg cursor-pointer transition-colors',
+              formData.referralSource === option.value
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>
+                  {option.value}
                 </div>
-                <div className={cn(
-                  'w-5 h-5 rounded-full border-2 flex items-center justify-center',
-                  formData.referralSource === option.value
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'border-gray-300'
-                )}>
-                  {formData.referralSource === option.value && (
-                    <div className="w-2 h-2 bg-white rounded-full" />
-                  )}
+                <div className="text-xs" style={{ color: '#4A5565' }}>
+                  {option.description}
                 </div>
               </div>
+              {formData.referralSource === option.value && (
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
 
-        {/* Direct Source dropdown when "Direct" is selected */}
-        {formData.referralSource === 'Direct' && (
+        {/* Referral Details dropdown when "Doctor Referral" is selected */}
+        {formData.referralSource === 'Doctor Referral' && (
           <div className="mt-4">
             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-              Direct Source
+              Select Doctor Referral
             </label>
             <CustomDropdown
-              options={[
-                { value: 'Walk-in', label: 'Walk-in' },
-                { value: 'Online Booking', label: 'Online Booking' },
-                { value: 'Phone Call', label: 'Phone Call' },
-                { value: 'Website', label: 'Website' },
-                { value: 'Social Media', label: 'Social Media' },
-                { value: 'Advertisement', label: 'Advertisement' },
-                { value: 'Family/Friend Referral', label: 'Family/Friend Referral' },
-                { value: 'Previous Patient', label: 'Previous Patient' },
-                { value: 'Emergency', label: 'Emergency' },
-                { value: 'Other', label: 'Other' }
-              ]}
-              value={formData.directSource}
-              onChange={(value) => handleInputChange('directSource', value)}
-              placeholder="Select direct source"
-              aria-label="Direct source"
+              options={referrals.map(r => ({ value: r.id || '', label: r.sourceName }))}
+              value={formData.selectedReferralId}
+              onChange={(value) => {
+                handleInputChange('selectedReferralId', value);
+                const selectedReferral = referrals.find(r => r.id === value);
+                if (selectedReferral) {
+                  setFormData(prev => ({
+                    ...prev,
+                    referralDetails: {
+                      sourceName: selectedReferral.sourceName,
+                      contactNumber: selectedReferral.contactNumber,
+                      hospital: selectedReferral.hospital,
+                      specialization: selectedReferral.specialization
+                    }
+                  }));
+                } else {
+                  setFormData(prev => ({
+                    ...prev,
+                    referralDetails: { sourceName: '', contactNumber: '', hospital: '', specialization: '' }
+                  }));
+                }
+              }}
+              placeholder="Select doctor referral source"
+              aria-label="Doctor referral source"
             />
           </div>
         )}
+
+        {/* Commented out custom referral source creation - not needed right now */}
+        {/* 
+        {formData.referralSource === 'Doctor Referral' && !formData.selectedReferralId && (
+          <div className="mt-4">
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+              Custom Referral Details
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+                  Source Name *
+                </label>
+                <input
+                  type="text"
+                  id="customSourceName"
+                  value={formData.referralDetails.sourceName}
+                  onChange={(e) => updateReferralDetails('sourceName', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                  placeholder="e.g., Dr. Smith"
+                  aria-label="Custom source name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+                  Contact Number *
+                </label>
+                <input
+                  type="tel"
+                  id="customContactNumber"
+                  value={formData.phoneNumber}
+                  onChange={(e) => updateReferralDetails('contactNumber', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                  placeholder="e.g., 9876543210"
+                  aria-label="Custom contact number"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+                  Hospital (if applicable)
+                </label>
+                <input
+                  type="text"
+                  id="customHospital"
+                  value={formData.referralDetails.hospital}
+                  onChange={(e) => updateReferralDetails('hospital', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                  placeholder="e.g., ABC Hospital"
+                  aria-label="Custom hospital"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+                  Specialization (if applicable)
+                </label>
+                <input
+                  type="text"
+                  id="customSpecialization"
+                  value={formData.referralDetails.specialization}
+                  onChange={(e) => updateReferralDetails('specialization', e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                  placeholder="e.g., ENT Specialist"
+                  aria-label="Custom specialization"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        */}
       </div>
     </div>
   );
