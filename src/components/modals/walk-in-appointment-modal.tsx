@@ -4,11 +4,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
-import { Audiologist, Procedure, CreateAppointmentData, User, ReferralSource } from '@/types';
+import { Audiologist, Procedure, CreateAppointmentData, User, Doctor } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
-import { referralService } from '@/services/referralService';
+import { doctorService } from '@/services/doctorService';
 
 interface NewAppointment {
   id: string;
@@ -106,7 +106,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const [userLookupLoading, setUserLookupLoading] = useState(false);
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([]);
   const [totalProcedureDuration, setTotalProcedureDuration] = useState(0);
-  const [referrals, setReferrals] = useState<ReferralSource[]>([]); // State for referrals
+  const [referralDoctors, setReferralDoctors] = useState<Doctor[]>([]); // State for referral doctors
 
   // Load audiologists from API
   const loadAudiologists = useCallback(async () => {
@@ -132,13 +132,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     }
   }, [token]);
 
-  // Load referrals from API
-  const loadReferrals = useCallback(async () => {
+  // Load referral doctors from API
+  const loadReferralDoctors = useCallback(async () => {
     try {
-      const response = await referralService.getReferrals(token || undefined);
-      setReferrals(response.data);
+      const response = await doctorService.getDoctors(token || undefined);
+      setReferralDoctors(response.data);
     } catch (error) {
-      console.error('Error loading referrals:', error);
+      console.error('Error loading referral doctors:', error);
     }
   }, [token]);
 
@@ -180,9 +180,9 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       // Load audiologists and procedures
       loadAudiologists();
       loadProcedures();
-      loadReferrals(); // Load referrals when modal opens
+      loadReferralDoctors(); // Load referral doctors when modal opens
     }
-  }, [isOpen, loadAudiologists, loadProcedures, loadReferrals]);
+  }, [isOpen, loadAudiologists, loadProcedures, loadReferralDoctors]);
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
@@ -315,15 +315,15 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         };
       } else if (formData.referralSource === 'Doctor Referral') {
         if (formData.selectedReferralId) {
-          // Use existing referral - get the referral details and send as referralSource object
-          const selectedReferral = referrals.find(r => r.id === formData.selectedReferralId);
-          if (selectedReferral) {
+          // Use existing referral doctor - get the doctor details and send as referralSource object
+          const selectedDoctor = referralDoctors.find(d => d.id === formData.selectedReferralId);
+          if (selectedDoctor) {
             referralSourceData = {
               type: 'doctor',
-              sourceName: selectedReferral.sourceName,
-              contactNumber: selectedReferral.contactNumber,
-              hospital: selectedReferral.hospital,
-              specialization: selectedReferral.specialization
+              sourceName: selectedDoctor.name,
+              contactNumber: selectedDoctor.phoneNumber,
+              hospital: selectedDoctor.facilityName || '',
+              specialization: selectedDoctor.specialization || ''
             };
           }
         } else {
@@ -827,19 +827,19 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
               Select Doctor Referral
             </label>
             <CustomDropdown
-              options={referrals.map(r => ({ value: r.id || '', label: r.sourceName }))}
+              options={referralDoctors.map(d => ({ value: d.id || '', label: d.name }))}
               value={formData.selectedReferralId}
               onChange={(value) => {
                 handleInputChange('selectedReferralId', value);
-                const selectedReferral = referrals.find(r => r.id === value);
-                if (selectedReferral) {
+                const selectedDoctor = referralDoctors.find(d => d.id === value);
+                if (selectedDoctor) {
                   setFormData(prev => ({
                     ...prev,
                     referralDetails: {
-                      sourceName: selectedReferral.sourceName,
-                      contactNumber: selectedReferral.contactNumber,
-                      hospital: selectedReferral.hospital,
-                      specialization: selectedReferral.specialization
+                      sourceName: selectedDoctor.name,
+                      contactNumber: selectedDoctor.phoneNumber,
+                      hospital: selectedDoctor.facilityName || '',
+                      specialization: selectedDoctor.specialization || ''
                     }
                   }));
                 } else {

@@ -111,7 +111,15 @@ export class InventoryService {
   }
 
   // Get inventory transactions
-  static async getInventoryTransactions(page: number = 1, limit: number = 10): Promise<PaginatedResponse<InventoryTransaction>> {
+  static async getInventoryTransactions(page: number = 1, limit: number = 10): Promise<{
+    transactions: InventoryTransaction[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
     try {
       const response = await fetch(`${API_BASE_URL}/inventory/transactions?page=${page}&limit=${limit}`, {
         method: 'GET',
@@ -122,7 +130,10 @@ export class InventoryService {
         throw new Error(`Failed to fetch inventory transactions: ${response.status} ${response.statusText}`);
       }
 
-      const data: ApiResponse<PaginatedResponse<InventoryTransaction>> = await response.json();
+      const data = await response.json();
+      console.log('Raw API response:', data); // Debug log
+      
+      // Return the data directly since the API structure is different from PaginatedResponse
       return data.data;
     } catch (error) {
       console.error('Error fetching inventory transactions:', error);

@@ -1,120 +1,88 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/utils';
 import AddStockModal from '@/components/modals/add-stock-modal';
 import ConsumeStockModal from '@/components/modals/consume-stock-modal';
+import { InventoryService } from '@/services/inventoryService';
+import { InventoryTransaction } from '@/types';
 
 type TabType = 'transaction-history' | 'stock-additions' | 'stock-consumptions';
-
-interface TransactionData {
-  id: string;
-  date: string;
-  time: string;
-  item: string;
-  quantity: string;
-  type: string;
-  supplier?: {
-    name: string;
-    contact: string;
-    phone: string;
-  };
-  batch?: string;
-  expiry?: string;
-  purchasePrice?: string;
-  warranty?: string;
-  patient?: {
-    name: string;
-    id: string;
-  };
-  reason?: string;
-  invoice?: string;
-  authorizedBy: string;
-}
-
-const transactionData: TransactionData[] = [
-  {
-    id: '1',
-    date: '10 Jun 2025',
-    time: '12:00 am',
-    item: 'Phonak Audéo Paradise P90 Left',
-    quantity: '+10',
-    type: 'addition',
-    supplier: {
-      name: 'Phonak India Pvt Ltd',
-      contact: 'Amit Sharma',
-      phone: '+91 22 4567 8901'
-    },
-    batch: 'PHK2025L001',
-    expiry: 'Exp: 10 Sept 2026',
-    purchasePrice: '₹47,500',
-    warranty: '24 months',
-    authorizedBy: 'Dr. Sarah Johnson'
-  },
-  {
-    id: '2',
-    date: '05 May 2025',
-    time: '12:00 am',
-    item: 'Zinc-Air Battery Size 312',
-    quantity: '+300',
-    type: 'addition',
-    supplier: {
-      name: 'PowerOne Battery Distributors',
-      contact: 'Suresh Reddy',
-      phone: '+91 40 7890 1234'
-    },
-    batch: 'P1-312-2025',
-    expiry: 'Exp: 31 Dec 2026',
-    purchasePrice: '₹85',
-    warranty: '',
-    authorizedBy: 'Dr. Michael Chen'
-  },
-  {
-    id: '3',
-    date: '15 Jun 2025',
-    time: '12:00 am',
-    item: 'Phonak Audéo Paradise P90 Left',
-    quantity: '-2',
-    type: 'consumption',
-    patient: {
-      name: 'Robert Wilson',
-      id: 'PAT001'
-    },
-    reason: 'Sales',
-    invoice: 'INV004',
-    authorizedBy: 'Dr. Sarah Johnson'
-  },
-  {
-    id: '4',
-    date: '28 May 2025',
-    time: '12:00 am',
-    item: 'Zinc-Air Battery Size 312',
-    quantity: '-50',
-    type: 'consumption',
-    reason: 'Battery replacement service',
-    invoice: '-',
-    authorizedBy: 'Dr. Jennifer Lee'
-  }
-];
 
 export default function InventoryAdjustmentsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('transaction-history');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [showConsumeStockModal, setShowConsumeStockModal] = useState(false);
+  
+  // API state
+  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
-  const filteredTransactions = transactionData.filter(transaction =>
-    transaction.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.patient?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fetch transactions from API
+  const fetchTransactions = async (page: number = 1, limit: number = 10) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await InventoryService.getInventoryTransactions(page, limit);
+      
+      console.log('API Response:', response); // Debug log
+      
+      // The API returns { data: { transactions: [], pagination: {} } }
+      // The service extracts data.data, so response should have transactions and pagination
+      if (response && 'transactions' in response && Array.isArray(response.transactions)) {
+        console.log('Using transactions structure:', response.transactions.length, 'items');
+        setTransactions(response.transactions as InventoryTransaction[]);
+        setPagination(response.pagination);
+      } else if (response && 'items' in response && Array.isArray(response.items)) {
+        // Fallback to items structure if needed
+        console.log('Using items structure:', response.items.length, 'items');
+        setTransactions(response.items as InventoryTransaction[]);
+        setPagination(response.pagination);
+      } else {
+        console.error('Unexpected response structure:', response);
+        setTransactions([]);
+        setPagination({ page: 1, limit: 10, total: 0, totalPages: 0 });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch transactions';
+      setError(errorMessage);
+      console.error('Error fetching transactions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load transactions on component mount
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  // Refresh transactions after modal operations
+  const refreshTransactions = () => {
+    fetchTransactions(pagination.page, pagination.limit);
+  };
+
+  const filteredTransactions = (transactions || []).filter(transaction =>
+    transaction.item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.authorizedBy?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const stockAdditions = filteredTransactions.filter(t => t.type === 'addition');
   const stockConsumptions = filteredTransactions.filter(t => t.type === 'consumption');
 
-  const getQuantityBadge = (quantity: string, type: string) => {
-    const isPositive = quantity.startsWith('+');
+  const getQuantityBadge = (quantity: number, type: string) => {
+    const isPositive = type === 'addition';
     return (
       <span className={cn(
         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
@@ -122,7 +90,7 @@ export default function InventoryAdjustmentsPage() {
           ? 'bg-green-100 text-green-800' 
           : 'bg-red-100 text-red-800'
       )} style={{ fontFamily: 'Segoe UI' }}>
-        {quantity}
+        {isPositive ? `+${quantity}` : `-${quantity}`}
       </span>
     );
   };
@@ -146,6 +114,21 @@ export default function InventoryAdjustmentsPage() {
         {config.label}
       </span>
     );
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const renderTransactionHistory = () => (
@@ -200,12 +183,15 @@ export default function InventoryAdjustmentsPage() {
                 <tr key={transaction.id} className="hover:bg-[#F9FAFB] transition-colors">
                   <td className="px-6 py-4">
                     <div className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.date}
+                      {formatDate(transaction.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.item}
+                      {transaction.item.itemName}
+                    </div>
+                    <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                      {transaction.item.itemCode} - {transaction.item.brand}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -214,30 +200,34 @@ export default function InventoryAdjustmentsPage() {
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                        {transaction.supplier?.name}
+                        {transaction.supplierName || '-'}
                       </div>
                       <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                        {transaction.supplier?.contact}
+                        {transaction.supplierContact || '-'}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.batch}
+                      {transaction.batchNumber || '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.purchasePrice}
+                      {transaction.purchasePrice ? `₹${transaction.purchasePrice.toLocaleString()}` : '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.authorizedBy}
+                      {transaction.authorizedBy || '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-[#4A5565] hover:text-[#101828] transition-colors">
+                    <button 
+                      className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                      aria-label="View transaction details"
+                      title="View transaction details"
+                    >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
@@ -300,44 +290,49 @@ export default function InventoryAdjustmentsPage() {
                 <tr key={transaction.id} className="hover:bg-[#F9FAFB] transition-colors">
                   <td className="px-6 py-4">
                     <div className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.date}
+                      {formatDate(transaction.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.item}
+                      {transaction.item.itemName}
+                    </div>
+                    <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                      {transaction.item.itemCode} - {transaction.item.brand}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     {getQuantityBadge(transaction.quantity, transaction.type)}
                   </td>
                   <td className="px-6 py-4">
-                    {getTypeBadge(transaction.reason || '')}
+                    {getTypeBadge('Consumption')}
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                        {transaction.patient?.name || transaction.reason}
+                        Stock Consumption
                       </div>
-                      {transaction.patient?.id && (
-                        <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                          ID: {transaction.patient.id}
-                        </div>
-                      )}
+                      <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                        {transaction.type}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.invoice}
+                      -
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.authorizedBy}
+                      {transaction.authorizedBy || '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-[#4A5565] hover:text-[#101828] transition-colors">
+                    <button 
+                      className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                      aria-label="View transaction details"
+                      title="View transaction details"
+                    >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
@@ -406,16 +401,19 @@ export default function InventoryAdjustmentsPage() {
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     <div className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.date}
+                      {formatDate(transaction.createdAt)}
                     </div>
                     <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.time}
+                      {formatTime(transaction.createdAt)}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.item}
+                    {transaction.item.itemName}
+                  </div>
+                  <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                    {transaction.item.itemCode} - {transaction.item.brand}
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -424,29 +422,26 @@ export default function InventoryAdjustmentsPage() {
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.supplier?.name}
+                      {transaction.supplierName || '-'}
                     </div>
                     <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.supplier?.contact}
-                    </div>
-                    <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.supplier?.phone}
+                      {transaction.supplierContact || '-'}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     <div className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.batch}
+                      {transaction.batchNumber || '-'}
                     </div>
                     <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.expiry}
+                      {transaction.expiryDate ? `Exp: ${formatDate(transaction.expiryDate)}` : '-'}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.purchasePrice}
+                    {transaction.purchasePrice ? `₹${transaction.purchasePrice.toLocaleString()}` : '-'}
                   </span>
                 </td>
                 <td className="px-6 py-4">
@@ -456,11 +451,15 @@ export default function InventoryAdjustmentsPage() {
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.authorizedBy}
+                    {transaction.authorizedBy || '-'}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-[#4A5565] hover:text-[#101828] transition-colors">
+                  <button 
+                    className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                    aria-label="View transaction details"
+                    title="View transaction details"
+                  >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                     </svg>
@@ -525,48 +524,53 @@ export default function InventoryAdjustmentsPage() {
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     <div className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.date}
+                      {formatDate(transaction.createdAt)}
                     </div>
                     <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.time}
+                      {formatTime(transaction.createdAt)}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.item}
+                    {transaction.item.itemName}
+                  </div>
+                  <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                    {transaction.item.itemCode} - {transaction.item.brand}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   {getQuantityBadge(transaction.quantity, transaction.type)}
                 </td>
                 <td className="px-6 py-4">
-                  {getTypeBadge(transaction.reason || '')}
+                  {getTypeBadge('Consumption')}
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-1">
                     <div className="text-sm font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                      {transaction.patient?.name || transaction.reason}
+                      Stock Consumption
                     </div>
-                    {transaction.patient?.id && (
-                      <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                        ID: {transaction.patient.id}
-                      </div>
-                    )}
+                    <div className="text-xs text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                      {transaction.type}
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.invoice}
+                    -
                   </span>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    {transaction.authorizedBy}
+                    {transaction.authorizedBy || '-'}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-[#4A5565] hover:text-[#101828] transition-colors">
+                  <button 
+                    className="text-[#4A5565] hover:text-[#101828] transition-colors"
+                    aria-label="View transaction details"
+                    title="View transaction details"
+                  >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                     </svg>
@@ -579,6 +583,36 @@ export default function InventoryAdjustmentsPage() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
+          <span className="ml-2 text-[#4A5565]">Loading transactions...</span>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6 text-center">
+          <div className="text-red-500">
+            <p className="font-medium">Error loading transactions</p>
+            <p className="text-sm">{error}</p>
+            <button 
+              onClick={() => fetchTransactions()}
+              className="mt-2 px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -707,11 +741,13 @@ export default function InventoryAdjustmentsPage() {
         {/* Modals */}
         <AddStockModal 
           isOpen={showAddStockModal} 
-          onClose={() => setShowAddStockModal(false)} 
+          onClose={() => setShowAddStockModal(false)}
+          onSuccess={refreshTransactions}
         />
         <ConsumeStockModal 
           isOpen={showConsumeStockModal} 
-          onClose={() => setShowConsumeStockModal(false)} 
+          onClose={() => setShowConsumeStockModal(false)}
+          onSuccess={refreshTransactions}
         />
       </div>
     </MainLayout>
