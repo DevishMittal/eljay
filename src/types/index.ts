@@ -474,10 +474,64 @@ export interface CreateDiagnosticData {
 }
 
 export interface UpdateDiagnosticData {
-  name: string;
-  category: string;
-  price: number;
-  description: string;
+  name?: string;
+  category?: string;
+  price?: number;
+  description?: string;
+}
+
+// Diagnostic Appointment types
+export interface DiagnosticAppointment {
+  id: string;
+  audiologistId: string;
+  userId: string;
+  referralSourceId?: string;
+  appointmentDate: string;
+  appointmentDuration: number;
+  appointmentTime: string;
+  procedures: string;
+  status: 'planned' | 'completed' | 'cancelled';
+  cost?: number;
+  assignedDoctor?: string;
+  files?: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    fullname: string;
+    email: string;
+    phoneNumber: string;
+  };
+  audiologist: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface DiagnosticAppointmentsResponse {
+  status: string;
+  data: {
+    appointments: DiagnosticAppointment[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface CreateDiagnosticAppointmentData {
+  userId: string;
+  audiologistId: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  appointmentDuration: number;
+  procedures: string;
+  cost: number;
+  status: 'planned' | 'completed' | 'cancelled';
+  referralSourceId?: string;
 }
 
 // Staff types

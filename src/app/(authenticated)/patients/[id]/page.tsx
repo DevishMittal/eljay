@@ -6,13 +6,15 @@ import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Patient, UpdatePatientData, UserAppointment, ClinicalNote } from '@/types';
+import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment } from '@/types';
 import { patientService } from '@/services/patientService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
+import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import ClinicalNoteModal from '@/components/modals/clinical-note-modal';
+import CreateDiagnosticPlanModal from '@/components/modals/create-diagnostic-plan-modal';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +42,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [showClinicalNoteModal, setShowClinicalNoteModal] = useState(false);
   const [editingNote, setEditingNote] = useState<ClinicalNote | null>(null);
   const [isEditingNote, setIsEditingNote] = useState(false);
+
+  // Diagnostic Appointments state
+  const [diagnosticAppointments, setDiagnosticAppointments] = useState<DiagnosticAppointment[]>([]);
+  const [diagnosticAppointmentsLoading, setDiagnosticAppointmentsLoading] = useState(false);
+  const [showDiagnosticPlanModal, setShowDiagnosticPlanModal] = useState(false);
 
   const fetchPatient = useCallback(async () => {
     try {
@@ -85,6 +92,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [patient, token]);
 
+  const fetchDiagnosticAppointments = useCallback(async () => {
+    if (!patient || !token) return;
+    
+    try {
+      setDiagnosticAppointmentsLoading(true);
+      const response = await diagnosticAppointmentsService.getDiagnosticAppointments(token);
+      setDiagnosticAppointments(response.data.appointments);
+    } catch (err) {
+      console.error('Error fetching diagnostic appointments:', err);
+      // Don't show error for diagnostic appointments, just log it
+    } finally {
+      setDiagnosticAppointmentsLoading(false);
+    }
+  }, [patient, token]);
+
   useEffect(() => {
     fetchPatient();
   }, [fetchPatient]);
@@ -99,8 +121,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     if (patient && activeSection === 'emr') {
       // Fetch clinical notes when EMR section is opened
       fetchClinicalNotes();
+      // Fetch diagnostic appointments when EMR section is opened
+      fetchDiagnosticAppointments();
     }
-  }, [fetchClinicalNotes, activeSection, patient]);
+  }, [fetchClinicalNotes, fetchDiagnosticAppointments, activeSection, patient]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -234,6 +258,17 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     // Refresh the list
     fetchClinicalNotes();
   };
+
+  const handleDiagnosticPlanClick = (appointmentId: string) => {
+    // Navigate to individual diagnostic plan page
+    router.push(`/patients/${patient?.id}/diagnostics/${appointmentId}`);
+  };
+
+  const handleDiagnosticPlanCreated = useCallback((newAppointment: any) => {
+    // Refresh the diagnostics list
+    fetchDiagnosticAppointments();
+    // You can also add a success message here if needed
+  }, [fetchDiagnosticAppointments]);
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -965,27 +1000,114 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="diagnostics" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Diagnostics</h2>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">5 Plans</span>
+                      <div className="w-5 h-5 rounded flex items-center justify-center" style={{
+                        background: 'linear-gradient(135deg, #FF6900 0%, #F54900 100%)'
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M17.125 18.875V17.125C17.125 16.1967 16.7563 15.3065 16.0999 14.6501C15.4435 13.9937 14.5533 13.625 13.625 13.625H8.375C7.44674 13.625 6.5565 13.9937 5.90013 14.6501C5.24375 15.3065 4.875 16.1967 4.875 17.125V18.875" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <h2 className="text-sm font-semibold text-gray-900">Diagnostics</h2>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{diagnosticAppointments.length} Plans</span>
                     </div>
-                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                    <button 
+                      onClick={() => setShowDiagnosticPlanModal(true)}
+                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors text-xs"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                       <span>Create Diagnostic Plan</span>
                     </button>
                   </div>
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
+
+                  {/* Diagnostic Plans */}
+                  <div className="space-y-4 mb-8">
+                    {diagnosticAppointmentsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                        <p className="mt-2 text-gray-600 text-xs">Loading diagnostic plans...</p>
+                      </div>
+                    ) : diagnosticAppointments.length === 0 ? (
+                      <div className="text-center py-16">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-sm font-medium mb-2 text-gray-900">No diagnostic plans yet</h3>
+                        <p className="text-gray-500 text-xs mb-6">Create your first diagnostic plan to get started</p>
+                        <button 
+                          onClick={() => setShowDiagnosticPlanModal(true)}
+                          className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors text-xs"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>Create First Plan</span>
+                        </button>
+                      </div>
+                    ) : (
+                      diagnosticAppointments.map((appointment) => (
+                        <div 
+                          key={appointment.id} 
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => handleDiagnosticPlanClick(appointment.id)}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="font-medium text-gray-900 text-sm">{appointment.procedures || 'Not specified'}</h3>
+                                <span className={`px-2 py-1 text-xs rounded-full ${diagnosticAppointmentsService.getStatusColor(appointment.status || 'planned')}`}>
+                                  {appointment.status || 'planned'}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
+                                <div>
+                                  <span className="font-medium">Cost:</span> 
+                                  <span className="font-bold text-gray-900 ml-1">₹{appointment.cost ? appointment.cost.toLocaleString() : 'Not specified'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Planned:</span> 
+                                  <span className="ml-1">{appointment.appointmentDate ? diagnosticAppointmentsService.formatDate(appointment.appointmentDate) : 'Not scheduled'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Assigned to:</span> 
+                                  <span className="ml-1">{appointment.audiologist?.name || 'Not assigned'}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Files:</span> 
+                                  <span className="ml-1">{appointment.files ? appointment.files : 'No files'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Specialized Procedures Section */}
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="font-semibold text-gray-900 mb-4 text-sm">Specialized Procedures</h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 2.109 12 2.109s1.077 1.554 2.707 3.184L19.414 9H20a1 1 0 011 1v4a1 1 0 01-1 1h-1.586l-4.707 4.707C13.077 20.337 12 21.891 12 21.891s-1.077-1.554-2.707-3.184L4.586 15z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">Hearing Aid Trial (HAT)</h4>
+                          <p className="text-gray-600 text-xs">Record hearing aid trial sessions</p>
+                        </div>
+                        <div className="text-right text-gray-500 text-xs">
+                          <div>Last updated</div>
+                          <div>Never</div>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-sm font-medium mb-2 text-gray-900">Diagnostics Coming Soon</h3>
-                    <p className="text-gray-500 text-sm">Diagnostic functionality will be available soon.</p>
                   </div>
                 </div>
 
@@ -1176,6 +1298,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         note={editingNote}
         isEditing={isEditingNote}
         userId={patient?.id || ''}
+      />
+
+      {/* Create Diagnostic Plan Modal */}
+      <CreateDiagnosticPlanModal
+        isOpen={showDiagnosticPlanModal}
+        onClose={() => setShowDiagnosticPlanModal(false)}
+        onSuccess={handleDiagnosticPlanCreated}
+        patientId={patient?.id || ''}
       />
     </MainLayout>
   );
