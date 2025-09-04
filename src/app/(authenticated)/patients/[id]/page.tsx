@@ -6,11 +6,13 @@ import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice } from '@/types';
+import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
 import { patientService } from '@/services/patientService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
 import PatientInvoiceService from '@/services/patientInvoiceService';
+import PatientPaymentService from '@/services/patientPaymentService';
+import PatientPaymentHistoryService, { PaymentHistoryEvent } from '@/services/patientPaymentHistoryService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
@@ -51,6 +53,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   // Billing state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryEvent[]>([]);
   const [billingSummary, setBillingSummary] = useState({
     totalPaid: 0,
     outstanding: 0,
@@ -151,6 +156,26 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [patient, token]);
 
+  const fetchPayments = useCallback(async () => {
+    if (!patient || !token) return;
+    
+    try {
+      setPaymentsLoading(true);
+      const response = await PatientPaymentService.getAllPayments();
+      
+      // Filter payments for this specific patient
+      const patientPayments = response.data.payments.filter(payment => 
+        payment.patientName.toLowerCase() === patient.full_name.toLowerCase()
+      );
+      
+      setPayments(patientPayments);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [patient, token]);
+
   useEffect(() => {
     fetchPatient();
   }, [fetchPatient]);
@@ -172,10 +197,19 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     if (patient && activeSection === 'billing') {
-      // Fetch invoices when billing section is opened
+      // Fetch invoices and payments when billing section is opened
       fetchInvoices();
+      fetchPayments();
     }
-  }, [fetchInvoices, activeSection, patient]);
+  }, [fetchInvoices, fetchPayments, activeSection, patient]);
+
+  // Create payment history when both invoices and payments are available
+  useEffect(() => {
+    if (invoices.length > 0 || payments.length > 0) {
+      const history = PatientPaymentHistoryService.createPaymentHistory(invoices, payments);
+      setPaymentHistory(history);
+    }
+  }, [invoices, payments]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -1504,8 +1538,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       </div>
                     ) : invoices.length === 0 ? (
                       <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
@@ -1646,7 +1680,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     </svg>
                       <h2 className="text-lg font-semibold text-gray-900">Recent Payments</h2>
                   </div>
-                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                    <button 
+                      onClick={() => window.open('/billing/payments/record', '_blank')}
+                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                       </svg>
@@ -1655,23 +1692,98 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="font-medium text-gray-900">RCP-2025-001</h3>
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Full</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900">₹29,500.00</div>
-                          <div className="text-sm text-gray-600">Received by Reception Staff</div>
-                        </div>
+                    {paymentsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                        <span className="ml-2 text-gray-600">Loading payments...</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-                        <div><span className="font-medium">Date:</span> 15/6/2025</div>
-                        <div><span className="font-medium">Method:</span> Card</div>
-                        <div><span className="font-medium">Transaction ID:</span> TXN123456789</div>
+                    ) : payments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <h3 className="text-sm font-medium mb-2 text-gray-900">No payments found</h3>
+                        <p className="text-gray-500">This patient has no payment records yet.</p>
                       </div>
-                    </div>
+                    ) : (
+                      payments.map((payment) => (
+                        <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <h3 className="font-medium text-gray-900">{payment.receiptNumber}</h3>
+                              <span className={`px-2 py-1 text-xs rounded-full ${PatientPaymentService.getPaymentTypeColor(payment.paymentType)}`}>
+                                {payment.paymentType}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-900">₹{payment.amount.toLocaleString()}</div>
+                              <div className="text-sm text-gray-600">Received by {payment.receivedBy}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
+                            <div><span className="font-medium">Date:</span> {PatientPaymentService.formatDateForDisplay(payment.paymentDate)}</div>
+                            <div><span className="font-medium">Method:</span> 
+                              <span className={`ml-1 px-2 py-1 text-xs rounded-full ${PatientPaymentService.getMethodColor(payment.method)}`}>
+                                {payment.method}
+                              </span>
+                            </div>
+                            <div><span className="font-medium">Transaction ID:</span> {payment.transactionId}</div>
+                          </div>
+                          
+                          {/* Payment Status */}
+                          <div className="mb-4">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900">Status:</span>
+                              <span className={`px-2 py-1 text-xs rounded-full ${PatientPaymentService.getStatusColor(payment.status)}`}>
+                                {payment.status}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Notes if available */}
+                          {payment.notes && (
+                            <div className="mb-4">
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">Notes:</span> {payment.notes}
+                </div>
+              </div>
+            )}
+                          
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                            <div className="text-sm text-gray-600">
+                              Receipt: {payment.receiptNumber}
+            </div>
+                            <div className="flex items-center space-x-2">
+                              <button 
+                                onClick={() => window.open(`/billing/payments/${payment.id}`, '_blank')}
+                                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span className="text-gray-600">View</span>
+                              </button>
+                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span className="text-gray-600">Download</span>
+                              </button>
+                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-gray-600">Email</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -1685,45 +1797,113 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   </div>
                   
                   <div className="space-y-6">
-                    <div>
-                      <h3 className="font-medium mb-4 text-gray-900">Friday, June 20, 2025</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <span className="font-medium text-gray-900">Invoice Generated</span>
-                              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Pending</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Invoice: INV-2025-002 • Amount: ₹1,67,930.00 • Created by Dr. Sarah Johnson</p>
-                          </div>
-                        </div>
+                    {paymentsLoading || invoicesLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                        <span className="ml-2 text-gray-600">Loading payment history...</span>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-medium mb-4 text-gray-900">Sunday, June 15, 2025</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <span className="font-medium text-gray-900">Invoice Generated</span>
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Paid</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Invoice: INV-2025-001 • Amount: ₹29,500.00 • Created by Dr. Sarah Johnson</p>
-                          </div>
+                    ) : paymentHistory.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                         </div>
-                        
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <span className="font-medium text-gray-900">Payment Received</span>
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Completed</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Amount: ₹29,500.00 • Method: Card • Transaction ID: TXN123456789 • Processed by Reception Staff</p>
-                          </div>
-                        </div>
+                        <h3 className="text-sm font-medium mb-2 text-gray-900">No payment history found</h3>
+                        <p className="text-gray-500">This patient has no payment or invoice history yet.</p>
                       </div>
-                    </div>
+                    ) : (
+                      (() => {
+                        const groupedEvents = PatientPaymentHistoryService.groupEventsByDate(paymentHistory);
+                        return Object.entries(groupedEvents).map(([date, events]) => (
+                          <div key={date}>
+                            <h3 className="font-medium mb-4 text-gray-900">{date}</h3>
+                            <div className="space-y-3">
+                              {events.map((event, index) => (
+                                <div key={event.id} className="flex items-start space-x-4">
+                                  {/* Event Icon */}
+                                  <div className={`w-8 h-8 ${event.iconColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                    {event.type === 'invoice_generated' ? (
+                                      <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Event Content */}
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <span className="font-medium text-gray-900">{event.title}</span>
+                                      <span className="text-sm text-gray-500">{event.time}</span>
+                                      <span className={`px-2 py-1 text-xs rounded-full ${event.statusColor}`}>
+                                        {event.status}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="text-sm text-gray-600">
+                                      {event.type === 'invoice_generated' ? (
+                                        <p>
+                                          Invoice: {event.details.invoiceNumber} • 
+                                          Amount: {PatientPaymentHistoryService.formatCurrency(event.details.amount)} • 
+                                          Created by {event.details.createdBy}
+                                        </p>
+                                      ) : (
+                                        <p>
+                                          Amount: {PatientPaymentHistoryService.formatCurrency(event.details.amount)} • 
+                                          Method: {event.details.method} • 
+                                          Transaction ID: {event.details.transactionId} • 
+                                          Processed by {event.details.processedBy}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center space-x-2">
+                                    <button 
+                                      onClick={() => {
+                                        if (event.type === 'invoice_generated') {
+                                          window.open(`/billing/invoices/${event.originalData.id}`, '_blank');
+                                        } else {
+                                          window.open(`/billing/payments/${event.originalData.id}`, '_blank');
+                                        }
+                                      }}
+                                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                      title="View"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                      title="Download"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                      title="Print"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()
+                    )}
                   </div>
                 </div>
               </div>
