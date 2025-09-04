@@ -1,190 +1,62 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
-
-// Sample data for expenses matching the image
-const expenseData = [
-  {
-    id: 1,
-    date: '12 Jun 2025',
-    expenseNumber: 'EXP-2025-010',
-    category: 'Travel',
-    description: 'Travel expenses for medical... Flights, hotel, and meals for ...',
-    amount: '₹22,000',
-    tax: '₹3,960',
-    paymentMethod: 'Cash',
-    vendor: 'Various Vendors'
-  },
-  {
-    id: 2,
-    date: '10 Jun 2025',
-    expenseNumber: 'EXP-2025-009',
-    category: 'Marketing',
-    description: 'Website maintenance and ... Annual hosting renewal and',
-    amount: '₹15,000',
-    tax: '₹2,700',
-    paymentMethod: 'Card',
-    vendor: 'TechSolutions ...'
-  },
-  {
-    id: 3,
-    date: '08 Jun 2025',
-    expenseNumber: 'EXP-2025-008',
-    category: 'Supplies',
-    description: 'Hearing aid batteries bulk ... Mixed sizes - 312, 13, 675 zi...',
-    amount: '₹12,000',
-    tax: '₹2,160',
-    paymentMethod: 'Cheque',
-    vendor: 'Battery World ...'
-  },
-  {
-    id: 4,
-    date: '05 Jun 2025',
-    expenseNumber: 'EXP-2025-007',
-    category: 'Equipment',
-    description: 'New audiometer purchase ... Professional grade diagnostic',
-    amount: '₹45,000',
-    tax: '₹8,100',
-    paymentMethod: 'Card',
-    vendor: 'Medical Equipment Co.'
-  },
-  {
-    id: 5,
-    date: '03 Jun 2025',
-    expenseNumber: 'EXP-2025-006',
-    category: 'Office',
-    description: 'Office supplies and stationery ... Paper, pens, folders, and',
-    amount: '₹8,500',
-    tax: '₹1,530',
-    paymentMethod: 'Cash',
-    vendor: 'Office Supplies Ltd.'
-  },
-  {
-    id: 6,
-    date: '01 Jun 2025',
-    expenseNumber: 'EXP-2025-005',
-    category: 'Utilities',
-    description: 'Electricity and water bills ... Monthly utility payments for',
-    amount: '₹18,000',
-    tax: '₹3,240',
-    paymentMethod: 'Bank Transfer',
-    vendor: 'City Utilities Board'
-  },
-  {
-    id: 7,
-    date: '30 May 2025',
-    expenseNumber: 'EXP-2025-004',
-    category: 'Insurance',
-    description: 'Professional liability insurance ... Annual premium payment',
-    amount: '₹25,000',
-    tax: '₹4,500',
-    paymentMethod: 'Card',
-    vendor: 'Healthcare Insurance Co.'
-  },
-  {
-    id: 8,
-    date: '28 May 2025',
-    expenseNumber: 'EXP-2025-003',
-    category: 'Training',
-    description: 'Staff training and certification ... Professional development',
-    amount: '₹35,000',
-    tax: '₹6,300',
-    paymentMethod: 'Cheque',
-    vendor: 'Training Institute'
-  },
-  {
-    id: 9,
-    date: '25 May 2025',
-    expenseNumber: 'EXP-2025-002',
-    category: 'Maintenance',
-    description: 'Equipment maintenance and repair ... Regular service and',
-    amount: '₹12,500',
-    tax: '₹2,250',
-    paymentMethod: 'Cash',
-    vendor: 'Service Center'
-  },
-  {
-    id: 10,
-    date: '22 May 2025',
-    expenseNumber: 'EXP-2025-001',
-    category: 'Software',
-    description: 'Practice management software ... Annual license renewal',
-    amount: '₹40,000',
-    tax: '₹7,200',
-    paymentMethod: 'Card',
-    vendor: 'Software Solutions Inc.'
-  }
-];
-
-const summaryCards = [
-  {
-    title: 'Total Expenses',
-    value: '₹2,49,000',
-    icon: (
-      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-      </div>
-    ),
-    color: 'text-red-600'
-  },
-  {
-    title: 'Cash Expenses',
-    value: '₹NaN',
-    icon: (
-      <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-        <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-      </div>
-    ),
-    color: 'text-yellow-600'
-  },
-  {
-    title: 'Categories',
-    value: '1',
-    icon: (
-      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-    ),
-    color: 'text-blue-600'
-  },
-  {
-    title: 'Average Expense',
-    value: '₹24,900',
-    icon: (
-      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-      </div>
-    ),
-    color: 'text-purple-600'
-  }
-];
+import ExpenseService from '@/services/expenseService';
+import { Expense, ExpensesResponse } from '@/types';
 
 export default function ExpensesPage() {
-  const [selectedExpenses, setSelectedExpenses] = useState<number[]>([]);
+  const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState({
+    totalAmount: 0,
+    totalTax: 0,
+    count: 0
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 0
+  });
 
-  const handleSelectAll = () => {
-    if (selectedExpenses.length === expenseData.length) {
-      setSelectedExpenses([]);
-    } else {
-      setSelectedExpenses(expenseData.map(expense => expense.id));
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const fetchExpenses = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response: ExpensesResponse = await ExpenseService.getExpenses(page, 10);
+      setExpenses(response.data.expenses);
+      setSummary(response.data.summary);
+      setPagination(response.data.pagination);
+    } catch (error: any) {
+      setError(error.message || 'Failed to fetch expenses');
+      console.error('Error fetching expenses:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSelectExpense = (id: number) => {
+  const handleSelectAll = () => {
+    if (selectedExpenses.length === expenses.length) {
+      setSelectedExpenses([]);
+    } else {
+      setSelectedExpenses(expenses.map(expense => expense.id));
+    }
+  };
+
+  const handleSelectExpense = (id: string) => {
     setSelectedExpenses(prev => 
       prev.includes(id) 
         ? prev.filter(expenseId => expenseId !== id)
@@ -238,6 +110,101 @@ export default function ExpensesPage() {
     window.location.href = '/billing/expenses/add';
   };
 
+  const filteredExpenses = expenses.filter(expense =>
+    expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    expense.expenseNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const summaryCards = [
+    {
+      title: 'Total Expenses',
+      value: `₹${summary.totalAmount.toLocaleString()}`,
+      icon: (
+        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+          <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        </div>
+      ),
+      color: 'text-red-600'
+    },
+    {
+      title: 'Total Tax',
+      value: `₹${summary.totalTax.toLocaleString()}`,
+      icon: (
+        <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        </div>
+      ),
+      color: 'text-yellow-600'
+    },
+    {
+      title: 'Total Count',
+      value: summary.count.toString(),
+      icon: (
+        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+      ),
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Average Expense',
+      value: summary.count > 0 ? `₹${Math.round(summary.totalAmount / summary.count).toLocaleString()}` : '₹0',
+      icon: (
+        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+          <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        </div>
+      ),
+      color: 'text-purple-600'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center space-x-3">
+              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-lg font-medium text-red-800">Error Loading Expenses</h3>
+                <p className="text-red-600">{error}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button onClick={() => fetchExpenses()} className="bg-red-600 hover:bg-red-700">
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -286,7 +253,7 @@ export default function ExpensesPage() {
             {/* Section Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                Expenses {expenseData.length}
+                Expenses {expenses.length}
               </h2>
             </div>
 
@@ -310,7 +277,7 @@ export default function ExpensesPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                   </svg>
-                  All Categorie
+                  All Categories
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -319,7 +286,7 @@ export default function ExpensesPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                   </svg>
-                  All Payment
+                  All Payment Methods
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -335,7 +302,7 @@ export default function ExpensesPage() {
                     <th className="text-left py-3 px-4">
                       <input
                         type="checkbox"
-                        checked={selectedExpenses.length === expenseData.length}
+                        checked={selectedExpenses.length === expenses.length}
                         onChange={handleSelectAll}
                         className="rounded border-gray-300"
                         aria-label="Select all expenses"
@@ -372,22 +339,28 @@ export default function ExpensesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                                     {expenseData.map((expense) => (
-                     <tr 
-                       key={expense.id} 
-                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                       onClick={() => window.location.href = `/billing/expenses/${expense.expenseNumber}`}
-                     >
-                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                         <input
-                           type="checkbox"
-                           checked={selectedExpenses.includes(expense.id)}
-                           onChange={() => handleSelectExpense(expense.id)}
-                           className="rounded border-gray-300"
-                           aria-label={`Select expense ${expense.expenseNumber}`}
-                         />
-                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{expense.date}</td>
+                  {filteredExpenses.map((expense) => (
+                    <tr 
+                      key={expense.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => window.location.href = `/billing/expenses/${expense.id}`}
+                    >
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedExpenses.includes(expense.id)}
+                          onChange={() => handleSelectExpense(expense.id)}
+                          className="rounded border-gray-300"
+                          aria-label={`Select expense ${expense.expenseNumber}`}
+                        />
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {new Date(expense.date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{expense.expenseNumber}</td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getCategoryColor(expense.category))}>
@@ -397,8 +370,8 @@ export default function ExpensesPage() {
                       <td className="py-3 px-4 text-sm text-gray-900 max-w-xs truncate">{expense.description}</td>
                       <td className="py-3 px-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{expense.amount}</div>
-                          <div className="text-xs text-gray-500">Tax: {expense.tax}</div>
+                          <div className="text-sm font-medium text-gray-900">₹{expense.amount.toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">Tax: ₹{expense.taxAmount.toLocaleString()}</div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -407,29 +380,29 @@ export default function ExpensesPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900 max-w-xs truncate">{expense.vendor}</td>
-                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                         <div className="flex space-x-2">
-                           <button 
-                             onClick={() => window.location.href = `/billing/expenses/${expense.expenseNumber}`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`View expense ${expense.expenseNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                             </svg>
-                           </button>
-                           <button 
-                             onClick={() => window.location.href = `/billing/expenses/${expense.expenseNumber}/edit`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`Edit expense ${expense.expenseNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                             </svg>
-                           </button>
-                         </div>
-                       </td>
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => window.location.href = `/billing/expenses/${expense.id}`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`View expense ${expense.expenseNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => window.location.href = `/billing/expenses/${expense.id}/edit`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`Edit expense ${expense.expenseNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -439,7 +412,7 @@ export default function ExpensesPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Showing 1 to {expenseData.length} of {expenseData.length} expenses
+                Showing 1 to {expenses.length} of {pagination.total} expenses
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>

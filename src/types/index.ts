@@ -894,3 +894,68 @@ export interface PaymentResponse {
   status: string;
   data: Payment;
 }
+
+// Expense types
+export interface Expense {
+  id: string;
+  expenseNumber: string;
+  organizationId: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  taxAmount: number;
+  totalAmount: number;
+  paymentMethod: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  vendor: string;
+  approvedBy: string | null;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpenseData {
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  taxAmount: number;
+  paymentMethod: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  vendor: string;
+  remarks?: string;
+}
+
+export interface UpdateExpenseData {
+  date?: string;
+  category?: string;
+  description?: string;
+  amount?: number;
+  taxAmount?: number;
+  paymentMethod?: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  vendor?: string;
+  approvedBy?: string;
+  remarks?: string;
+}
+
+export interface ExpensesResponse {
+  status: string;
+  data: {
+    expenses: Expense[];
+    summary: {
+      totalAmount: number;
+      totalTax: number;
+      count: number;
+    };
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface ExpenseResponse {
+  status: string;
+  data: Expense;
+}

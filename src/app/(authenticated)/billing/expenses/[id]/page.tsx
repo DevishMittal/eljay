@@ -1,31 +1,41 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
-
-// Sample expense data - in real app this would come from API
-const expenseData = {
-  id: 'EXP-2025-010',
-  expenseNumber: 'EXP-2025-010',
-  expenseDate: '12 Jun 2025',
-  category: 'Travel',
-  paymentMethod: 'Cash',
-  description: 'Travel expenses for medical conference',
-  vendor: 'Various Vendors',
-  notes: 'Flights, hotel, and meals for ENT conference in Mumbai',
-  expenseAmount: '₹22,000',
-  taxAmount: '₹3,960',
-  totalAmount: '₹25,960',
-  createdDate: '12 Jun 2025, 00:00'
-};
+import ExpenseService from '@/services/expenseService';
+import { Expense } from '@/types';
 
 export default function ExpenseDetailsPage() {
   const params = useParams();
-  const expenseId = params.id;
+  const expenseId = params.id as string;
+
+  const [expense, setExpense] = useState<Expense | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (expenseId) {
+      fetchExpense();
+    }
+  }, [expenseId]);
+
+  const fetchExpense = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ExpenseService.getExpense(expenseId);
+      setExpense(response.data);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch expense details');
+      console.error('Error fetching expense:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     window.location.href = '/billing/expenses';
@@ -86,6 +96,43 @@ export default function ExpenseDetailsPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !expense) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center space-x-3">
+              <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-lg font-medium text-red-800">Error Loading Expense</h3>
+                <p className="text-red-600">{error || 'Expense not found'}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button onClick={handleBack} className="bg-red-600 hover:bg-red-700">
+                Go Back
+              </Button>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -106,7 +153,7 @@ export default function ExpenseDetailsPage() {
                 Expense Details
               </h1>
               <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                {expenseData.expenseNumber}
+                {expense.expenseNumber}
               </p>
             </div>
           </div>
@@ -164,36 +211,44 @@ export default function ExpenseDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Expense Number</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.expenseNumber}</p>
+                    <p className="text-lg font-semibold text-gray-900">{expense.expenseNumber}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Expense Date</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.expenseDate}</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {new Date(expense.date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getCategoryColor(expenseData.category))}>
-                      {expenseData.category}
+                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getCategoryColor(expense.category))}>
+                      {expense.category}
                     </span>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(expenseData.paymentMethod))}>
-                      {expenseData.paymentMethod}
+                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(expense.paymentMethod))}>
+                      {expense.paymentMethod}
                     </span>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.description}</p>
+                    <p className="text-lg font-semibold text-gray-900">{expense.description}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Vendor</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.vendor}</p>
+                    <p className="text-lg font-semibold text-gray-900">{expense.vendor}</p>
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.notes}</p>
-                  </div>
+                  {expense.remarks && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                      <p className="text-lg font-semibold text-gray-900">{expense.remarks}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -215,15 +270,15 @@ export default function ExpenseDetailsPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Expense Amount (Amount before tax):</span>
-                    <span className="text-lg font-semibold text-gray-900">{expenseData.expenseAmount}</span>
+                    <span className="text-lg font-semibold text-gray-900">₹{expense.amount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Tax Amount (GST/Tax applied):</span>
-                    <span className="text-lg font-semibold text-gray-900">{expenseData.taxAmount}</span>
+                    <span className="text-lg font-semibold text-gray-900">₹{expense.taxAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                     <span className="text-lg font-semibold text-gray-900">Total Amount (Amount + Tax):</span>
-                    <span className="text-2xl font-bold text-blue-600">{expenseData.totalAmount}</span>
+                    <span className="text-2xl font-bold text-blue-600">₹{expense.totalAmount.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -249,12 +304,12 @@ export default function ExpenseDetailsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Name</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.vendor}</p>
+                    <p className="text-lg font-semibold text-gray-900">{expense.vendor}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(expenseData.paymentMethod))}>
-                      {expenseData.paymentMethod}
+                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(expense.paymentMethod))}>
+                      {expense.paymentMethod}
                     </span>
                   </div>
                 </div>
@@ -278,12 +333,32 @@ export default function ExpenseDetailsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Created Date</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.createdDate}</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {new Date(expense.createdAt).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Expense Date</label>
-                    <p className="text-lg font-semibold text-gray-900">{expenseData.expenseDate}</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {new Date(expense.date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </p>
                   </div>
+                  {expense.approvedBy && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Approved By</label>
+                      <p className="text-lg font-semibold text-gray-900">{expense.approvedBy}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -352,8 +427,8 @@ export default function ExpenseDetailsPage() {
                 </div>
 
                 <div>
-                  <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getCategoryColor(expenseData.category))}>
-                    {expenseData.category}
+                  <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getCategoryColor(expense.category))}>
+                    {expense.category}
                   </span>
                 </div>
               </CardContent>
