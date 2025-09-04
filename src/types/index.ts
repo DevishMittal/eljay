@@ -831,3 +831,66 @@ export interface InvoiceResponse {
   status: string;
   data: Invoice;
 }
+
+// Payment types
+export interface Payment {
+  id: string;
+  receiptNumber: string;
+  organizationId: string;
+  paymentDate: string;
+  patientName: string;
+  amount: number;
+  method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
+  status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
+  transactionId: string;
+  receivedBy: string;
+  paymentType: 'Full' | 'Partial';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentData {
+  paymentDate: string;
+  patientName: string;
+  amount: number;
+  method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
+  status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
+  transactionId: string;
+  receivedBy: string;
+  paymentType: 'Full' | 'Partial';
+  notes?: string;
+}
+
+export interface UpdatePaymentData {
+  paymentDate?: string;
+  amount?: number;
+  method?: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
+  status?: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
+  transactionId?: string;
+  receivedBy?: string;
+  paymentType?: 'Full' | 'Partial';
+  notes?: string;
+}
+
+export interface PaymentsResponse {
+  status: string;
+  data: {
+    payments: Payment[];
+    summary: {
+      totalAmount: number;
+      count: number;
+    };
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface PaymentResponse {
+  status: string;
+  data: Payment;
+}

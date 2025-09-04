@@ -1,170 +1,132 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
-
-
-// Sample data for payments matching the image
-const paymentData = [
-  {
-    id: 1,
-    date: '22 Jun 2025',
-    receiptNumber: 'RCP-2025-008',
-    patient: { name: 'Lisa Wang', id: 'PAT008' },
-    type: 'Finance Pr...',
-    amount: '₹6,750',
-    method: 'UPI',
-    status: 'Completed',
-    receivedBy: 'Dr. Sarah Johns...'
-  },
-  {
-    id: 2,
-    date: '18 Jun 2025',
-    receiptNumber: 'RCP-2025-007',
-    patient: { name: 'James Anderson', id: 'PAT007' },
-    type: 'Direct',
-    amount: '₹4,200',
-    method: 'Card',
-    status: 'Completed',
-    receivedBy: 'Dr. Jennifer Lee'
-  },
-  {
-    id: 3,
-    date: '15 Jun 2025',
-    receiptNumber: 'RCP-2025-006',
-    patient: { name: 'Maria Garcia', id: 'PAT006' },
-    type: 'HealthFirs...',
-    amount: '₹8,900',
-    method: 'Cash',
-    status: 'Completed',
-    receivedBy: 'Dr. Michael Chen'
-  },
-  {
-    id: 4,
-    date: '12 Jun 2025',
-    receiptNumber: 'RCP-2025-005',
-    patient: { name: 'David Kim', id: 'PAT005' },
-    type: 'TechCorp S...',
-    amount: '₹12,500',
-    method: 'Transfer',
-    status: 'Completed',
-    receivedBy: 'Dr. Sarah Johns...'
-  },
-  {
-    id: 5,
-    date: '10 Jun 2025',
-    receiptNumber: 'RCP-2025-004',
-    patient: { name: 'Emily Rodriguez', id: 'PAT004' },
-    type: 'Direct',
-    amount: '₹2,250',
-    method: 'Card',
-    status: 'Failed',
-    receivedBy: 'Dr. Michael Chen'
-  },
-  {
-    id: 6,
-    date: '08 Jun 2025',
-    receiptNumber: 'RCP-2025-003',
-    patient: { name: 'Robert Wilson', id: 'PAT003' },
-    type: 'Finance Pr...',
-    amount: '₹15,800',
-    method: 'UPI',
-    status: 'Completed',
-    receivedBy: 'Dr. Jennifer Lee'
-  },
-  {
-    id: 7,
-    date: '05 Jun 2025',
-    receiptNumber: 'RCP-2025-002',
-    patient: { name: 'Sarah Johnson', id: 'PAT002' },
-    type: 'HealthFirs...',
-    amount: '₹9,300',
-    method: 'Cash',
-    status: 'Completed',
-    receivedBy: 'Dr. Sarah Johns...'
-  },
-  {
-    id: 8,
-    date: '03 Jun 2025',
-    receiptNumber: 'RCP-2025-001',
-    patient: { name: 'Michael Chen', id: 'PAT001' },
-    type: 'TechCorp S...',
-    amount: '₹18,200',
-    method: 'Transfer',
-    status: 'Completed',
-    receivedBy: 'Dr. Michael Chen'
-  }
-];
-
-const summaryCards = [
-  {
-    title: 'Total Received',
-    value: '₹85,300',
-    icon: (
-      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-      </div>
-    ),
-    color: 'text-green-600'
-  },
-  {
-    title: 'Pending',
-    value: '1',
-    icon: (
-      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-        </svg>
-      </div>
-    ),
-    color: 'text-yellow-600'
-  },
-  {
-    title: 'Completed',
-    value: '18',
-    icon: (
-      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-    ),
-    color: 'text-blue-600'
-  },
-  {
-    title: 'Average Payment',
-    value: '₹4,538',
-    icon: (
-      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      </div>
-    ),
-    color: 'text-purple-600'
-  }
-];
+import PaymentService from '@/services/paymentService';
+import { Payment } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function PaymentsPage() {
-  const [selectedPayments, setSelectedPayments] = useState<number[]>([]);
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
+  const fetchPayments = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await PaymentService.getPayments(currentPage, 10);
+      setPayments(response.data.payments);
+      setTotalPages(response.data.pagination.pages);
+      setTotalAmount(response.data.summary.totalAmount);
+      setTotalCount(response.data.summary.count);
+      setError(null);
+    } catch (err: unknown) {
+      console.error('Error fetching payments:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch payments';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, currentPage]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (token) {
+      fetchPayments();
+    }
+  }, [token, fetchPayments, isAuthenticated, router, authLoading]);
+
+  // Calculate summary data from payments
+  const completedPayments = payments.filter(p => p.status === 'Completed');
+  const pendingPayments = payments.filter(p => p.status === 'Pending');
+  const failedPayments = payments.filter(p => p.status === 'Failed');
+  const averagePayment = payments.length > 0 ? totalAmount / payments.length : 0;
+
+  const summaryCards = [
+    {
+      title: 'Total Received',
+      value: PaymentService.formatCurrency(totalAmount),
+      icon: (
+        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        </div>
+      ),
+      color: 'text-green-600'
+    },
+    {
+      title: 'Pending',
+      value: pendingPayments.length.toString(),
+      icon: (
+        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+          <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+      ),
+      color: 'text-yellow-600'
+    },
+    {
+      title: 'Completed',
+      value: completedPayments.length.toString(),
+      icon: (
+        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      ),
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Average Payment',
+      value: PaymentService.formatCurrency(averagePayment),
+      icon: (
+        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+          <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+      ),
+      color: 'text-purple-600'
+    }
+  ];
 
   const handleSelectAll = () => {
-    if (selectedPayments.length === paymentData.length) {
+    if (selectedPayments.length === payments.length) {
       setSelectedPayments([]);
     } else {
-      setSelectedPayments(paymentData.map(payment => payment.id));
+      setSelectedPayments(payments.map(payment => payment.id));
     }
   };
 
-  const handleSelectPayment = (id: number) => {
+  const handleSelectPayment = (id: string) => {
     setSelectedPayments(prev => 
       prev.includes(id) 
         ? prev.filter(paymentId => paymentId !== id)
@@ -193,23 +155,78 @@ export default function PaymentsPage() {
         return 'bg-blue-100 text-blue-800';
       case 'Cash':
         return 'bg-green-100 text-green-800';
-      case 'Transfer':
+      case 'Bank Transfer':
         return 'bg-orange-100 text-orange-800';
+      case 'Cheque':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getTypeColor = (type: string) => {
-    if (type.includes('Finance') || type.includes('Health') || type.includes('Tech')) {
+    if (type === 'Full') {
       return 'bg-purple-100 text-purple-800';
     }
     return 'bg-blue-100 text-blue-800';
   };
 
   const handleNewPayment = () => {
-    window.location.href = '/billing/payments/record';
+    router.push('/billing/payments/record');
   };
+
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading authentication...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading payments...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-lg text-red-600 mb-4">{error}</div>
+              {error.includes('token') || error.includes('authentication') ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Please try logging in again.</p>
+                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                    Go to Login
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={fetchPayments} className="ml-4">Retry</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -259,7 +276,7 @@ export default function PaymentsPage() {
             {/* Section Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                Payments {paymentData.length}
+                Payments {payments.length}
               </h2>
             </div>
 
@@ -292,7 +309,7 @@ export default function PaymentsPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                   </svg>
-                  All Met
+                  All Method
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -301,7 +318,7 @@ export default function PaymentsPage() {
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                   </svg>
-                  All Stat
+                  All Status
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -317,7 +334,7 @@ export default function PaymentsPage() {
                     <th className="text-left py-3 px-4">
                       <input
                         type="checkbox"
-                        checked={selectedPayments.length === paymentData.length}
+                        checked={selectedPayments.length === payments.length}
                         onChange={handleSelectAll}
                         className="rounded border-gray-300"
                         aria-label="Select all payments"
@@ -360,32 +377,32 @@ export default function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                                     {paymentData.map((payment) => (
-                     <tr 
-                       key={payment.id} 
-                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                       onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}`}
-                     >
-                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                         <input
-                           type="checkbox"
-                           checked={selectedPayments.includes(payment.id)}
-                           onChange={() => handleSelectPayment(payment.id)}
-                           className="rounded border-gray-300"
-                           aria-label={`Select payment ${payment.receiptNumber}`}
-                         />
-                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.date}</td>
+                  {payments.map((payment) => (
+                    <tr 
+                      key={payment.id} 
+                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => window.location.href = `/billing/payments/${payment.id}`}
+                    >
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedPayments.includes(payment.id)}
+                          onChange={() => handleSelectPayment(payment.id)}
+                          className="rounded border-gray-300"
+                          aria-label={`Select payment ${payment.receiptNumber}`}
+                        />
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{PaymentService.formatDateForDisplay(payment.paymentDate)}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.receiptNumber}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">
-                        {payment.patient.name} ID: {payment.patient.id}
+                        {payment.patientName}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(payment.type))}>
-                          {payment.type}
+                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(payment.paymentType))}>
+                          {payment.paymentType}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{payment.amount}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{PaymentService.formatCurrency(payment.amount)}</td>
                       <td className="py-3 px-4">
                         <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getMethodColor(payment.method))}>
                           {payment.method}
@@ -397,29 +414,29 @@ export default function PaymentsPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{payment.receivedBy}</td>
-                                             <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                         <div className="flex space-x-2">
-                           <button 
-                             onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`View payment ${payment.receiptNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                             </svg>
-                           </button>
-                           <button 
-                             onClick={() => window.location.href = `/billing/payments/${payment.receiptNumber}/edit`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`Edit payment ${payment.receiptNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                             </svg>
-                           </button>
-                         </div>
-                       </td>
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => window.location.href = `/billing/payments/${payment.id}`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`View payment ${payment.receiptNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => window.location.href = `/billing/payments/${payment.id}/edit`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`Edit payment ${payment.receiptNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -429,7 +446,7 @@ export default function PaymentsPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Showing 1 to {paymentData.length} of {paymentData.length} payments
+                Showing 1 to {payments.length} of {payments.length} payments
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>
@@ -446,8 +463,6 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       </div>
-
-
     </MainLayout>
   );
 }

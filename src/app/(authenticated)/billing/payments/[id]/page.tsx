@@ -1,63 +1,152 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback, use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import PaymentService from '@/services/paymentService';
+import { Payment } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
-// Sample payment data - in real app this would come from API
-const paymentData = {
-  id: 'RCP-2025-008',
-  receiptNumber: 'RCP-2025-008',
-  amount: '₹6,750',
-  paymentMethod: 'UPI',
-  paymentDate: '22 Jun 2025',
-  status: 'Completed',
-  transactionId: 'UPI345678901',
-  patient: {
-    name: 'Lisa Wang',
-    id: 'PAT008'
-  },
-  receivedBy: 'Dr. Sarah Johnson',
-  createdDate: '22 Jun 2025, 00:00',
-  currency: 'INR',
-  notes: 'Corporate payment for employee hearing screening'
-};
+export default function PaymentReceiptPage({ params }: { params: Promise<{ id: string }> }) {
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const [payment, setPayment] = useState<Payment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function PaymentReceiptPage() {
-  const params = useParams();
-  const paymentId = params.id;
+  const fetchPayment = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await PaymentService.getPayment(resolvedParams.id);
+      setPayment(response.data);
+      setError(null);
+    } catch (err: unknown) {
+      console.error('Error fetching payment:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch payment details';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedParams.id, token]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (token) {
+      fetchPayment();
+    }
+  }, [token, fetchPayment, isAuthenticated, router, authLoading]);
 
   const handleBack = () => {
-    window.location.href = '/billing/payments';
+    router.push('/billing/payments');
   };
 
   const handleDownloadPDF = () => {
-    console.log('Downloading PDF for payment:', paymentId);
+    console.log('Downloading PDF for payment:', resolvedParams.id);
   };
 
   const handlePrint = () => {
-    console.log('Printing payment receipt:', paymentId);
+    console.log('Printing payment receipt:', resolvedParams.id);
     window.print();
   };
 
   const handleEdit = () => {
-    window.location.href = `/billing/payments/${paymentId}/edit`;
+    router.push(`/billing/payments/${resolvedParams.id}/edit`);
   };
 
   const handleDownloadReceipt = () => {
-    console.log('Downloading receipt for payment:', paymentId);
+    console.log('Downloading receipt for payment:', resolvedParams.id);
   };
 
   const handlePrintReceipt = () => {
-    console.log('Printing receipt for payment:', paymentId);
+    console.log('Printing receipt for payment:', resolvedParams.id);
     window.print();
   };
 
   const handleEditPayment = () => {
-    window.location.href = `/billing/payments/${paymentId}/edit`;
+    router.push(`/billing/payments/${resolvedParams.id}/edit`);
   };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await PaymentService.deletePayment(resolvedParams.id);
+      router.push('/billing/payments');
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+      alert(err instanceof Error ? err.message : 'Failed to delete payment');
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading authentication...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading payment...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !payment) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-lg text-red-600 mb-4">{error || 'Payment not found'}</div>
+              {error && (error.includes('token') || error.includes('authentication')) ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Please try logging in again.</p>
+                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                    Go to Login
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={fetchPayment} className="ml-4">Retry</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -79,7 +168,7 @@ export default function PaymentReceiptPage() {
                 Payment Receipt
               </h1>
               <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                Receipt #{paymentData.receiptNumber}
+                Receipt #{payment.receiptNumber}
               </p>
             </div>
           </div>
@@ -114,6 +203,16 @@ export default function PaymentReceiptPage() {
               </svg>
               Edit
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="border-red-300 text-red-700 hover:bg-red-50"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </Button>
           </div>
         </div>
 
@@ -137,11 +236,11 @@ export default function PaymentReceiptPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Number</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.receiptNumber}</p>
+                    <p className="text-lg font-semibold text-gray-900">{payment.receiptNumber}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                    <p className="text-2xl font-bold text-gray-900">{paymentData.amount}</p>
+                    <p className="text-2xl font-bold text-gray-900">{PaymentService.formatCurrency(payment.amount)}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
@@ -149,22 +248,22 @@ export default function PaymentReceiptPage() {
                       <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                       </svg>
-                      <span className="text-lg font-semibold text-gray-900">{paymentData.paymentMethod}</span>
+                                             <span className="text-lg font-semibold text-gray-900">{payment.method}</span>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Date</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.paymentDate}</p>
+                                         <p className="text-lg font-semibold text-gray-900">{PaymentService.formatDateForDisplay(payment.paymentDate)}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                      {paymentData.status}
-                    </span>
+                                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        {payment.status}
+                      </span>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Transaction ID</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.transactionId}</p>
+                                         <p className="text-lg font-semibold text-gray-900">{payment.transactionId}</p>
                   </div>
                 </div>
               </CardContent>
@@ -186,7 +285,7 @@ export default function PaymentReceiptPage() {
 
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-gray-900">Total Payment</span>
-                  <span className="text-2xl font-bold text-gray-900">{paymentData.amount}</span>
+                                     <span className="text-2xl font-bold text-gray-900">{PaymentService.formatCurrency(payment.amount)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -205,7 +304,7 @@ export default function PaymentReceiptPage() {
                   </h2>
                 </div>
 
-                <p className="text-gray-900">{paymentData.notes}</p>
+                <p className="text-gray-900">{payment.notes || 'No notes available'}</p>
               </CardContent>
             </Card>
           </div>
@@ -229,12 +328,9 @@ export default function PaymentReceiptPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Patient Name</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.patient.name}</p>
+                    <p className="text-lg font-semibold text-gray-900">{payment.patientName}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Patient ID</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.patient.id}</p>
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
@@ -256,16 +352,13 @@ export default function PaymentReceiptPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Received By</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.receivedBy}</p>
+                    <p className="text-lg font-semibold text-gray-900">{payment.receivedBy}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Created Date</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.createdDate}</p>
+                    <p className="text-lg font-semibold text-gray-900">{PaymentService.formatDateForDisplay(payment.createdAt)}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                    <p className="text-lg font-semibold text-gray-900">{paymentData.currency}</p>
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
