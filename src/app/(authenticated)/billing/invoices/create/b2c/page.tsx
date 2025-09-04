@@ -1,122 +1,69 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
-
-// Sample data for services
-const services = [
-  {
-    id: 1,
-    name: 'Pure Tone Audiometry',
-    description: 'Detailed hearing threshold testing across frequencies',
-    unitCost: 1200
-  },
-  {
-    id: 2,
-    name: 'Hearing Aid Fitting',
-    description: 'Custom hearing aid fitting and programming',
-    unitCost: 2500
-  },
-  {
-    id: 3,
-    name: 'Tympanometry',
-    description: 'Middle ear function assessment',
-    unitCost: 800
-  },
-  {
-    id: 4,
-    name: 'BERA Testing',
-    description: 'Brainstem evoked response audiometry',
-    unitCost: 1500
-  }
-];
-
-// Sample patients
-const patients = [
-  { id: 1, name: 'Robert Wilson', patientId: 'PAT001' },
-  { id: 2, name: 'John Smith', patientId: 'PAT002' },
-  { id: 3, name: 'Maria Garcia', patientId: 'PAT003' }
-];
-
-interface InvoiceItem {
-  id: number;
-  serviceId: number;
-  serviceName: string;
-  description: string;
-  qty: number;
-  unitCost: number;
-  discount: number;
-  total: number;
-}
+import InvoiceService from '@/services/invoiceService';
+import { CreateInvoiceData, InvoiceScreening } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function B2CInvoicePage() {
-  const [invoiceNumber, setInvoiceNumber] = useState('EHC-2025-06-001');
-  const [invoiceDate, setInvoiceDate] = useState('28-06-2025');
-  const [selectedPatient, setSelectedPatient] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('Pending');
-  const [overallDiscount, setOverallDiscount] = useState(0);
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [invoiceDate, setInvoiceDate] = useState('');
+  const [patientName, setPatientName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Partial'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
-  const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const addItem = () => {
-    const newItem: InvoiceItem = {
-      id: Date.now(),
-      serviceId: 0,
-      serviceName: '',
-      description: '',
-      qty: 1,
-      unitCost: 0,
-      discount: 0,
-      total: 0
-    };
-    setItems([...items, newItem]);
-  };
-
-  const removeItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
-  };
-
-  const updateItem = (id: number, field: keyof InvoiceItem, value: any) => {
-    setItems(items.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value };
-        
-        // Recalculate total
-        if (field === 'qty' || field === 'unitCost' || field === 'discount') {
-          updatedItem.total = (updatedItem.qty * updatedItem.unitCost) - updatedItem.discount;
-        }
-        
-        return updatedItem;
-      }
-      return item;
-    }));
-  };
-
-  const handleServiceSelect = (itemId: number, serviceId: number) => {
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      updateItem(itemId, 'serviceId', serviceId);
-      updateItem(itemId, 'serviceName', service.name);
-      updateItem(itemId, 'description', service.description);
-      updateItem(itemId, 'unitCost', service.unitCost);
-      updateItem(itemId, 'total', service.unitCost);
+  // Authentication check
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isAuthenticated) {
+      router.push('/login');
     }
+  }, [isAuthenticated, authLoading, router]);
+
+  const addScreening = () => {
+    const newScreening: InvoiceScreening = {
+      screeningDate: '',
+      opNumber: '',
+      bioName: '',
+      diagnosticName: '',
+      amount: 0,
+      discount: 0
+    };
+    setScreenings([...screenings, newScreening]);
+  };
+
+  const removeScreening = (index: number) => {
+    const updatedScreenings = screenings.filter((_, i) => i !== index);
+    setScreenings(updatedScreenings);
+  };
+
+  const updateScreening = (index: number, field: keyof InvoiceScreening, value: any) => {
+    const updatedScreenings = [...screenings];
+    updatedScreenings[index] = { ...updatedScreenings[index], [field]: value };
+    setScreenings(updatedScreenings);
   };
 
   const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + item.total, 0);
+    return screenings.reduce((sum, screening) => sum + screening.amount, 0);
   };
 
   const calculateTotalDiscount = () => {
-    return items.reduce((sum, item) => sum + item.discount, 0) + overallDiscount;
+    return screenings.reduce((sum, screening) => sum + (screening.discount || 0), 0);
   };
 
   const calculateTaxableAmount = () => {
@@ -135,6 +82,80 @@ export default function B2CInvoicePage() {
     return calculateTaxableAmount() + tax.total;
   };
 
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading authentication...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  const handleSaveInvoice = async () => {
+    if (!token) {
+      alert('Authentication token not found. Please login again.');
+      router.push('/login');
+      return;
+    }
+
+    if (!invoiceDate || !patientName || !organizationName || screenings.length === 0) {
+      alert('Please fill in all required fields and add at least one screening');
+      return;
+    }
+
+    // Validate screenings
+    for (const screening of screenings) {
+      if (!screening.screeningDate || !screening.opNumber || !screening.bioName || !screening.diagnosticName || screening.amount <= 0) {
+        alert('Please fill in all required screening fields');
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      
+      const invoiceData: CreateInvoiceData = {
+        invoiceDate: InvoiceService.formatDateForAPI(invoiceDate),
+        patientName,
+        organizationName,
+        invoiceType: 'B2C',
+        screenings: screenings.map(screening => ({
+          ...screening,
+          screeningDate: InvoiceService.formatDateForAPI(screening.screeningDate)
+        })),
+        paymentStatus,
+        sgstRate,
+        cgstRate,
+        notes,
+        warranty: warrantyInfo
+      };
+
+      const response = await InvoiceService.createInvoice(invoiceData);
+      console.log('Invoice created successfully:', response);
+      
+      // Navigate to the new invoice detail page
+      window.location.href = `/billing/invoices/${response.data.id}`;
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      alert('Failed to create invoice. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    window.location.href = '/billing/invoices';
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -149,11 +170,15 @@ export default function B2CInvoicePage() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="outline" className="border-gray-300">
+            <Button variant="outline" className="border-gray-300" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white">
-              Save Invoice
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleSaveInvoice}
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Save Invoice'}
             </Button>
           </div>
         </div>
@@ -170,17 +195,7 @@ export default function B2CInvoicePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Invoice Number*
-                    </label>
-                    <Input
-                      value={invoiceNumber}
-                      onChange={(e) => setInvoiceNumber(e.target.value)}
-                      className="bg-white border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Invoice Date
+                      Invoice Date*
                     </label>
                     <Input
                       type="date"
@@ -191,38 +206,42 @@ export default function B2CInvoicePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Patient*
+                      Patient Name*
                     </label>
-                                         <select
-                       value={selectedPatient}
-                       onChange={(e) => setSelectedPatient(e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                       aria-label="Select patient for this invoice"
-                     >
-                      <option value="">Select patient</option>
-                      {patients.map(patient => (
-                        <option key={patient.id} value={patient.id}>
-                          {patient.name} ({patient.patientId})
-                        </option>
-                      ))}
-                    </select>
+                    <Input
+                      value={patientName}
+                      onChange={(e) => setPatientName(e.target.value)}
+                      placeholder="Enter patient name"
+                      className="bg-white border-gray-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Organization Name*
+                    </label>
+                    <Input
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      placeholder="Hospital/Company Name"
+                      className="bg-white border-gray-300"
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Services & Items */}
+            {/* Screening Details */}
             <Card className="bg-white">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Services & Items
+                    Screening Details
                   </h2>
                   <Button 
-                    onClick={addItem}
+                    onClick={addScreening}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
-                    Add Item
+                    + Add Screening
                   </Button>
                 </div>
                 
@@ -230,68 +249,74 @@ export default function B2CInvoicePage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service/Item*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Qty*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Unit Cost*</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening*</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No*</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name*</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name*</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount*</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Total</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item) => (
-                        <tr key={item.id} className="border-b border-gray-100">
-                                                     <td className="py-3 px-4">
-                             <select
-                               value={item.serviceId}
-                               onChange={(e) => handleServiceSelect(item.id, parseInt(e.target.value))}
-                               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                               aria-label="Select service for this item"
-                             >
-                               <option value={0}>Select service</option>
-                               {services.map(service => (
-                                 <option key={service.id} value={service.id}>
-                                   {service.name}
-                                 </option>
-                               ))}
-                             </select>
-                            {item.description && (
-                              <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                            )}
-                          </td>
+                      {screenings.map((screening, index) => (
+                        <tr key={index} className="border-b border-gray-100">
+                          <td className="py-3 px-4 text-sm text-gray-900">{index + 1}</td>
                           <td className="py-3 px-4">
                             <Input
-                              type="number"
-                              value={item.qty}
-                              onChange={(e) => updateItem(item.id, 'qty', parseInt(e.target.value) || 0)}
-                              className="w-20 bg-white border-gray-300"
+                              type="date"
+                              value={screening.screeningDate}
+                              onChange={(e) => updateScreening(index, 'screeningDate', e.target.value)}
+                              className="w-32 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
                             <Input
-                              type="number"
-                              value={item.unitCost}
-                              onChange={(e) => updateItem(item.id, 'unitCost', parseInt(e.target.value) || 0)}
+                              value={screening.opNumber}
+                              onChange={(e) => updateScreening(index, 'opNumber', e.target.value)}
+                              placeholder="OP/IP Number"
                               className="w-24 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
                             <Input
+                              value={screening.bioName}
+                              onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
+                              placeholder="Patient Name"
+                              className="w-32 bg-white border-gray-300"
+                            />
+                          </td>
+                          <td className="py-3 px-4">
+                            <Input
+                              value={screening.diagnosticName}
+                              onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
+                              placeholder="Diagnostic Name"
+                              className="w-48 bg-white border-gray-300"
+                            />
+                          </td>
+                          <td className="py-3 px-4">
+                            <Input
                               type="number"
-                              value={item.discount}
-                              onChange={(e) => updateItem(item.id, 'discount', parseInt(e.target.value) || 0)}
+                              value={screening.amount}
+                              onChange={(e) => updateScreening(index, 'amount', parseInt(e.target.value) || 0)}
                               className="w-20 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
-                            <span className="font-medium">₹{item.total.toLocaleString()}</span>
+                            <Input
+                              type="number"
+                              value={screening.discount || 0}
+                              onChange={(e) => updateScreening(index, 'discount', parseInt(e.target.value) || 0)}
+                              className="w-20 bg-white border-gray-300"
+                            />
                           </td>
                           <td className="py-3 px-4">
-                                                         <button
-                               onClick={() => removeItem(item.id)}
-                               className="text-red-500 hover:text-red-700"
-                               aria-label={`Remove item ${item.serviceName || 'service'}`}
-                             >
+                            <button
+                              onClick={() => removeScreening(index)}
+                              className="text-red-500 hover:text-red-700"
+                              aria-label={`Remove screening ${index + 1}`}
+                            >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
@@ -316,27 +341,16 @@ export default function B2CInvoicePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Payment Status
                     </label>
-                                         <select
-                       value={paymentStatus}
-                       onChange={(e) => setPaymentStatus(e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                       aria-label="Select payment status"
-                     >
+                    <select
+                      value={paymentStatus}
+                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Partial')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      aria-label="Select payment status"
+                    >
                       <option value="Pending">Pending</option>
                       <option value="Paid">Paid</option>
                       <option value="Partial">Partial</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Overall Discount (₹)
-                    </label>
-                    <Input
-                      type="number"
-                      value={overallDiscount}
-                      onChange={(e) => setOverallDiscount(parseInt(e.target.value) || 0)}
-                      className="bg-white border-gray-300"
-                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

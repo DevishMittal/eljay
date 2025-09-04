@@ -1,117 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
-
-// Sample data for invoices
-const invoiceData = [
-  {
-    id: 1,
-    date: '22 Jun 2025',
-    invoiceNumber: 'EHC-2025-014',
-    type: 'B2C',
-    patientOrg: 'Robert Wilson',
-    items: 'Starkey Livio Al 2400 He...',
-    amount: '₹66,670',
-    paid: '₹30,000',
-    status: 'Partial',
-    createdBy: 'Dr. Michael Chen'
-  },
-  {
-    id: 2,
-    date: '21 Jun 2025',
-    invoiceNumber: 'EHC-2025-013',
-    type: 'B2B',
-    patientOrg: 'Lisa Wang Finance Pro Group',
-    items: '3 screenings',
-    amount: '₹45,000',
-    paid: '₹45,000',
-    status: 'Paid',
-    createdBy: 'Dr. Sarah Johnson'
-  },
-  {
-    id: 3,
-    date: '20 Jun 2025',
-    invoiceNumber: 'EHC-2025-012',
-    type: 'B2C',
-    patientOrg: 'John Smith',
-    items: 'Hearing Aid Consultation',
-    amount: '₹25,000',
-    paid: '₹0',
-    status: 'Pending',
-    createdBy: 'Dr. Emily Davis'
-  },
-  {
-    id: 4,
-    date: '19 Jun 2025',
-    invoiceNumber: 'EHC-2025-011',
-    type: 'B2B',
-    patientOrg: 'ABC Corporation',
-    items: 'Workplace Hearing Assessment',
-    amount: '₹80,000',
-    paid: '₹40,000',
-    status: 'Partial',
-    createdBy: 'Dr. Michael Chen'
-  },
-  {
-    id: 5,
-    date: '18 Jun 2025',
-    invoiceNumber: 'EHC-2025-010',
-    type: 'B2C',
-    patientOrg: 'Maria Garcia',
-    items: 'Custom Hearing Protection',
-    amount: '₹15,000',
-    paid: '₹15,000',
-    status: 'Paid',
-    createdBy: 'Dr. Sarah Johnson'
-  }
-];
-
-const summaryCards = [
-  {
-    title: 'Total Invoiced',
-    value: '₹5,09,130',
-    icon: '📄',
-    color: 'text-green-600'
-  },
-  {
-    title: 'Outstanding',
-    value: '₹2,40,516',
-    icon: '⚠️',
-    color: 'text-yellow-600'
-  },
-  {
-    title: 'Paid Invoices',
-    value: '9',
-    icon: '✅',
-    color: 'text-green-600'
-  },
-  {
-    title: 'Overdue',
-    value: '8',
-    icon: '🚨',
-    color: 'text-red-600'
-  }
-];
+import InvoiceService from '@/services/invoiceService';
+import { Invoice, InvoicesResponse } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function InvoicesPage() {
-  const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewInvoiceDropdown, setShowNewInvoiceDropdown] = useState(false);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState({
+    totalAmount: 0,
+    totalTax: 0,
+    count: 0
+  });
+
+  const fetchInvoices = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await InvoiceService.getInvoices();
+      setInvoices(response.data.invoices);
+      setSummary(response.data.summary);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching invoices:', err);
+      setError('Failed to fetch invoices');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
+    
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (token) {
+      fetchInvoices();
+    }
+  }, [token, fetchInvoices, isAuthenticated, router, authLoading]);
 
   const handleSelectAll = () => {
-    if (selectedInvoices.length === invoiceData.length) {
+    if (selectedInvoices.length === invoices.length) {
       setSelectedInvoices([]);
     } else {
-      setSelectedInvoices(invoiceData.map(invoice => invoice.id));
+      setSelectedInvoices(invoices.map(invoice => invoice.id));
     }
   };
 
-  const handleSelectInvoice = (id: number) => {
+  const handleSelectInvoice = (id: string) => {
     setSelectedInvoices(prev => 
       prev.includes(id) 
         ? prev.filter(invoiceId => invoiceId !== id)
@@ -155,6 +112,94 @@ export default function InvoicesPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return InvoiceService.formatDateForDisplay(dateString);
+  };
+
+  const summaryCards = [
+    {
+      title: 'Total Invoiced',
+      value: formatCurrency(summary.totalAmount),
+      icon: '📄',
+      color: 'text-green-600'
+    },
+    {
+      title: 'Total Tax',
+      value: formatCurrency(summary.totalTax),
+      icon: '⚠️',
+      color: 'text-yellow-600'
+    },
+    {
+      title: 'Invoice Count',
+      value: summary.count.toString(),
+      icon: '✅',
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Average Invoice',
+      value: summary.count > 0 ? formatCurrency(summary.totalAmount / summary.count) : '₹0',
+      icon: '🚨',
+      color: 'text-red-600'
+    }
+  ];
+
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading authentication...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading invoices...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-lg text-red-600 mb-4">{error}</div>
+              {error.includes('token') || error.includes('authentication') ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Please try logging in again.</p>
+                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                    Go to Login
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={fetchInvoices} className="ml-4">Retry</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -250,7 +295,7 @@ export default function InvoicesPage() {
                   Invoices
                 </h2>
                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
-                  20
+                  {invoices.length}
                 </span>
               </div>
             </div>
@@ -278,12 +323,6 @@ export default function InvoicesPage() {
                   </svg>
                 </Button>
                 <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  All Patients
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </Button>
-                <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
                   All Status
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -300,7 +339,7 @@ export default function InvoicesPage() {
                     <th className="text-left py-3 px-4">
                       <input
                         type="checkbox"
-                        checked={selectedInvoices.length === invoiceData.length}
+                        checked={selectedInvoices.length === invoices.length}
                         onChange={handleSelectAll}
                         className="rounded border-gray-300"
                         aria-label="Select all invoices"
@@ -337,19 +376,17 @@ export default function InvoicesPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                       </svg>
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Paid</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                       Status
                       <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                       </svg>
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Created By</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoiceData.map((invoice) => (
+                  {invoices.map((invoice) => (
                     <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <input
@@ -360,46 +397,48 @@ export default function InvoicesPage() {
                           aria-label={`Select invoice ${invoice.invoiceNumber}`}
                         />
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{invoice.date}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{formatDate(invoice.invoiceDate)}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">{invoice.invoiceNumber}</td>
                       <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(invoice.type))}>
-                          {invoice.type}
+                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(invoice.invoiceType))}>
+                          {invoice.invoiceType}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{invoice.patientOrg}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{invoice.items}</td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{invoice.amount}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{invoice.paid}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {invoice.screenings.length} {invoice.screenings.length === 1 ? 'item' : 'items'}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatCurrency(invoice.totalAmount)}</td>
                       <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getStatusColor(invoice.status))}>
-                          {invoice.status}
+                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getStatusColor(invoice.paymentStatus))}>
+                          {invoice.paymentStatus}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{invoice.createdBy}</td>
-                                             <td className="py-3 px-4">
-                         <div className="flex space-x-2">
-                           <button 
-                             onClick={() => window.location.href = `/billing/invoices/${invoice.id}`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`View invoice ${invoice.invoiceNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                             </svg>
-                           </button>
-                           <button 
-                             onClick={() => window.location.href = `/billing/invoices/${invoice.id}/edit`}
-                             className="text-gray-400 hover:text-gray-600"
-                             aria-label={`Edit invoice ${invoice.invoiceNumber}`}
-                           >
-                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                             </svg>
-                           </button>
-                         </div>
-                       </td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => window.location.href = `/billing/invoices/${invoice.id}`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`View invoice ${invoice.invoiceNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => window.location.href = `/billing/invoices/${invoice.id}/edit`}
+                            className="text-gray-400 hover:text-gray-600"
+                            aria-label={`Edit invoice ${invoice.invoiceNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -409,7 +448,7 @@ export default function InvoicesPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Showing 1 to 20 of 20 invoices.
+                Showing 1 to {invoices.length} of {invoices.length} invoices.
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>

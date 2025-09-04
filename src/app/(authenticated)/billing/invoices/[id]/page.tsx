@@ -1,80 +1,60 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
+import InvoiceService from '@/services/invoiceService';
+import { Invoice } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
-// Sample invoice data
-const invoiceData = {
-  id: 1,
-  invoiceNumber: 'EHC-2025-014',
-  type: 'B2C',
-  typeLabel: 'B2C Invoice - Service Based',
-  date: '22 Jun 2025',
-  dueDate: '24 Jul 2025',
-  status: 'Partially Paid',
-  patient: {
-    name: 'Robert Wilson',
-    type: 'Individual Patient',
-    patientId: 'PAT001'
-  },
-  createdBy: 'Dr. Michael Chen',
-  items: [
-    {
-      id: 1,
-      name: 'Starkey Livio AI 2400 Hearing Aid',
-      description: 'AI-powered hearing aid with health monitoring.',
-      warranty: '3 years warranty + health tracking.',
-      qty: 1,
-      unitCost: 69000,
-      discount: 4000,
-      total: 65000
-    },
-    {
-      id: 2,
-      name: 'Smart Charger',
-      description: 'Wireless charging case with smartphone app.',
-      warranty: '2 years warranty.',
-      qty: 1,
-      unitCost: 5500,
-      discount: 500,
-      total: 5000
-    },
-    {
-      id: 3,
-      name: 'Health Monitoring Setup',
-      description: 'AI health feature configuration and training.',
-      qty: 1,
-      unitCost: 1500,
-      discount: 0,
-      total: 1500
-    }
-  ],
-  notes: 'AI-powered hearing aid with health monitoring features.',
-  terms: [
-    'Payment is due within 30 days of invoice date.',
-    'All services provided are subject to professional terms.',
-    'Warranty terms apply as per individual service agreements.',
-    'For any queries, please contact us at the above details.'
-  ],
-  subtotal: 76000,
-  totalDiscount: 4500,
-  taxableAmount: 71500,
-  sgst: 585,
-  cgst: 585,
-  totalTax: 1170,
-  totalAmount: 66670,
-  amountPaid: 30000,
-  balanceDue: 36670
-};
-
-export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const resolvedParams = use(params);
   const [viewMode, setViewMode] = useState<'invoice' | 'pdf'>('invoice');
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchInvoice = useCallback(async () => {
+    if (!token) {
+      setError('Authentication token not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await InvoiceService.getInvoice(resolvedParams.id);
+      setInvoice(response.data);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching invoice:', err);
+      setError(err.message || 'Failed to fetch invoice details');
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedParams.id, token]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (token) {
+      fetchInvoice();
+    }
+  }, [authLoading, isAuthenticated, token, fetchInvoice, router]);
 
   const handleEdit = () => {
-    window.location.href = `/billing/invoices/${params.id}/edit`;
+    window.location.href = `/billing/invoices/${resolvedParams.id}/edit`;
   };
 
   const handleDownload = () => {
@@ -85,6 +65,67 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
   const handlePrint = () => {
     window.print();
   };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return InvoiceService.formatDateForDisplay(dateString);
+  };
+
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading authentication...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading invoice...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !invoice) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-lg text-red-600 mb-4">{error || 'Invoice not found'}</div>
+              {error && (error.includes('token') || error.includes('authentication')) ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Please try logging in again.</p>
+                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                    Go to Login
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={fetchInvoice} className="ml-4">Retry</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -103,10 +144,10 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
             </button>
             <div>
               <h1 className="text-xl font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                Invoice {invoiceData.invoiceNumber}
+                Invoice {invoice.invoiceNumber}
               </h1>
               <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                {invoiceData.typeLabel}
+                {invoice.invoiceType === 'B2C' ? 'B2C Invoice - Service Based' : 'B2B Invoice - Organization Based'}
               </p>
             </div>
           </div>
@@ -171,8 +212,13 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 </p>
               </div>
               <div className="text-right">
-                <div className="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium mb-2">
-                  {invoiceData.status}
+                <div className={cn(
+                  "inline-block px-3 py-1 rounded-full text-sm font-medium mb-2",
+                  invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                  invoice.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-blue-100 text-blue-800'
+                )}>
+                  {invoice.paymentStatus}
                 </div>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
                   Phone: +91 44 1234 5678
@@ -196,14 +242,16 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                   <span className="font-medium text-gray-700">Bill To</span>
                 </div>
                 <p className="font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                  {invoiceData.patient.name}
+                  {invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  {invoiceData.patient.type}
+                  {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Organization'}
                 </p>
-                <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Patient ID: {invoiceData.patient.patientId}
-                </p>
+                {invoice.invoiceType === 'B2C' && (
+                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                    Organization: {invoice.organizationName}
+                  </p>
+                )}
               </div>
               
               <div>
@@ -214,16 +262,16 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                   <span className="font-medium text-gray-700">Invoice Details</span>
                 </div>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Invoice Number: {invoiceData.invoiceNumber}
+                  Invoice Number: {invoice.invoiceNumber}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Invoice Date: {invoiceData.date}
+                  Invoice Date: {formatDate(invoice.invoiceDate)}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Due Date: {invoiceData.dueDate}
+                  Type: {invoice.invoiceType}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Created By: {invoiceData.createdBy}
+                  Created: {formatDate(invoice.createdAt)}
                 </p>
               </div>
             </div>
@@ -233,37 +281,29 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service/Item</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Qty</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Unit Cost</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoiceData.items.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="py-4 px-4">
-                        <div>
-                          <p className="font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                            {item.name}
-                          </p>
-                          <p className="text-sm text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                            {item.description}
-                          </p>
-                          {item.warranty && (
-                            <p className="text-xs text-blue-600 mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                              Warranty: {item.warranty}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{item.qty}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">₹{item.unitCost.toLocaleString()}</td>
+                  {invoice.screenings.map((screening, index) => (
+                    <tr key={screening.id || index} className="border-b border-gray-100">
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.serialNumber || index + 1}</td>
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">{formatDate(screening.screeningDate)}</td>
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.opNumber}</td>
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.bioName}</td>
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.diagnosticName}</td>
+                      <td className="py-4 px-4 text-sm text-[#4A5565]">₹{screening.amount.toLocaleString()}</td>
                       <td className="py-4 px-4 text-sm text-red-600">
-                        {item.discount > 0 ? `-₹${item.discount.toLocaleString()}` : '-'}
+                        {screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}
                       </td>
-                      <td className="py-4 px-4 text-sm font-medium text-[#101828]">₹{item.total.toLocaleString()}</td>
+                      <td className="py-4 px-4 text-sm font-medium text-[#101828]">₹{(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -274,26 +314,40 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column - Notes, Terms, Tax Info */}
               <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                    Notes
-                  </h3>
-                  <p className="text-sm text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                    {invoiceData.notes}
-                  </p>
-                </div>
+                {invoice.notes && (
+                  <div>
+                    <h3 className="font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      Notes
+                    </h3>
+                    <p className="text-sm text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
+                      {invoice.notes}
+                    </p>
+                  </div>
+                )}
                 
                 <div>
                   <h3 className="font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                     Terms & Conditions
                   </h3>
                   <ul className="text-sm text-[#4A5565] space-y-1" style={{ fontFamily: 'Segoe UI' }}>
-                    {invoiceData.terms.map((term, index) => (
-                      <li key={index} className="flex items-start">
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      Payment is due within 30 days of invoice date.
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      All services provided are subject to professional terms.
+                    </li>
+                    {invoice.warranty && (
+                      <li className="flex items-start">
                         <span className="mr-2">•</span>
-                        {term}
+                        Warranty terms apply as per individual service agreements.
                       </li>
-                    ))}
+                    )}
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      For any queries, please contact us at the above details.
+                    </li>
                   </ul>
                 </div>
                 
@@ -314,50 +368,38 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-[#4A5565]">Subtotal:</span>
-                      <span className="text-sm font-medium">₹{invoiceData.subtotal.toLocaleString()}</span>
+                      <span className="text-sm font-medium">₹{invoice.subtotal.toLocaleString()}</span>
                     </div>
                     
                     <div className="flex justify-between">
                       <span className="text-sm text-[#4A5565]">Total Discount:</span>
-                      <span className="text-sm font-medium text-red-600">-₹{invoiceData.totalDiscount.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-red-600">-₹{invoice.totalDiscount.toLocaleString()}</span>
                     </div>
                     
                     <div className="flex justify-between">
                       <span className="text-sm text-[#4A5565]">Taxable Amount:</span>
-                      <span className="text-sm font-medium">₹{invoiceData.taxableAmount.toLocaleString()}</span>
+                      <span className="text-sm font-medium">₹{invoice.taxableAmount.toLocaleString()}</span>
                     </div>
                     
                     <div className="flex justify-between">
-                      <span className="text-sm text-[#4A5565]">SGST (9%):</span>
-                      <span className="text-sm font-medium">₹{invoiceData.sgst.toLocaleString()}</span>
+                      <span className="text-sm text-[#4A5565]">SGST ({invoice.sgstRate}%):</span>
+                      <span className="text-sm font-medium">₹{invoice.sgstAmount.toLocaleString()}</span>
                     </div>
                     
                     <div className="flex justify-between">
-                      <span className="text-sm text-[#4A5565]">CGST (9%):</span>
-                      <span className="text-sm font-medium">₹{invoiceData.cgst.toLocaleString()}</span>
+                      <span className="text-sm text-[#4A5565]">CGST ({invoice.cgstRate}%):</span>
+                      <span className="text-sm font-medium">₹{invoice.cgstAmount.toLocaleString()}</span>
                     </div>
                     
                     <div className="flex justify-between">
                       <span className="text-sm text-[#4A5565]">Total Tax:</span>
-                      <span className="text-sm font-medium">₹{invoiceData.totalTax.toLocaleString()}</span>
+                      <span className="text-sm font-medium">₹{invoice.totalTax.toLocaleString()}</span>
                     </div>
                     
                     <div className="border-t pt-3">
                       <div className="flex justify-between">
                         <span className="font-semibold text-[#101828]">Total Amount:</span>
-                        <span className="font-semibold text-[#101828]">₹{invoiceData.totalAmount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-sm text-[#4A5565]">Amount Paid:</span>
-                      <span className="text-sm font-medium">₹{invoiceData.amountPaid.toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="border-t pt-3">
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-red-600">Balance Due:</span>
-                        <span className="font-semibold text-red-600">₹{invoiceData.balanceDue.toLocaleString()}</span>
+                        <span className="font-semibold text-[#101828]">₹{invoice.totalAmount.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -371,7 +413,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
         <div className="text-center text-sm text-[#4A5565] max-w-4xl mx-auto" style={{ fontFamily: 'Segoe UI' }}>
           <p>Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
           <p className="mt-1">This is a computer-generated invoice and does not require a signature.</p>
-          <p className="mt-1">Generated on 28 Jun 2025</p>
+          <p className="mt-1">Generated on {formatDate(invoice.createdAt)}</p>
         </div>
       </div>
     </MainLayout>

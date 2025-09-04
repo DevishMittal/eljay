@@ -747,3 +747,87 @@ export type Procedure = Diagnostic;
 
 // ProceduresResponse type (alias for DiagnosticsResponse)
 export type ProceduresResponse = DiagnosticsResponse;
+
+// Invoice types
+export interface InvoiceScreening {
+  id?: string;
+  invoiceId?: string;
+  serialNumber?: number;
+  screeningDate: string;
+  opNumber: string;
+  bioName: string;
+  diagnosticName: string;
+  amount: number;
+  discount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  organizationId: string;
+  invoiceDate: string;
+  patientName: string;
+  organizationName: string;
+  invoiceType: 'B2B' | 'B2C';
+  paymentStatus: 'Pending' | 'Paid' | 'Partial';
+  sgstRate: number;
+  cgstRate: number;
+  subtotal: number;
+  totalDiscount: number;
+  taxableAmount: number;
+  sgstAmount: number;
+  cgstAmount: number;
+  totalTax: number;
+  totalAmount: number;
+  notes?: string;
+  warranty?: string;
+  createdAt: string;
+  updatedAt: string;
+  screenings: InvoiceScreening[];
+}
+
+export interface CreateInvoiceData {
+  invoiceDate: string;
+  patientName: string;
+  organizationName: string;
+  invoiceType: 'B2B' | 'B2C';
+  screenings: InvoiceScreening[];
+  paymentStatus: 'Pending' | 'Paid' | 'Partial';
+  sgstRate: number;
+  cgstRate: number;
+  notes?: string;
+  warranty?: string;
+}
+
+export interface UpdateInvoiceData {
+  invoiceDate?: string;
+  paymentStatus?: 'Pending' | 'Paid' | 'Partial';
+  sgstRate?: number;
+  cgstRate?: number;
+  screenings?: InvoiceScreening[];
+}
+
+export interface InvoicesResponse {
+  status: string;
+  data: {
+    invoices: Invoice[];
+    summary: {
+      totalAmount: number;
+      totalTax: number;
+      count: number;
+    };
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface InvoiceResponse {
+  status: string;
+  data: Invoice;
+}

@@ -1,127 +1,69 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
-
-// Sample data for diagnostics
-const diagnostics = [
-  { id: 1, name: 'Pure Tone Audiometry', unitCost: 800 },
-  { id: 2, name: 'Tympanometry', unitCost: 400 },
-  { id: 3, name: 'Comprehensive Hearing Assessment', unitCost: 2500 },
-  { id: 4, name: 'Hearing Aid Consultation', unitCost: 1200 },
-  { id: 5, name: 'Follow-up Care Plan', unitCost: 800 }
-];
-
-interface ScreeningItem {
-  id: number;
-  sNo: number;
-  dateOfScreening: string;
-  opIpNo: string;
-  bioName: string;
-  diagnosticId: number;
-  diagnosticName: string;
-  amount: number;
-  discount: number;
-  total: number;
-}
+import InvoiceService from '@/services/invoiceService';
+import { CreateInvoiceData, InvoiceScreening } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function B2BInvoicePage() {
-  const [invoiceNumber, setInvoiceNumber] = useState('EHC-B2B-2025-06-001');
-  const [invoiceDate, setInvoiceDate] = useState('28-06-2025');
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [invoiceDate, setInvoiceDate] = useState('');
   const [patientName, setPatientName] = useState('');
   const [organizationName, setOrganizationName] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('Pending');
-  const [overallDiscount, setOverallDiscount] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Partial'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
-  const [screenings, setScreenings] = useState<ScreeningItem[]>([
-    {
-      id: 1,
-      sNo: 1,
-      dateOfScreening: '28-06-2025',
-      opIpNo: 'OP12345',
-      bioName: 'John Smith',
-      diagnosticId: 1,
-      diagnosticName: 'Pure Tone Audiometry',
-      amount: 800,
-      discount: 0,
-      total: 800
-    },
-    {
-      id: 2,
-      sNo: 2,
-      dateOfScreening: '28-06-2025',
-      opIpNo: 'OP12346',
-      bioName: 'Sarah Johnson',
-      diagnosticId: 2,
-      diagnosticName: 'Tympanometry',
-      amount: 400,
-      discount: 50,
-      total: 350
+  const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Authentication check
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isAuthenticated) {
+      router.push('/login');
     }
-  ]);
+  }, [isAuthenticated, authLoading, router]);
 
   const addScreening = () => {
-    const newScreening: ScreeningItem = {
-      id: Date.now(),
-      sNo: screenings.length + 1,
-      dateOfScreening: '28-06-2025',
-      opIpNo: '',
+    const newScreening: InvoiceScreening = {
+      screeningDate: '',
+      opNumber: '',
       bioName: '',
-      diagnosticId: 0,
       diagnosticName: '',
       amount: 0,
-      discount: 0,
-      total: 0
+      discount: 0
     };
     setScreenings([...screenings, newScreening]);
   };
 
-  const removeScreening = (id: number) => {
-    const updatedScreenings = screenings.filter(screening => screening.id !== id);
-    const renumberedScreenings = updatedScreenings.map((screening, index) => ({
-      ...screening,
-      sNo: index + 1
-    }));
-    setScreenings(renumberedScreenings);
+  const removeScreening = (index: number) => {
+    const updatedScreenings = screenings.filter((_, i) => i !== index);
+    setScreenings(updatedScreenings);
   };
 
-  const updateScreening = (id: number, field: keyof ScreeningItem, value: any) => {
-    setScreenings(screenings.map(screening => {
-      if (screening.id === id) {
-        const updatedScreening = { ...screening, [field]: value };
-        if (field === 'amount' || field === 'discount') {
-          updatedScreening.total = updatedScreening.amount - updatedScreening.discount;
-        }
-        return updatedScreening;
-      }
-      return screening;
-    }));
-  };
-
-  const handleDiagnosticSelect = (screeningId: number, diagnosticId: number) => {
-    const diagnostic = diagnostics.find(d => d.id === diagnosticId);
-    if (diagnostic) {
-      updateScreening(screeningId, 'diagnosticId', diagnosticId);
-      updateScreening(screeningId, 'diagnosticName', diagnostic.name);
-      updateScreening(screeningId, 'amount', diagnostic.unitCost);
-      updateScreening(screeningId, 'total', diagnostic.unitCost);
-    }
+  const updateScreening = (index: number, field: keyof InvoiceScreening, value: any) => {
+    const updatedScreenings = [...screenings];
+    updatedScreenings[index] = { ...updatedScreenings[index], [field]: value };
+    setScreenings(updatedScreenings);
   };
 
   const calculateSubtotal = () => {
-    return screenings.reduce((sum, screening) => sum + screening.total, 0);
+    return screenings.reduce((sum, screening) => sum + screening.amount, 0);
   };
 
   const calculateTotalDiscount = () => {
-    return screenings.reduce((sum, screening) => sum + screening.discount, 0) + overallDiscount;
+    return screenings.reduce((sum, screening) => sum + (screening.discount || 0), 0);
   };
 
   const calculateTaxableAmount = () => {
@@ -140,6 +82,80 @@ export default function B2BInvoicePage() {
     return calculateTaxableAmount() + tax.total;
   };
 
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading authentication...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
+
+  const handleSaveInvoice = async () => {
+    if (!token) {
+      alert('Authentication token not found. Please login again.');
+      router.push('/login');
+      return;
+    }
+
+    if (!invoiceDate || !patientName || !organizationName || screenings.length === 0) {
+      alert('Please fill in all required fields and add at least one screening');
+      return;
+    }
+
+    // Validate screenings
+    for (const screening of screenings) {
+      if (!screening.screeningDate || !screening.opNumber || !screening.bioName || !screening.diagnosticName || screening.amount <= 0) {
+        alert('Please fill in all required screening fields');
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      
+      const invoiceData: CreateInvoiceData = {
+        invoiceDate: InvoiceService.formatDateForAPI(invoiceDate),
+        patientName,
+        organizationName,
+        invoiceType: 'B2B',
+        screenings: screenings.map(screening => ({
+          ...screening,
+          screeningDate: InvoiceService.formatDateForAPI(screening.screeningDate)
+        })),
+        paymentStatus,
+        sgstRate,
+        cgstRate,
+        notes,
+        warranty: warrantyInfo
+      };
+
+      const response = await InvoiceService.createInvoice(invoiceData);
+      console.log('Invoice created successfully:', response);
+      
+      // Navigate to the new invoice detail page
+      window.location.href = `/billing/invoices/${response.data.id}`;
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      alert('Failed to create invoice. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    window.location.href = '/billing/invoices';
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -154,11 +170,15 @@ export default function B2BInvoicePage() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="outline" className="border-gray-300">
+            <Button variant="outline" className="border-gray-300" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white">
-              Save Invoice
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleSaveInvoice}
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Save Invoice'}
             </Button>
           </div>
         </div>
@@ -175,17 +195,7 @@ export default function B2BInvoicePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Invoice Number*
-                    </label>
-                    <Input
-                      value={invoiceNumber}
-                      onChange={(e) => setInvoiceNumber(e.target.value)}
-                      className="bg-white border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Invoice Date
+                      Invoice Date*
                     </label>
                     <Input
                       type="date"
@@ -240,7 +250,7 @@ export default function B2BInvoicePage() {
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening*</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No*</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name*</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name*</th>
@@ -250,21 +260,21 @@ export default function B2BInvoicePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {screenings.map((screening) => (
-                        <tr key={screening.id} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-sm text-gray-900">{screening.sNo}</td>
+                      {screenings.map((screening, index) => (
+                        <tr key={index} className="border-b border-gray-100">
+                          <td className="py-3 px-4 text-sm text-gray-900">{index + 1}</td>
                           <td className="py-3 px-4">
                             <Input
                               type="date"
-                              value={screening.dateOfScreening}
-                              onChange={(e) => updateScreening(screening.id, 'dateOfScreening', e.target.value)}
+                              value={screening.screeningDate}
+                              onChange={(e) => updateScreening(index, 'screeningDate', e.target.value)}
                               className="w-32 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
                             <Input
-                              value={screening.opIpNo}
-                              onChange={(e) => updateScreening(screening.id, 'opIpNo', e.target.value)}
+                              value={screening.opNumber}
+                              onChange={(e) => updateScreening(index, 'opNumber', e.target.value)}
                               placeholder="OP/IP Number"
                               className="w-24 bg-white border-gray-300"
                             />
@@ -272,47 +282,40 @@ export default function B2BInvoicePage() {
                           <td className="py-3 px-4">
                             <Input
                               value={screening.bioName}
-                              onChange={(e) => updateScreening(screening.id, 'bioName', e.target.value)}
+                              onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
                               placeholder="Patient Name"
                               className="w-32 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
-                            <select
-                              value={screening.diagnosticId}
-                              onChange={(e) => handleDiagnosticSelect(screening.id, parseInt(e.target.value))}
-                              className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-white"
-                              aria-label="Select diagnostic for this screening"
-                            >
-                              <option value={0}>Select diagnostic</option>
-                              {diagnostics.map(diagnostic => (
-                                <option key={diagnostic.id} value={diagnostic.id}>
-                                  {diagnostic.name}
-                                </option>
-                              ))}
-                            </select>
+                            <Input
+                              value={screening.diagnosticName}
+                              onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
+                              placeholder="Diagnostic Name"
+                              className="w-48 bg-white border-gray-300"
+                            />
                           </td>
                           <td className="py-3 px-4">
                             <Input
                               type="number"
                               value={screening.amount}
-                              onChange={(e) => updateScreening(screening.id, 'amount', parseInt(e.target.value) || 0)}
+                              onChange={(e) => updateScreening(index, 'amount', parseInt(e.target.value) || 0)}
                               className="w-20 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
                             <Input
                               type="number"
-                              value={screening.discount}
-                              onChange={(e) => updateScreening(screening.id, 'discount', parseInt(e.target.value) || 0)}
+                              value={screening.discount || 0}
+                              onChange={(e) => updateScreening(index, 'discount', parseInt(e.target.value) || 0)}
                               className="w-20 bg-white border-gray-300"
                             />
                           </td>
                           <td className="py-3 px-4">
                             <button
-                              onClick={() => removeScreening(screening.id)}
+                              onClick={() => removeScreening(index)}
                               className="text-red-500 hover:text-red-700"
-                              aria-label={`Remove screening ${screening.sNo}`}
+                              aria-label={`Remove screening ${index + 1}`}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -340,7 +343,7 @@ export default function B2BInvoicePage() {
                     </label>
                     <select
                       value={paymentStatus}
-                      onChange={(e) => setPaymentStatus(e.target.value)}
+                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Partial')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                       aria-label="Select payment status"
                     >
@@ -348,17 +351,6 @@ export default function B2BInvoicePage() {
                       <option value="Paid">Paid</option>
                       <option value="Partial">Partial</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Overall Discount (₹)
-                    </label>
-                    <Input
-                      type="number"
-                      value={overallDiscount}
-                      onChange={(e) => setOverallDiscount(parseInt(e.target.value) || 0)}
-                      className="bg-white border-gray-300"
-                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
