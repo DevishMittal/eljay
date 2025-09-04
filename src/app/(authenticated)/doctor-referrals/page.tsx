@@ -10,7 +10,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Users, DollarSign, FileText, TrendingUp, CheckCircle, ChartPie } from 'lucide-react';
+import { Users, DollarSign, FileText, TrendingUp, CheckCircle, ChartPie, Filter } from 'lucide-react';
 
 export default function DoctorReferralsPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -459,50 +459,64 @@ export default function DoctorReferralsPage() {
                 {/* Referrals Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Referrals</h2>
+                    <h2 className="text-sm " style={{ color: '#101828' }}>Referrals</h2>
                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{totalReferrals}</span>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    {/* Search Bar */}
-                    <div className="relative">
+                  <div className="flex gap-2">
+                    <div className="relative w-64">
+                      <svg
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
                       <input
                         type="text"
                         placeholder="Search patients or doctors..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        style={{ backgroundColor: '#F9FAFB' }}
+                        className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
-                      <svg className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
                     </div>
-                    
-                    {/* Doctor Filter */}
-                    <select 
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      aria-label="Filter by doctor"
-                    >
-                      <option>All Doctors</option>
-                      {loading ? (
-                        <option>Loading...</option>
-                      ) : (
-                        doctorReferrals.map((referral) => (
-                          <option key={referral.id} value={referral.id}>
-                            {referral.sourceName}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    
-                    {/* Status Filter */}
-                    <select 
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      aria-label="Filter by status"
-                    >
-                      <option>Current</option>
-                      <option>Completed</option>
-                      <option>Pending</option>
-                      <option>Active</option>
-                    </select>
+                    <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
+                      <Filter className="w-4 h-4 mr-2"/>
+                      All Doctors
+                      <svg
+                        className="w-4 h-4 ml-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
+                      <Filter className="w-4 h-4 mr-2"/>
+                      All Status
+                      <svg
+                        className="w-4 h-4 ml-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
 
@@ -532,19 +546,19 @@ export default function DoctorReferralsPage() {
                         ) : mockReferralData.length > 0 ? (
                           mockReferralData.map((referral) => (
                             <tr key={referral.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{referral.date}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.date}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div>
-                                  <div className="text-sm font-medium" style={{ color: '#101828' }}>{referral.patient.name}</div>
-                                  <div className="text-sm" style={{ color: '#717182' }}>{referral.patient.id}</div>
+                                  <div className="text-xs font-medium" style={{ color: '#101828' }}>{referral.patient.name}</div>
+                                  <div className="text-xs" style={{ color: '#717182' }}>{referral.patient.id}</div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{referral.doctor}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.doctor}</td>
                               <td className="px-6 py-4">
                                 <div className="space-y-1">
                                   {referral.services.map((service, index) => (
                                     <div key={index} className="flex items-center space-x-2">
-                                      <span className="text-sm" style={{ color: '#101828' }}>{service.name}</span>
+                                      <span className="text-xs" style={{ color: '#101828' }}>{service.name}</span>
                                       <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>{service.type}</span>
                                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                         service.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -553,14 +567,14 @@ export default function DoctorReferralsPage() {
                                   ))}
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{referral.amount}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>{referral.commission}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{referral.amount}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#717182' }}>{referral.commission}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                   referral.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                 }`}>{referral.status}</span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <td className="px-6 py-4 whitespace-nowrap text-xs">
                                 <button 
                                   className="text-gray-400 hover:text-gray-600"
                                   aria-label="View referral details"
@@ -576,7 +590,7 @@ export default function DoctorReferralsPage() {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colSpan={8} className="px-6 py-4 text-center text-xs text-gray-500">
                               No referrals found
                             </td>
                           </tr>
@@ -587,13 +601,13 @@ export default function DoctorReferralsPage() {
 
                   {/* Summary Row */}
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>{totalReferrals} referrals</strong></span>
                         <span style={{ color: '#717182' }}>Services & Products: <strong>7 items</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}>Total Amount: <strong>{totalRevenue}</strong></span>
+                        <span style={{ color: '#101828' }}>Total Amount: <strong className="text-xs">{totalRevenue}</strong></span>
                         <span style={{ color: '#717182' }}>Total Commission: <strong>{totalCommissions}</strong></span>
                       </div>
                     </div>
@@ -633,7 +647,7 @@ export default function DoctorReferralsPage() {
                 {/* Commission Statements Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-semibold" style={{ color: '#101828' }}>Commission Statements</h2>
+                    <h2 className="text-sm" style={{ color: '#101828' }}>Commission Statements</h2>
                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{mockCommissionStatements.length}</span>
                   </div>
                 </div>
@@ -657,18 +671,18 @@ export default function DoctorReferralsPage() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {mockCommissionStatements.map((statement, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{statement.doctor}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.period}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.referrals}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#101828' }}>{statement.revenue}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#717182' }}>{statement.commission}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{statement.doctor}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.period}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.referrals}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{statement.revenue}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#717182' }}>{statement.commission}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 statement.status === 'sent' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                               }`}>{statement.status}</span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#101828' }}>{statement.dueDate}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.dueDate}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs">
                               <div className="flex items-center space-x-2">
                                 <button 
                                   className="text-gray-400 hover:text-gray-600"
@@ -699,15 +713,15 @@ export default function DoctorReferralsPage() {
 
                   {/* Total Row */}
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>Total</strong></span>
                         <span style={{ color: '#717182' }}>Statements: <strong>{mockCommissionStatements.length} statements</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}>Total Referrals: <strong>13</strong></span>
-                        <span style={{ color: '#101828' }}>Total Revenue: <strong>₹30,500</strong></span>
-                        <span className="text-green-600 font-medium">Total Commission: <strong>₹3,050</strong></span>
+                        <span style={{ color: '#101828' }}>Total Referrals: <strong className="text-xs">13</strong></span>
+                        <span style={{ color: '#101828' }}>Total Revenue: <strong className="text-xs">₹30,500</strong></span>
+                        <span className="text-green-600 font-medium">Total Commission: <strong className="text-xs">₹3,050</strong></span>
                       </div>
                     </div>
                   </div>
