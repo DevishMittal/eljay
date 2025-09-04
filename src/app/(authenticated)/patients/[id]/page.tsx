@@ -1421,7 +1421,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="patient-files" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
-                    <button className="bg-orange-600 text-white px-4 py-1 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                    <button className="bg-orange-600 text-white px-4 py-1 rounded-lg text-sm flex items-center space-x-2 hover:bg-orange-700 transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
@@ -1436,7 +1436,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     </div>
                     <h3 className="text-sm font-medium mb-2 text-gray-900">No files uploaded</h3>
                     <p className="text-gray-500 text-sm mb-6">Upload patient files and documents</p>
-                    <button className="bg-orange-600 text-white px-6 py-1 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
+                    <button className="bg-orange-600 text-white px-6 py-1 rounded-lg text-sm flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>

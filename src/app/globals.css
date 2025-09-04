@@ -5,7 +5,7 @@
   --foreground: #171717;
   
   /* Color palette - Updated for Hearing Care Management */
-  --primary: #f97316; /* Orange for brand */
+  --primary: #f54900; /* Orange for brand */
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
@@ -69,8 +69,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #ffffff;
-    --foreground: #364153; 
-    --primary: #f97316;
+    --foreground: #364153;
+    --primary: #f54900;
     --primary-foreground: #0f172a;
     --secondary: #1e293b;
     --secondary-foreground: #f8fafc;
