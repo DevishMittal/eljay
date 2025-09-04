@@ -1,18 +1,143 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Area, AreaChart
 } from 'recharts';
+import { DashboardService, DashboardAppointmentsData } from '@/services/dashboardService';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('appointments');
   const [timeFilter, setTimeFilter] = useState('Last 30 Days');
+  const [appointmentsData, setAppointmentsData] = useState<DashboardAppointmentsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for charts
+  // Get date range based on time filter
+  const getDateRange = () => {
+    const endDate = new Date();
+    let startDate = new Date();
+    
+    switch (timeFilter) {
+      case 'Last 7 Days':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case 'Last 30 Days':
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+      case 'Last 90 Days':
+        startDate.setDate(endDate.getDate() - 90);
+        break;
+      case 'This Year':
+        startDate = new Date(endDate.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate.setDate(endDate.getDate() - 30);
+    }
+    
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
+  // Fetch appointments data
+  const fetchAppointmentsData = async () => {
+    if (activeTab !== 'appointments') return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getDateRange();
+      const data = await DashboardService.getAppointmentsData(startDate, endDate);
+      setAppointmentsData(data);
+    } catch (error) {
+      console.error('Error fetching appointments data:', error);
+      setError('Failed to fetch appointments data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when tab changes or time filter changes
+  useEffect(() => {
+    fetchAppointmentsData();
+  }, [activeTab, timeFilter]);
+
+  // Debug logging
+  useEffect(() => {
+    if (appointmentsData) {
+      console.log('Appointments data loaded:', appointmentsData);
+    }
+  }, [appointmentsData]);
+
+  // Transform API data for charts
+  const transformAppointmentsData = () => {
+    if (!appointmentsData) return null;
+
+    try {
+      // Appointment Status Distribution
+      const appointmentStatusData = [
+        { name: 'Completed', value: appointmentsData.statusDistribution?.COMPLETED || 0, color: '#10B981' },
+        { name: 'Pending', value: appointmentsData.statusDistribution?.PENDING || 0, color: '#F59E0B' },
+        { name: 'Cancelled', value: appointmentsData.statusDistribution?.CANCELLED || 0, color: '#EF4444' },
+        { name: 'No Show', value: appointmentsData.statusDistribution?.NO_SHOW || 0, color: '#8B5CF6' }
+      ].filter(item => item.value > 0);
+
+      // Appointment Trends (Last 6 Months)
+      const appointmentTrendsData = (appointmentsData.trends?.lastSixMonths || []).map(item => ({
+        month: new Date(item.month).toLocaleDateString('en-US', { month: 'short' }),
+        total: item.count,
+        completed: item.count, // Assuming all are completed for now
+        cancelled: 0
+      }));
+
+      // Audiologist Performance
+      const audiologistPerformanceData = (appointmentsData.audiologistPerformance || []).map(item => ({
+        name: item.audiologistName,
+        appointments: item.count
+      }));
+
+      // Channel Distribution
+      const channelDistributionData = (appointmentsData.channelDistribution || []).map(item => ({
+        name: item.name,
+        value: item.count,
+        color: item.referralSourceId ? '#10B981' : '#3B82F6'
+      }));
+
+      // Attendance Rate Data
+      const attendanceRateData = (appointmentsData.trends?.attendanceRate || []).map(item => ({
+        month: item.monthLabel,
+        rate: item.attendanceRate,
+        target: item.target
+      }));
+
+      // Booking Lead Time Distribution
+      const bookingLeadTimeData = Object.entries(appointmentsData.leadTimeHistogram || {}).map(([range, count]) => ({
+        range,
+        count
+      }));
+
+      return {
+        appointmentStatusData,
+        appointmentTrendsData,
+        audiologistPerformanceData,
+        channelDistributionData,
+        attendanceRateData,
+        bookingLeadTimeData
+      };
+    } catch (error) {
+      console.error('Error transforming appointments data:', error);
+      return null;
+    }
+  };
+
+  const chartData = transformAppointmentsData();
+
+  // Mock data for other sections (to be replaced when APIs are ready)
   const appointmentStatusData = [
     { name: 'Completed', value: 149, color: '#10B981' },
     { name: 'Pending', value: 12, color: '#F59E0B' },
@@ -332,79 +457,150 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         {activeTab === 'appointments' && (
           <div className="space-y-6">
-            {/* Top Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Appointments Overview */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Appointments Overview</h3>
-                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
-                </div>
-                <div className="mb-4">
-                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>167</div>
-                  <div className="text-sm mb-2" style={{ color: '#717182' }}>Total appointments this month.</div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium" style={{ color: '#101828' }}>89.2% completed</span>
-                    <div className="flex items-center text-sm text-green-600">
-                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                      </svg>
-                      20.77% vs last month
-                    </div>
+            {loading ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Loading appointments data...</span>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-center">
+                  <div className="text-red-600 mb-2">
+                    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '89.2%' }}></div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-green-600">149</div>
-                    <div className="text-xs" style={{ color: '#717182' }}>COMPLETED</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-blue-600">12</div>
-                    <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-red-600">6</div>
-                    <div className="text-xs" style={{ color: '#717182' }}>CANCELLED</div>
-                  </div>
+                  <p className="text-gray-600 mb-4">{error}</p>
+                  <button 
+                    onClick={fetchAppointmentsData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Retry
+                  </button>
                 </div>
               </div>
+            ) : !appointmentsData ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-center">
+                  <div className="text-gray-400 mb-2">
+                    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 mb-4">No appointments data available for the selected period.</p>
+                  <button 
+                    onClick={fetchAppointmentsData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Top Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Appointments Overview */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Appointments Overview</h3>
+                      <span className="text-sm" style={{ color: '#717182' }}>{timeFilter}</span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                        {appointmentsData?.overview.total || 0}
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#717182' }}>
+                        Total appointments in selected period.
+                      </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium" style={{ color: '#101828' }}>
+                          {appointmentsData?.overview.completionRate || 0}% completed
+                        </span>
+                        <div className="flex items-center text-sm text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                          {appointmentsData?.performance.targetAchievement ? 
+                            `${Math.round(appointmentsData.performance.targetAchievement)}% of target` : 
+                            'Target achieved'
+                          }
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full" 
+                          style={{ width: `${appointmentsData?.overview.completionRate || 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">{appointmentsData?.overview.completed || 0}</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>COMPLETED</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-blue-600">{appointmentsData?.overview.pending || 0}</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-red-600">{appointmentsData?.overview.cancelled || 0}</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>CANCELLED</div>
+                      </div>
+                    </div>
+                  </div>
 
               {/* Performance */}
               <div className="bg-white rounded-lg border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Performance</h3>
-                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                  <span className="text-sm" style={{ color: '#717182' }}>{timeFilter}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>89.2%</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {appointmentsData?.performance.attendanceRate || 0}%
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>ATTENDANCE RATE</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>67%</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {Math.round(appointmentsData?.performance.repeatPatients || 0)}%
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>REPEAT PATIENTS</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>4.2%</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {appointmentsData?.performance.noShowRate || 0}%
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>NO-SHOW RATE</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>4.2</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {appointmentsData?.performance.avgLeadDays ? 
+                        appointmentsData.performance.avgLeadDays.toFixed(1) : 0}
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>AVG LEAD DAYS</div>
                   </div>
                 </div>
                 <div className="mb-2">
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span style={{ color: '#717182' }}>89.2% of target</span>
-                    <span style={{ color: '#717182' }}>Target: 90%</span>
+                    <span style={{ color: '#717182' }}>
+                      {appointmentsData?.performance.attendanceRate || 0}% of target
+                    </span>
+                    <span style={{ color: '#717182' }}>Target: 85%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '89.2%' }}></div>
+                    <div 
+                      className="bg-green-500 h-2 rounded-full" 
+                      style={{ width: `${Math.min((appointmentsData?.performance.attendanceRate || 0), 100)}%` }}
+                    ></div>
                   </div>
-                  <div className="text-sm text-green-600 mt-1">Below target</div>
+                  <div className={`text-sm mt-1 ${
+                    (appointmentsData?.performance.attendanceRate || 0) >= 85 ? 'text-green-600' : 'text-orange-600'
+                  }`}>
+                    {(appointmentsData?.performance.attendanceRate || 0) >= 85 ? 'Target achieved' : 'Below target'}
+                  </div>
                 </div>
               </div>
 
@@ -412,22 +608,31 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Utilization Rate</h3>
-                  <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                  <span className="text-sm" style={{ color: '#717182' }}>{timeFilter}</span>
                 </div>
                 <div className="mb-4">
-                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>78%</div>
+                  <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                    {appointmentsData?.utilization.overall || 0}%
+                  </div>
                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Overall</div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${appointmentsData?.utilization.overall || 0}%` }}
+                    ></div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>85%</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {appointmentsData?.utilization.audiologistAvg || 0}%
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>AUDIOLOGIST AVG</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold" style={{ color: '#101828' }}>92%</div>
+                    <div className="text-lg font-bold" style={{ color: '#101828' }}>
+                      {appointmentsData?.utilization.peakHour || 0}
+                    </div>
                     <div className="text-xs" style={{ color: '#717182' }}>PEAK HOUR</div>
                   </div>
                 </div>
@@ -437,12 +642,21 @@ export default function DashboardPage() {
                     <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
-                    +5% vs last month
+                    {appointmentsData?.utilization.overall ? 
+                      `${appointmentsData.utilization.overall >= 80 ? 'Optimal' : 'Below optimal'}` : 
+                      'No data'
+                    }
                   </div>
                 </div>
                 <div className="flex items-center mt-2">
                   <span className="text-sm mr-2" style={{ color: '#717182' }}>Resource efficiency</span>
-                  <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Low</span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    (appointmentsData?.utilization.overall || 0) >= 80 ? 
+                      'bg-green-100 text-green-800' : 
+                      'bg-red-100 text-red-800'
+                  }`}>
+                    {(appointmentsData?.utilization.overall || 0) >= 80 ? 'Optimal' : 'Low'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -452,44 +666,66 @@ export default function DashboardPage() {
               {/* Appointment Status Distribution */}
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Appointment Status Distribution</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Current month breakdown</p>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={appointmentStatusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {appointmentStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>{timeFilter} breakdown</p>
+                {chartData?.appointmentStatusData && chartData.appointmentStatusData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={chartData.appointmentStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {chartData.appointmentStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    <div className="text-center">
+                      <svg className="w-16 h-16 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <p>No status distribution data available</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Appointment Trends */}
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Appointment Trends (6 Months)</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly performance tracking</p>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={appointmentTrendsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeDasharray="5 5" />
-                    <Line type="monotone" dataKey="completed" stroke="#10B981" />
-                    <Line type="monotone" dataKey="cancelled" stroke="#EF4444" />
-                  </LineChart>
-                </ResponsiveContainer>
+                {chartData?.appointmentTrendsData && chartData.appointmentTrendsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData.appointmentTrendsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeDasharray="5 5" />
+                      <Line type="monotone" dataKey="completed" stroke="#10B981" />
+                      <Line type="monotone" dataKey="cancelled" stroke="#EF4444" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    <div className="text-center">
+                      <svg className="w-16 h-16 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <p>No trends data available</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -498,9 +734,9 @@ export default function DashboardPage() {
               {/* Audiologist Performance */}
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Audiologist Performance</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>This month appointments handled</p>
+                <p className="text-sm mb-4" style={{ color: '#717182' }}>{timeFilter} appointments handled</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={audiologistPerformanceData}>
+                  <BarChart data={chartData?.audiologistPerformanceData || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                     <YAxis />
@@ -517,7 +753,7 @@ export default function DashboardPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={channelDistributionData}
+                      data={chartData?.channelDistributionData || []}
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
@@ -525,7 +761,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {channelDistributionData.map((entry, index) => (
+                      {(chartData?.channelDistributionData || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -540,7 +776,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Booking Lead Time Distribution</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Days between booking and appointment</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={bookingLeadTimeData}>
+                  <BarChart data={chartData?.bookingLeadTimeData || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="range" />
                     <YAxis />
@@ -556,7 +792,7 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Attendance Rate Trend</h3>
               <p className="text-sm mb-4" style={{ color: '#717182' }}>Performance vs target (85%)</p>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={attendanceRateData}>
+                <LineChart data={chartData?.attendanceRateData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis domain={[75, 95]} />
@@ -567,6 +803,8 @@ export default function DashboardPage() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+              </>
+            )}
           </div>
         )}
 
