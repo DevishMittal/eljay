@@ -6,10 +6,11 @@ import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReferralSource } from '@/types';
-import { 
+import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { Users, DollarSign, FileText, TrendingUp, CheckCircle, ChartPie } from 'lucide-react';
 
 export default function DoctorReferralsPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -69,6 +70,38 @@ export default function DoctorReferralsPage() {
   const totalCommissions = '₹16,770';
   const pendingPayments = '₹12,000';
   const paidThisMonth = '₹18,500';
+
+  // Summary cards data (same structure as billing invoices)
+  const summaryCards = [
+    {
+      title: "Total Referrals",
+      value: totalReferrals.toString(),
+      icon: Users,
+      bgColor: "bg-blue-100",
+      iconColor: "text-blue-700",
+    },
+    {
+      title: "Completed",
+      value: totalDoctorReferrals.toString(),
+      icon: TrendingUp,
+      bgColor: "bg-green-100",
+      iconColor: "text-green-700",
+    },
+    {
+      title: "Revenue Generated",
+      value: totalRevenue,
+      icon: DollarSign,
+      bgColor: "bg-yellow-100",
+      iconColor: "text-yellow-700",
+    },
+    {
+      title: "Total Commissions",
+      value: totalCommissions,
+      icon: FileText,
+      bgColor: "bg-purple-100",
+      iconColor: "text-purple-700",
+    },
+  ];
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -169,7 +202,7 @@ export default function DoctorReferralsPage() {
           <div className="flex space-x-3">
             <button 
               onClick={() => setIsAddDoctorModalOpen(true)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="px-4 py-1.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,7 +211,7 @@ export default function DoctorReferralsPage() {
                 <span>Add Doctor</span>
               </div>
             </button>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+            <button className="px-4 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
               <div className="flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -212,64 +245,41 @@ export default function DoctorReferralsPage() {
         {/* Tab Content */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Key Metrics Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {/* Total Referrals */}
-                  <div className="bg-white rounded-lg border border-border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Total Referrals</h3>
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                        </svg>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {summaryCards.map((card, index) => {
+                    const IconComponent = card.icon;
+                    return (
+                      <div key={index} className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p
+                                className="text-xs text-[#4A5565]"
+                                style={{ fontFamily: "Segoe UI" }}
+                              >
+                                {card.title}
+                              </p>
+                              <p
+                                className="text-xl font-semibold text-gray-900"
+                                style={{ fontFamily: "Segoe UI" }}
+                              >
+                                {card.value}
+                              </p>
+                            </div>
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center ${card.bgColor}`}
+                            >
+                              <IconComponent className={`w-5 h-5 ${card.iconColor}`} />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalReferrals}</div>
-                    <div className="text-sm" style={{ color: '#717182' }}>Total referrals this month</div>
-                  </div>
-
-                  {/* Completed */}
-                  <div className="bg-white rounded-lg border border-border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Completed</h3>
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalDoctorReferrals}</div>
-                    <div className="text-sm" style={{ color: '#717182' }}>Doctor referrals</div>
-                  </div>
-
-                  {/* Revenue Generated */}
-                  <div className="bg-white rounded-lg border border-border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Revenue Generated</h3>
-                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalRevenue}</div>
-                    <div className="text-sm" style={{ color: '#717182' }}>Total revenue from referrals</div>
-                  </div>
-
-                  {/* Total Commissions */}
-                  <div className="bg-white rounded-lg border border-border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Total Commissions</h3>
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>{totalCommissions}</div>
-                    <div className="text-sm" style={{ color: '#717182' }}>Total commissions paid</div>
-                  </div>
+                    );
+                  })}
                 </div>
+
+              
 
                 {/* Charts Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -309,17 +319,22 @@ export default function DoctorReferralsPage() {
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                    <div className="flex items-center justify-between mt-4 text-sm">
-                      <span style={{ color: '#717182' }}>Peak: Nov (32)</span>
-                      <span className="text-green-600 font-medium">+87% 6-month growth</span>
+                    <div className="flex items-center text-xs justify-between mt-4  bg-blue-50 rounded-lg p-2">
+                      <div className="flex items-center space-x-1">
+                        <TrendingUp className="w-3 h-3 text-green-600" />
+                        <span className="text-xs" style={{ color: '#717182' }}> Peak: Nov (32)</span>
+                      </div>
+                      <div className="flex flex-col justify-end items-end"> <span className="text-green-600 font-medium">+87% </span>
+                      <span className="text-gray-500 ">6-month growth</span></div>
+                     
                     </div>
                   </div>
 
                   {/* Top Performing Doctors */}
                   <div className="bg-white rounded-lg border border-border p-6">
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top Performing Doctors</h3>
-                      <p className="text-sm" style={{ color: '#717182' }}>This month&apos;s leading referrers</p>
+                      <h3 className="text-sm font-semibold mb-2" style={{ color: '#101828' }}>Top Performing Doctors</h3>
+                      <p className="text-xs" style={{ color: '#717182' }}>This month&apos;s leading referrers</p>
                     </div>
                     <div className="space-y-4">
                       {loading ? (
@@ -328,7 +343,7 @@ export default function DoctorReferralsPage() {
                         </div>
                       ) : doctorReferrals.length > 0 ? (
                         doctorReferrals.slice(0, 3).map((referral, index) => (
-                          <div key={referral.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={referral.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                 index === 0 ? 'bg-blue-100' : index === 1 ? 'bg-green-100' : 'bg-orange-100'
@@ -338,13 +353,13 @@ export default function DoctorReferralsPage() {
                                 }`}>{index + 1}</span>
                               </div>
                               <div>
-                                <div className="font-medium" style={{ color: '#101828' }}>{referral.sourceName}</div>
-                                <div className="text-sm" style={{ color: '#717182' }}>{referral.specialization || 'General'}</div>
+                                <div className="font-medium text-sm" style={{ color: '#101828' }}>{referral.sourceName}</div>
+                                <div className="text-xs" style={{ color: '#717182' }}>{referral.specialization || 'General'}</div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium" style={{ color: '#101828' }}>1 referral</div>
-                              <div className="text-sm" style={{ color: '#717182' }}>₹200</div>
+                              <div className="font-medium text-sm" style={{ color: '#101828' }}>1 referral</div>
+                              <div className="text-xs" style={{ color: '#717182' }}>₹200</div>
                             </div>
                           </div>
                         ))
@@ -362,11 +377,11 @@ export default function DoctorReferralsPage() {
                   {/* Commission Overview */}
                   <div className="bg-white rounded-lg border border-border p-6">
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Commission Overview</h3>
-                      <p className="text-sm" style={{ color: '#717182' }}>Payment status breakdown</p>
+                      <h3 className="text-sm mb-2" style={{ color: '#101828' }}>Commission Overview</h3>
+                      <p className="text-xs" style={{ color: '#717182' }}>Payment status breakdown</p>
                     </div>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 py-1 border border-yellow-100 bg-yellow-50 rounded-lg" style={{ boxShadow: '0 0 0 1px #fde047' }}>
                         <div className="flex items-center space-x-3">
                           <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -374,20 +389,18 @@ export default function DoctorReferralsPage() {
                           <span className="font-medium" style={{ color: '#101828' }}>Pending Payments</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>{pendingPayments}</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>2 statements</div>
+                          <div className="text-sm" style={{ color: '#101828' }}>{pendingPayments}</div>
+                          <div className="text-xs" style={{ color: '#717182' }}>2 statements</div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 py-1 border border-green-100 bg-green-50 rounded-lg" style={{ boxShadow: '0 0 0 1px #86efac' }}>
                         <div className="flex items-center space-x-3">
-                          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
+                          <CheckCircle className="w-5 h-5 text-green-600" />
                           <span className="font-medium" style={{ color: '#101828' }}>Paid This Month</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium" style={{ color: '#101828' }}>{paidThisMonth}</div>
-                          <div className="text-sm" style={{ color: '#717182' }}>3 statements</div>
+                          <div className="text-sm" style={{ color: '#101828' }}>{paidThisMonth}</div>
+                          <div className="text-xs" style={{ color: '#717182' }}>3 statements</div>
                         </div>
                       </div>
                     </div>
@@ -396,8 +409,11 @@ export default function DoctorReferralsPage() {
                   {/* Top 5 Services & Products */}
                   <div className="bg-white rounded-lg border border-border p-6">
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top 5 Services & Products</h3>
-                      <p className="text-sm" style={{ color: '#717182' }}>Most referred items and services</p>
+                      <h3 className="text-sm mb-2" style={{ color: '#101828' }}>
+                        <ChartPie className="w-4 h-4 text-blue-600 inline mr-2" />
+                        Top 5 Services & Products
+                      </h3>
+                      <p className="text-xs" style={{ color: '#717182' }}>Most referred items and services</p>
                     </div>
                     <div className="flex items-center space-x-6">
                       <div className="flex-1">
@@ -422,7 +438,7 @@ export default function DoctorReferralsPage() {
                       </div>
                       <div className="flex-1 space-y-2">
                         {topServicesData.map((service, index) => (
-                          <div key={index} className="flex items-center space-x-2">
+                          <div key={index} className="flex items-center space-x-2 space-y-3">
                             <div 
                               className="w-3 h-3 rounded-full" 
                               style={{ backgroundColor: service.color }}
