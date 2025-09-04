@@ -272,6 +272,9 @@ export default function DynamicCalendar({
               </div>
             </div>
 
+            {/* Separator Line */}
+            <hr className="my-4 border-gray-200" />
+
             {/* Patient Information Section */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4 ">
               <div className="flex items-start justify-between">
