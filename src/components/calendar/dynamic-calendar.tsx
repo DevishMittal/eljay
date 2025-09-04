@@ -236,7 +236,7 @@ export default function DynamicCalendar({
 
     return (
       <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={handleClickOutside}>
-        <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-white rounded-xl w-[30rem] max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <div className="p-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -250,7 +250,7 @@ export default function DynamicCalendar({
                     setIsDetailsModalOpen(false);
                     setSelectedAppointment(null);
                   }}
-                  className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                   aria-label="Edit appointment"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -262,7 +262,7 @@ export default function DynamicCalendar({
                     setIsDetailsModalOpen(false);
                     setSelectedAppointment(null);
                   }}
-                  className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                   aria-label="Close modal"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -272,8 +272,11 @@ export default function DynamicCalendar({
               </div>
             </div>
 
+            {/* Separator Line */}
+            <hr className="my-4 border-gray-200" />
+
             {/* Patient Information Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100 shadow-lg">
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 ">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -286,40 +289,43 @@ export default function DynamicCalendar({
                       className="w-6 h-6 text-blue-600"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <h3 className="font-semibold text-gray-900 text-base">{appointment.patient}</h3>
-                    <p className="text-sm text-gray-500">Patient ID: PAT999</p>
-                    <p className="text-sm text-gray-600">{appointment.phoneNumber || 'No contact number'}</p>
+                    <p className="text-xs text-gray-500">Patient ID: PAT999</p>
+                    <p className="text-xs text-gray-600">{appointment.phoneNumber || 'No contact number'}</p>
                   </div>
                 </div>
                 <div className="text-right space-y-1">
-                  <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium text-center">Pending</div>
+                  <div className="flex justify-end">
+                    <div className="bg-yellow-100 text-yellow-800 w-16 rounded-full text-xs text-center border-amber-300 border">Pending</div>
+                  </div>
                   <div className="flex items-center justify-end space-x-1 text-orange-600 text-xs">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <span>Incomplete profile</span>
                   </div>
-                  <div className="text-xs text-gray-500 text-right">No email</div>
+                  <div className="text-xs text-gray-500 text-right mt-2">No email</div>
                 </div>
               </div>
             </div>
+            <hr className="my-4 border-gray-200" />
 
             {/* Appointment Details Section */}
             <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 ">
                 <div className="flex items-center space-x-2">
                   <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-semibold text-gray-900 text-base">In-Clinic Appointment</span>
+                  <span className="font-semibold text-gray-900 text-xs">In-Clinic Appointment</span>
                 </div>
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors flex items-center space-x-2"
+                    className="px-5  py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2"
                   >
-                    <span>Mark as...</span>
+                    <span className='pr-8'>Mark as...</span>
                     <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -357,9 +363,10 @@ export default function DynamicCalendar({
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <hr className="my-3 border-gray-200" />
+              <div className="flex items-center justify-between text-xs">
                 <p className="text-gray-700">
-                  <span className="font-medium">Doctor:</span> <span className="font-semibold">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
+                  <span className="font-medium text-gray-400 ">Doctor:</span> <span className="font-semibold">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
                 </p>
                 <p className="text-gray-700">
                   <span className="font-medium">Time:</span> <span className="font-semibold">{appointment.time} - {appointment.duration} minutes</span>
@@ -369,27 +376,27 @@ export default function DynamicCalendar({
 
             {/* Planned Procedures Section */}
             <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 text-base mb-3">Planned Procedures</h3>
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center space-x-3">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">Planned Procedures</h3>
+              <div className="bg-white rounded-lg p-2 border border-gray-200">
+                <div className="flex items-center space-x-3 rounded-full ">
                   <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-sm text-gray-900">Follow-up Consultation</span>
+                  <span className="text-xs text-gray-900">Follow-up Consultation</span>
                 </div>
               </div>
             </div>
 
             {/* Notes Section */}
             <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 text-base mb-3">Notes</h3>
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">Notes</h3>
+              <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 ">
                 {isEditingNotes ? (
                   <div className="space-y-3">
                     <textarea
                       value={notesText}
                       onChange={(e) => setNotesText(e.target.value)}
-                      className="w-full p-3 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-3 text-xs border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows={3}
                       placeholder="Add notes for this patient..."
                     />
@@ -399,7 +406,7 @@ export default function DynamicCalendar({
                           setIsEditingNotes(false);
                           setNotesText(appointment.notes || '');
                         }}
-                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                        className="px-3 py-1 text-xs border border-red-500 rounded-md text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -408,7 +415,7 @@ export default function DynamicCalendar({
                           // Here you would save the notes to the appointment
                           setIsEditingNotes(false);
                         }}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors cursor-pointer"
                       >
                         Save
                       </button>
@@ -419,7 +426,7 @@ export default function DynamicCalendar({
                     className="cursor-pointer"
                     onClick={() => setIsEditingNotes(true)}
                   >
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-xs text-gray-500 italic">
                       {notesText || "No notes available. Click \"Edit\" to add notes for this patient."}
                     </p>
                   </div>
@@ -434,7 +441,7 @@ export default function DynamicCalendar({
                   setIsDetailsModalOpen(false);
                   setSelectedAppointment(null);
                 }}
-                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 text-sm font-medium"
+                className="px-10 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer flex items-center space-x-2 text-sm font-medium"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -446,7 +453,7 @@ export default function DynamicCalendar({
                   setIsDetailsModalOpen(false);
                   setSelectedAppointment(null);
                 }}
-                className="px-6 py-2.5 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                className="px-10 py-1.5 border border-red-600 text-red-700 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-sm font-medium"
               >
                 Cancel Appointment
               </button>
@@ -697,7 +704,7 @@ export default function DynamicCalendar({
           <div className="flex items-center">
             <button
               onClick={handlePrevious}
-              className=" hover:bg-gray-100 rounded-md transition-colors"
+              className=" hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
               aria-label={`Previous ${currentView}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -709,7 +716,7 @@ export default function DynamicCalendar({
             </span>
             <button
               onClick={handleNext}
-              className="hover:bg-gray-100 rounded-lg transition-colors"
+              className="hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
               aria-label={`Next ${currentView}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -722,7 +729,7 @@ export default function DynamicCalendar({
           <div className="flex items-center space-x-2">
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-xs bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors shadow-lg"
+              className="px-3 py-1 text-xs bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors cursor-pointer shadow-lg"
             >
               Today
             </button>
@@ -732,7 +739,7 @@ export default function DynamicCalendar({
                   key={view}
                   onClick={() => handleViewChange(view)}
                   className={cn(
-                    "px-3 py-1 text-xs rounded-md transition-colors capitalize",
+                    "px-3 py-1 text-xs rounded-md transition-colors capitalize cursor-pointer",
                     currentView === view
                       ? "bg-white border border-gray-300 text-black shadow-lg"
                       : "bg-gray-100 text-black hover:bg-gray-200"

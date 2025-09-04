@@ -3,7 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { use } from 'react';
+import { ActivityIcon, NotepadText, Search, Volume2 } from 'lucide-react';
 import MainLayout from '@/components/layout/main-layout';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
@@ -13,7 +15,6 @@ import { diagnosticAppointmentsService } from '@/services/diagnosticAppointments
 import PatientInvoiceService from '@/services/patientInvoiceService';
 import PatientPaymentService from '@/services/patientPaymentService';
 import PatientPaymentHistoryService, { PaymentHistoryEvent } from '@/services/patientPaymentHistoryService';
-import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import ClinicalNoteModal from '@/components/modals/clinical-note-modal';
@@ -44,6 +45,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [showClinicalNoteModal, setShowClinicalNoteModal] = useState(false);
   const [editingNote, setEditingNote] = useState<ClinicalNote | null>(null);
   const [isEditingNote, setIsEditingNote] = useState(false);
+
+  // Category dropdown state
+  const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
+
+  const categories = [
+    { value: 'All Categories', label: 'All Categories' },
+    { value: 'General', label: 'General' },
+    { value: 'Diagnosis', label: 'Diagnosis' },
+    { value: 'Treatment', label: 'Treatment' },
+    { value: 'Follow-up', label: 'Follow-up' },
+    { value: 'Test Results', label: 'Test Results' },
+    { value: 'Prescription', label: 'Prescription' },
+    { value: 'Referral', label: 'Referral' }
+  ];
 
   // Diagnostic Appointments state
   const [diagnosticAppointments, setDiagnosticAppointments] = useState<DiagnosticAppointment[]>([]);
@@ -566,11 +581,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <g clipPath="url(#clip0_1_44808)">
-                            <path d="M12.9333 7.65023H11.4866C11.2317 7.64968 10.9836 7.73266 10.7803 7.88646C10.5769 8.04026 10.4296 8.25643 10.3608 8.50189L8.98993 13.3786C8.9811 13.4089 8.96268 13.4355 8.93743 13.4544C8.91219 13.4733 8.88149 13.4836 8.84993 13.4836C8.81838 13.4836 8.78768 13.4733 8.76243 13.4544C8.73719 13.4355 8.71877 13.4089 8.70993 13.3786L5.48993 1.92189C5.4811 1.8916 5.46268 1.86499 5.43743 1.84606C5.41219 1.82713 5.38149 1.81689 5.34993 1.81689C5.31838 1.81689 5.28768 1.82713 5.26243 1.84606C5.23719 1.86499 5.21877 1.8916 5.20993 1.92189L3.8391 6.79856C3.77054 7.04307 3.62407 7.25853 3.42194 7.41224C3.2198 7.56594 2.97304 7.6495 2.7191 7.65023H1.2666" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                          </g>
-                        </svg>
+                        <ActivityIcon size={16} />
                         <span>Diagnostics</span>
                       </div>
                     </button>
@@ -1191,13 +1202,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="diagnostics" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 rounded flex items-center justify-center" style={{
-                        background: 'linear-gradient(135deg, #FF6900 0%, #F54900 100%)'
-                      }}>
-                        <svg width="16" height="16" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M17.125 18.875V17.125C17.125 16.1967 16.7563 15.3065 16.0999 14.6501C15.4435 13.9937 14.5533 13.625 13.625 13.625H8.375C7.44674 13.625 6.5565 13.9937 5.90013 14.6501C5.24375 15.3065 4.875 16.1967 4.875 17.125V18.875" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                      <div className="w-5 h-5 rounded flex items-center justify-center">
+                        <ActivityIcon size={16} className="text-black" />
                       </div>
                       <h2 className="text-sm font-semibold text-gray-900">Diagnostics</h2>
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{diagnosticAppointments.length} Plans</span>
@@ -1243,7 +1249,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       diagnosticAppointments.map((appointment) => (
                         <div 
                           key={appointment.id} 
-                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                          className="border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => handleDiagnosticPlanClick(appointment.id)}
                         >
                           <div className="flex items-start justify-between mb-3">
@@ -1254,21 +1260,24 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                   {appointment.status || 'planned'}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
-                                <div>
-                                  <span className="font-medium">Cost:</span> 
+                              <div className="flex items-center gap-4 text-xs text-gray-600">
+                                <div className="flex items-center">
                                   <span className="font-bold text-gray-900 ml-1">₹{appointment.cost ? appointment.cost.toLocaleString() : 'Not specified'}</span>
+                                  <span className="">:  Cost</span>
                                 </div>
-                                <div>
-                                  <span className="font-medium">Planned:</span> 
+                                <span className="text-gray-400">•</span>
+                                <div className="flex items-center">
+                                  <span className="font-medium">Planned:</span>
                                   <span className="ml-1">{appointment.appointmentDate ? diagnosticAppointmentsService.formatDate(appointment.appointmentDate) : 'Not scheduled'}</span>
                                 </div>
-                                <div>
-                                  <span className="font-medium">Assigned to:</span> 
+                                <span className="text-gray-400">•</span>
+                                <div className="flex items-center">
+                                  <span className="font-medium">Assigned to:</span>
                                   <span className="ml-1">{appointment.audiologist?.name || 'Not assigned'}</span>
                                 </div>
-                                <div>
-                                  <span className="font-medium">Files:</span> 
+                                <span className="text-gray-400">•</span>
+                                <div className="flex items-center">
+                                  <span className="font-medium">Files:</span>
                                   <span className="ml-1">{appointment.files ? appointment.files : 'No files'}</span>
                                 </div>
                               </div>
@@ -1279,15 +1288,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     )}
                   </div>
 
+                  {/* Separator Line */}
+                  <hr className="my-6 border-gray-200" />
+
                   {/* Specialized Procedures Section */}
-                  <div className="border-t border-gray-200 pt-6">
+                  <div className="rounded-md pt-6">
                     <h3 className="font-semibold text-gray-900 mb-4 text-sm">Specialized Procedures</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 2.109 12 2.109s1.077 1.554 2.707 3.184L19.414 9H20a1 1 0 011 1v4a1 1 0 01-1 1h-1.586l-4.707 4.707C13.077 20.337 12 21.891 12 21.891s-1.077-1.554-2.707-3.184L4.586 15z" />
-                          </svg>
+                          <Volume2 size={16} className="text-blue-600" />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 text-sm">Hearing Aid Trial (HAT)</h4>
@@ -1304,30 +1314,31 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
                 {/* Clinical Notes Section */}
                 <div id="clinical-notes" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="mb-6 flex gap-2 items-center">
+                    <NotepadText size={16} className="text-gray-900" />
+                    <h2 className="text-base font-semibold text-gray-900">Clinical Notes</h2>
+                  </div>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Clinical Notes</h2>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center relative">
                       <input
                         type="text"
                         placeholder="Search notes..."
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-sm w-96 "
                       />
-                      <select 
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <CustomDropdown
+                        options={categories}
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        placeholder="Select category"
+                        className="min-w-[140px] h-10"
                         aria-label="Filter by category"
-                      >
-                        <option>All Categories</option>
-                        <option>General</option>
-                        <option>Diagnosis</option>
-                        <option>Treatment</option>
-                        <option>Follow-up</option>
-                        <option>Test Results</option>
-                        <option>Prescription</option>
-                        <option>Referral</option>
-                      </select>
-                      <button 
+                      />
+                      <button
                         onClick={handleAddClinicalNote}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                        className="bg-orange-600 text-white px-4 py-1 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1410,7 +1421,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="patient-files" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
-                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                    <button className="bg-orange-600 text-white px-4 py-1 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
@@ -1425,7 +1436,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     </div>
                     <h3 className="text-sm font-medium mb-2 text-gray-900">No files uploaded</h3>
                     <p className="text-gray-500 text-sm mb-6">Upload patient files and documents</p>
-                    <button className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
+                    <button className="bg-orange-600 text-white px-6 py-1 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
