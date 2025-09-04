@@ -5,11 +5,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment } from '@/types';
+import { useRouter } from 'next/navigation';
+import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice } from '@/types';
 import { patientService } from '@/services/patientService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
+import PatientInvoiceService from '@/services/patientInvoiceService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
@@ -20,10 +21,9 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const pathname = usePathname();
   const { token } = useAuth();
   const [activeSection, setActiveSection] = useState<'profile' | 'emr' | 'billing'>('profile');
-  const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments' | 'diagnostics' | 'clinical-notes' | 'patient-files' | 'medical-history'>('information');
+  const [activeSubTab, setActiveSubTab] = useState<'information' | 'appointments' | 'diagnostics' | 'clinical-notes' | 'patient-files' | 'medical-history' | 'overview' | 'invoices' | 'payments' | 'payment-history'>('information');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(true);
   const [activeProfileButton, setActiveProfileButton] = useState<'information' | 'appointments'>('information');
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -47,6 +47,15 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [diagnosticAppointments, setDiagnosticAppointments] = useState<DiagnosticAppointment[]>([]);
   const [diagnosticAppointmentsLoading, setDiagnosticAppointmentsLoading] = useState(false);
   const [showDiagnosticPlanModal, setShowDiagnosticPlanModal] = useState(false);
+
+  // Billing state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [billingSummary, setBillingSummary] = useState({
+    totalPaid: 0,
+    outstanding: 0,
+    totalInvoices: 0
+  });
 
   const fetchPatient = useCallback(async () => {
     try {
@@ -107,6 +116,41 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [patient, token]);
 
+  const fetchInvoices = useCallback(async () => {
+    if (!patient || !token) return;
+    
+    try {
+      setInvoicesLoading(true);
+      const response = await PatientInvoiceService.getAllInvoices();
+      
+      // Filter invoices for this specific patient
+      const patientInvoices = response.data.invoices.filter(invoice => 
+        invoice.patientName.toLowerCase() === patient.full_name.toLowerCase()
+      );
+      
+      setInvoices(patientInvoices);
+      
+      // Calculate billing summary
+      const totalPaid = patientInvoices
+        .filter(invoice => invoice.paymentStatus === 'Paid')
+        .reduce((sum, invoice) => sum + invoice.totalAmount, 0);
+      
+      const outstanding = patientInvoices
+        .filter(invoice => invoice.paymentStatus === 'Pending')
+        .reduce((sum, invoice) => sum + invoice.totalAmount, 0);
+      
+      setBillingSummary({
+        totalPaid,
+        outstanding,
+        totalInvoices: patientInvoices.length
+      });
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }, [patient, token]);
+
   useEffect(() => {
     fetchPatient();
   }, [fetchPatient]);
@@ -125,6 +169,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       fetchDiagnosticAppointments();
     }
   }, [fetchClinicalNotes, fetchDiagnosticAppointments, activeSection, patient]);
+
+  useEffect(() => {
+    if (patient && activeSection === 'billing') {
+      // Fetch invoices when billing section is opened
+      fetchInvoices();
+    }
+  }, [fetchInvoices, activeSection, patient]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -563,10 +614,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               </div>
 
               {/* Billing Section */}
-              <Link
-                href={`/patients/${patient.id}/billing`}
+              <div>
+                <button
+                  onClick={() => {
+                    setActiveSection('billing');
+                    setIsProfileDropdownOpen(false);
+                  }}
                 className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors rounded-lg ${
-                  pathname?.includes('/billing')
+                    activeSection === 'billing'
                     ? 'bg-orange-50 text-orange-700'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
@@ -577,10 +632,112 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   </svg>
                   <span className="text-xs font-medium">Billing</span>
                 </div>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-200 ${activeSection === 'billing' ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </Link>
+                </button>
+
+                {/* Billing Dropdown Content */}
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out !border-l-2 !border-orange-200 ${
+                  activeSection === 'billing' ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  <div className="mt-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('overview');
+                        scrollToSection('billing-overview');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'overview'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_45437)">
+                            <path d="M8.85026 1.81689H3.60026C3.29084 1.81689 2.99409 1.93981 2.7753 2.1586C2.55651 2.3774 2.43359 2.67414 2.43359 2.98356V12.3169C2.43359 12.6263 2.55651 12.9231 2.7753 13.1419C2.99409 13.3606 3.29084 13.4836 3.60026 13.4836H10.6003C10.9097 13.4836 11.2064 13.3606 11.4252 13.1419C11.644 12.9231 11.7669 12.6263 11.7669 12.3169V4.73356L8.85026 1.81689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M8.26562 1.81689V4.15023C8.26562 4.45965 8.38854 4.75639 8.60733 4.97519C8.82613 5.19398 9.12287 5.31689 9.43229 5.31689H11.7656" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M5.93229 5.90039H4.76562" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43229 8.23389H4.76562" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43229 10.5669H4.76562" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Overview</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('invoices');
+                        scrollToSection('billing-invoices');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'invoices'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_45442)">
+                            <path d="M2.43359 1.81689V13.4836L3.60026 12.9002L4.76693 13.4836L5.93359 12.9002L7.10026 13.4836L8.26693 12.9002L9.43359 13.4836L10.6003 12.9002L11.7669 13.4836V1.81689L10.6003 2.40023L9.43359 1.81689L8.26693 2.40023L7.10026 1.81689L5.93359 2.40023L4.76693 1.81689L3.60026 2.40023L2.43359 1.81689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9.43229 5.31689H5.93229C5.62287 5.31689 5.32613 5.43981 5.10733 5.6586C4.88854 5.8774 4.76563 6.17414 4.76562 6.48356C4.76563 6.79298 4.88854 7.08973 5.10733 7.30852C5.32613 7.52731 5.62287 7.65023 5.93229 7.65023H8.26562C8.57504 7.65023 8.87179 7.77314 9.09058 7.99194C9.30937 8.21073 9.43229 8.50748 9.43229 8.81689C9.43229 9.12631 9.30937 9.42306 9.09058 9.64185C8.87179 9.86064 8.57504 9.98356 8.26562 9.98356H4.76562" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M7.09961 10.8586V4.44189" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Invoices</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('payments');
+                        scrollToSection('billing-payments');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'payments'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_45448)">
+                            <path d="M11.1829 4.73372V2.98372C11.1829 2.82901 11.1215 2.68064 11.0121 2.57124C10.9027 2.46185 10.7543 2.40039 10.5996 2.40039H3.01628C2.70686 2.40039 2.41011 2.52331 2.19132 2.7421C1.97253 2.96089 1.84961 3.25764 1.84961 3.56706C1.84961 3.87648 1.97253 4.17322 2.19132 4.39202C2.41011 4.61081 2.70686 4.73372 3.01628 4.73372H11.7663C11.921 4.73372 12.0694 4.79518 12.1788 4.90458C12.2882 5.01397 12.3496 5.16235 12.3496 5.31706V7.65039M12.3496 7.65039H10.5996C10.2902 7.65039 9.99344 7.77331 9.77465 7.9921C9.55586 8.21089 9.43294 8.50764 9.43294 8.81706C9.43294 9.12648 9.55586 9.42322 9.77465 9.64201C9.99344 9.86081 10.2902 9.98372 10.5996 9.98372H12.3496C12.5043 9.98372 12.6527 9.92227 12.7621 9.81287C12.8715 9.70347 12.9329 9.5551 12.9329 9.40039V8.23372C12.9329 8.07901 12.8715 7.93064 12.7621 7.82124C12.6527 7.71185 12.5043 7.65039 12.3496 7.65039Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M1.84961 3.56689V11.7336C1.84961 12.043 1.97253 12.3397 2.19132 12.5585C2.41011 12.7773 2.70686 12.9002 3.01628 12.9002H11.7663C11.921 12.9002 12.0694 12.8388 12.1788 12.7294C12.2882 12.62 12.3496 12.4716 12.3496 12.3169V9.98356" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Payments</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveSubTab('payment-history');
+                        scrollToSection('billing-payment-history');
+                      }}
+                      className={`w-full text-left px-6 py-2 text-xs transition-colors rounded-md mx-4 ${
+                        activeSubTab === 'payment-history'
+                          ? 'text-orange-700 bg-orange-100'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_1_45454)">
+                            <path d="M11.7656 3.56689H2.43229C1.78796 3.56689 1.26562 4.08923 1.26562 4.73356V10.5669C1.26562 11.2112 1.78796 11.7336 2.43229 11.7336H11.7656C12.41 11.7336 12.9323 11.2112 12.9323 10.5669V4.73356C12.9323 4.08923 12.41 3.56689 11.7656 3.56689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M1.26562 6.48389H12.9323" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                          </g>
+                        </svg>
+                        <span>Payment History</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </nav>
           </div>
         </div>
@@ -1260,21 +1417,314 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
             )}
 
             {activeSection === 'billing' && (
+              <div className="space-y-6">
+                {/* Billing Overview Section */}
+                <div id="billing-overview" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Billing Overview</h2>
+                  </div>
+                  
+                  {/* Financial Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
-                  <h2 className="text-sm font-semibold text-gray-900">Billing Information</h2>
                 </div>
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">
+                            {invoicesLoading ? '...' : `₹${billingSummary.totalPaid.toLocaleString()}`}
+                          </h3>
+                          <p className="text-sm text-gray-600">Total Paid</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">
+                            {invoicesLoading ? '...' : `₹${billingSummary.outstanding.toLocaleString()}`}
+                          </h3>
+                          <p className="text-sm text-gray-600">Outstanding</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">
+                            {invoicesLoading ? '...' : billingSummary.totalInvoices}
+                          </h3>
+                          <p className="text-sm text-gray-600">Total Invoices</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Billing Invoices Section */}
+                <div id="billing-invoices" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h2 className="text-lg font-semibold text-gray-900">Invoices</h2>
+                    </div>
+                    <button 
+                      onClick={() => window.open('/billing/invoices/create/b2c', '_blank')}
+                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>+ Create Invoice</span>
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {invoicesLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                        <span className="ml-2 text-gray-600">Loading invoices...</span>
+                      </div>
+                    ) : invoices.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-sm font-medium mb-2 text-gray-900">No invoices found</h3>
+                        <p className="text-gray-500">This patient has no invoices yet.</p>
+                      </div>
+                    ) : (
+                      invoices.map((invoice) => (
+                        <div key={invoice.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <h3 className="font-medium text-gray-900">{invoice.invoiceNumber}</h3>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                invoice.paymentStatus === 'Paid' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : invoice.paymentStatus === 'Pending'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {invoice.paymentStatus}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</div>
+                              <div className="text-sm text-gray-600">{invoice.screenings.length} item(s)</div>
+                            </div>
+                          </div>
+                          
+                          {/* Invoice Details */}
+                          <div className="mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
+                              <div><span className="font-medium">Created:</span> {PatientInvoiceService.formatDateForDisplay(invoice.invoiceDate)}</div>
+                              <div><span className="font-medium">Type:</span> {invoice.invoiceType}</div>
+                            </div>
+                            
+                            {/* Items & Services */}
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium text-gray-900 mb-2">Items & Services</h4>
+                              {invoice.screenings.map((screening, index) => (
+                                <div key={screening.id || index} className="bg-gray-50 rounded-lg p-3 mb-2">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <h5 className="font-medium text-gray-900">{screening.diagnosticName}</h5>
+                                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">service</span>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-sm font-medium text-gray-900">₹{screening.amount.toLocaleString()}</div>
+                                      {screening.discount > 0 && (
+                                        <div className="text-xs text-red-600">- ₹{screening.discount.toLocaleString()} discount</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-gray-600">
+                                    <div>OP Number: {screening.opNumber}</div>
+                                    <div>Date: {PatientInvoiceService.formatDateForDisplay(screening.screeningDate)}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Cost Breakdown */}
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <h4 className="text-sm font-medium text-gray-900 mb-2">Cost Breakdown</h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Subtotal:</span>
+                                  <span className="font-medium">₹{invoice.subtotal.toLocaleString()}</span>
+                                </div>
+                                {invoice.totalDiscount > 0 && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Discount:</span>
+                                    <span className="font-medium text-red-600">- ₹{invoice.totalDiscount.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">SGST ({invoice.sgstRate}%):</span>
+                                  <span className="font-medium">₹{invoice.sgstAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">CGST ({invoice.cgstRate}%):</span>
+                                  <span className="font-medium">₹{invoice.cgstAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between pt-2 border-t border-gray-200">
+                                  <span className="font-medium text-gray-900">Total Amount:</span>
+                                  <span className="font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</span>
+                                </div>
+                                {invoice.paymentStatus === 'Paid' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Paid Amount:</span>
+                                    <span className="font-medium text-green-600">₹{invoice.totalAmount.toLocaleString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                            <div className="text-sm text-gray-600">
+                              Invoice: {invoice.invoiceNumber}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button 
+                                onClick={() => window.open(`/billing/invoices/${invoice.id}`, '_blank')}
+                                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span className="text-gray-600">View</span>
+                              </button>
+                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span className="text-gray-600">Download</span>
+                              </button>
+                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-gray-600">Email</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Billing Payments Section */}
+                <div id="billing-payments" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                     </svg>
+                      <h2 className="text-lg font-semibold text-gray-900">Recent Payments</h2>
                   </div>
-                  <h3 className="text-sm font-medium mb-2 text-gray-900">Billing functionality moved to separate page</h3>
-                  <p className="text-gray-500">Click on the Billing tab in the sidebar to access billing information.</p>
+                    <button className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                      <span>Record Payment</span>
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="font-medium text-gray-900">RCP-2025-001</h3>
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Full</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">₹29,500.00</div>
+                          <div className="text-sm text-gray-600">Received by Reception Staff</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
+                        <div><span className="font-medium">Date:</span> 15/6/2025</div>
+                        <div><span className="font-medium">Method:</span> Card</div>
+                        <div><span className="font-medium">Transaction ID:</span> TXN123456789</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Billing Payment History Section */}
+                <div id="billing-payment-history" className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center space-x-2 mb-6">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-gray-900">Payment History</h2>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-medium mb-4 text-gray-900">Friday, June 20, 2025</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-medium text-gray-900">Invoice Generated</span>
+                              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Pending</span>
+                            </div>
+                            <p className="text-sm text-gray-600">Invoice: INV-2025-002 • Amount: ₹1,67,930.00 • Created by Dr. Sarah Johnson</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-medium mb-4 text-gray-900">Sunday, June 15, 2025</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-medium text-gray-900">Invoice Generated</span>
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Paid</span>
+                            </div>
+                            <p className="text-sm text-gray-600">Invoice: INV-2025-001 • Amount: ₹29,500.00 • Created by Dr. Sarah Johnson</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-medium text-gray-900">Payment Received</span>
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Completed</span>
+                            </div>
+                            <p className="text-sm text-gray-600">Amount: ₹29,500.00 • Method: Card • Transaction ID: TXN123456789 • Processed by Reception Staff</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
