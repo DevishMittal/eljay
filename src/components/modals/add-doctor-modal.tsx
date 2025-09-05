@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/utils';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 interface AddDoctorModalProps {
   isOpen: boolean;
@@ -22,16 +23,16 @@ interface DoctorData {
 }
 
 const specializations = [
-  'ENT (Otolaryngology)',
-  'Neurology',
-  'Family Medicine',
-  'Pediatrics',
-  'Internal Medicine',
-  'Cardiology',
-  'Orthopedics',
-  'Dermatology',
-  'Ophthalmology',
-  'General Practice'
+  { value: 'ENT (Otolaryngology)', label: 'ENT (Otolaryngology)' },
+  { value: 'Neurology', label: 'Neurology' },
+  { value: 'Family Medicine', label: 'Family Medicine' },
+  { value: 'Pediatrics', label: 'Pediatrics' },
+  { value: 'Internal Medicine', label: 'Internal Medicine' },
+  { value: 'Cardiology', label: 'Cardiology' },
+  { value: 'Orthopedics', label: 'Orthopedics' },
+  { value: 'Dermatology', label: 'Dermatology' },
+  { value: 'Ophthalmology', label: 'Ophthalmology' },
+  { value: 'General Practice', label: 'General Practice' }
 ];
 
 export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorModalProps) {
@@ -322,24 +323,16 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
                   Specialization *
                 </label>
-                <select
+                <CustomDropdown
+                  options={specializations}
                   value={formData.specialization}
-                  onChange={(e) => handleInputChange('specialization', e.target.value)}
+                  onChange={(value) => handleInputChange('specialization', value)}
+                  placeholder="Select specialization"
                   className={cn(
-                    "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.specialization ? "border-red-300" : "border-gray-300",
-                    "bg-gray-50"
+                    errors.specialization ? "border-red-300" : ""
                   )}
-                  style={{ color: formData.specialization ? '#101828' : '#717182' }}
                   aria-label="Select doctor specialization"
-                >
-                  <option value="">Select specialization</option>
-                  {specializations.map((spec) => (
-                    <option key={spec} value={spec}>
-                      {spec}
-                    </option>
-                  ))}
-                </select>
+                />
                 {errors.specialization && (
                   <p className="text-red-500 text-xs mt-1">{errors.specialization}</p>
                 )}
