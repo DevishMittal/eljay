@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import CustomDropdown from '@/components/ui/custom-dropdown';
+import CustomCalendar from '@/components/ui/custom-calendar';
 
 interface StockEntry {
   id: number;
@@ -8,7 +10,7 @@ interface StockEntry {
   quantity: string;
   serialNumber: string;
   color: string;
-  restockingDate: string;
+  restockingDate: Date | null;
   itemTags: string;
 }
 
@@ -19,7 +21,67 @@ interface AddStockModalProps {
 }
 
 export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
-  const [stockDate, setStockDate] = useState('2025-07-25');
+  const [stockDate, setStockDate] = useState(new Date('2025-07-25'));
+  const [isStockDateOpen, setIsStockDateOpen] = useState(false);
+  const [isRestockingDateOpen, setIsRestockingDateOpen] = useState(false);
+  const stockDateButtonRef = useRef<HTMLButtonElement>(null);
+  const restockingDateButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close stock date calendar on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        stockDateButtonRef.current &&
+        !stockDateButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsStockDateOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close restocking date calendar on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        restockingDateButtonRef.current &&
+        !restockingDateButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsRestockingDateOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Dropdown options
+  const itemNameOptions = [
+    { value: '', label: 'Select an item' },
+    { value: 'Hearing Aid Cleaning Kit', label: 'Hearing Aid Cleaning Kit' },
+    { value: 'Oticon ConnectClip', label: 'Oticon ConnectClip' },
+    { value: 'Oticon More 1 Universal', label: 'Oticon More 1 Universal' },
+    { value: 'Phonak Audéo Paradise P90 Left', label: 'Phonak Audéo Paradise P90 Left' },
+    { value: 'Phonak Audéo Paradise P90 Right', label: 'Phonak Audéo Paradise P90 Right' },
+  ];
+
+  const colorOptions = [
+    { value: 'No color specified', label: 'No color specified' },
+    { value: 'Blue', label: 'Blue' },
+    { value: 'Silver', label: 'Silver' },
+    { value: 'Beige', label: 'Beige' },
+    { value: 'Black', label: 'Black' },
+    { value: 'White', label: 'White' },
+    { value: 'Brown', label: 'Brown' },
+  ];
+
+  const itemTagsOptions = [
+    { value: '', label: 'Select tags' },
+    { value: 'Premium', label: 'Premium' },
+    { value: 'Standard', label: 'Standard' },
+    { value: 'Rechargeable', label: 'Rechargeable' },
+    { value: 'Bluetooth', label: 'Bluetooth' },
+  ];
   const [stockEntries, setStockEntries] = useState<StockEntry[]>([
     {
       id: 1,
@@ -27,7 +89,7 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
       quantity: '',
       serialNumber: '',
       color: 'No color specified',
-      restockingDate: '',
+      restockingDate: null,
       itemTags: ''
     }
   ]);
@@ -39,14 +101,14 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
       quantity: '',
       serialNumber: '',
       color: 'No color specified',
-      restockingDate: '',
+      restockingDate: null,
       itemTags: ''
     };
     setStockEntries([...stockEntries, newEntry]);
   };
 
-  const updateStockEntry = (id: number, field: keyof StockEntry, value: string) => {
-    setStockEntries(stockEntries.map(entry => 
+  const updateStockEntry = (id: number, field: keyof StockEntry, value: string | Date) => {
+    setStockEntries(stockEntries.map(entry =>
       entry.id === id ? { ...entry, [field]: value } : entry
     ));
   };
@@ -67,17 +129,13 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
 
   return (
     <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E5E7EB]">
+        <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#f97316] rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-              </svg>
-            </div>
+           
             <div>
-              <h2 className="text-xl font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+              <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                 Add Stock to Inventory
               </h2>
               <p className="text-sm text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
@@ -87,7 +145,7 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-[#4A5565] hover:text-[#101828] transition-colors"
+            className="text-[#4A5565] hover:text-[#101828] transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,32 +154,62 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
           </button>
         </div>
 
+        {/* Separator Line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
           {/* Stock Addition Date */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+            <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
               Stock Addition Date:
             </label>
-            <input
-              type="date"
-              value={stockDate}
-              onChange={(e) => setStockDate(e.target.value)}
-              className="px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-              style={{ fontFamily: 'Segoe UI' }}
-            />
+            <div className="relative">
+              <button
+                ref={stockDateButtonRef}
+                type="button"
+                onClick={() => setIsStockDateOpen(!isStockDateOpen)}
+                className="w-full px-3 py-1 bg-gray-100 rounded-lg   text-left flex items-center justify-between"
+                style={{ fontFamily: 'Segoe UI' }}
+              >
+                <span className="truncate">
+                  {stockDate ? stockDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select date'}
+                </span>
+                <svg
+                  className="w-4 h-4 text-gray-500 ml-2 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2m-9 4h10m-10 4h6M5 7h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
+                </svg>
+              </button>
+
+              {isStockDateOpen && (
+                <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                  <CustomCalendar
+                    value={stockDate}
+                    onChange={(date) => {
+                      setStockDate(date);
+                      setIsStockDateOpen(false);
+                    }}
+                    className="w-[18rem]"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stock Entries */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+              <h3 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                 Stock Entries
               </h3>
               <button
                 type="button"
                 onClick={addStockEntry}
-                className="flex items-center gap-2 px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm"
+                className="flex items-center gap-2 px-4 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm cursor-pointer"
                 style={{ fontFamily: 'Segoe UI' }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,7 +232,7 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                       <button
                         type="button"
                         onClick={() => removeStockEntry(entry.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
                         aria-label={`Remove entry ${entry.id}`}
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,28 +244,21 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Item Name *
                       </label>
-                      <select
-                        required
+                      <CustomDropdown
+                        options={itemNameOptions}
                         value={entry.itemName}
-                        onChange={(e) => updateStockEntry(entry.id, 'itemName', e.target.value)}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
+                        onChange={(value) => updateStockEntry(entry.id, 'itemName', value)}
+                        placeholder="Select an item"
+                        className="w-full"
                         aria-label="Select item name"
-                      >
-                        <option value="">Select an item</option>
-                        <option value="Hearing Aid Cleaning Kit">Hearing Aid Cleaning Kit</option>
-                        <option value="Oticon ConnectClip">Oticon ConnectClip</option>
-                        <option value="Oticon More 1 Universal">Oticon More 1 Universal</option>
-                        <option value="Phonak Audéo Paradise P90 Left">Phonak Audéo Paradise P90 Left</option>
-                        <option value="Phonak Audéo Paradise P90 Right">Phonak Audéo Paradise P90 Right</option>
-                      </select>
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Quantity *
                       </label>
                       <input
@@ -186,13 +267,13 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                         value={entry.quantity}
                         onChange={(e) => updateStockEntry(entry.id, 'quantity', e.target.value)}
                         placeholder="e.g., 10"
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
                         style={{ fontFamily: 'Segoe UI' }}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Serial Number
                       </label>
                       <input
@@ -200,7 +281,7 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                         value={entry.serialNumber}
                         onChange={(e) => updateStockEntry(entry.id, 'serialNumber', e.target.value)}
                         placeholder="e.g., SN123456"
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
                         style={{ fontFamily: 'Segoe UI' }}
                       />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
@@ -209,62 +290,77 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Color
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={colorOptions}
                         value={entry.color}
-                        onChange={(e) => updateStockEntry(entry.id, 'color', e.target.value)}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
+                        onChange={(value) => updateStockEntry(entry.id, 'color', value)}
+                        placeholder="No color specified"
+                        className="w-full"
                         aria-label="Select color"
-                      >
-                        <option value="No color specified">No color specified</option>
-                        <option value="Blue">Blue</option>
-                        <option value="Silver">Silver</option>
-                        <option value="Beige">Beige</option>
-                        <option value="Black">Black</option>
-                        <option value="White">White</option>
-                        <option value="Brown">Brown</option>
-                      </select>
+                      />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
                         Optional - item color/finish
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Restocking Date
                       </label>
-                      <input
-                        type="date"
-                        value={entry.restockingDate}
-                        onChange={(e) => updateStockEntry(entry.id, 'restockingDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
-                      />
+                      <div className="relative">
+                        <button
+                          ref={restockingDateButtonRef}
+                          type="button"
+                          onClick={() => setIsRestockingDateOpen(!isRestockingDateOpen)}
+                          className="w-full px-3 py-1 bg-gray-100 rounded-lg  text-left flex items-center justify-between"
+                          style={{ fontFamily: 'Segoe UI' }}
+                        >
+                          <span className="truncate">
+                            {entry.restockingDate ? entry.restockingDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select date'}
+                          </span>
+                          <svg
+                            className="w-4 h-4 text-gray-500 ml-2 flex-shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V5a1 1 0 011-1h6a1 1 0 011 1v2m-9 4h10m-10 4h6M5 7h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
+                          </svg>
+                        </button>
+
+                        {isRestockingDateOpen && (
+                          <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                            <CustomCalendar
+                              value={entry.restockingDate || undefined}
+                              onChange={(date) => {
+                                updateStockEntry(entry.id, 'restockingDate', date);
+                                setIsRestockingDateOpen(false);
+                              }}
+                              className="w-[18rem]"
+                            />
+                          </div>
+                        )}
+                      </div>
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
                         Optional - for restocking schedule
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Item Tags
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={itemTagsOptions}
                         value={entry.itemTags}
-                        onChange={(e) => updateStockEntry(entry.id, 'itemTags', e.target.value)}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                        style={{ fontFamily: 'Segoe UI' }}
+                        onChange={(value) => updateStockEntry(entry.id, 'itemTags', value)}
+                        placeholder="Select tags"
+                        className="w-full"
                         aria-label="Select item tags"
-                      >
-                        <option value="">Select tags</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Standard">Standard</option>
-                        <option value="Rechargeable">Rechargeable</option>
-                        <option value="Bluetooth">Bluetooth</option>
-                      </select>
+                      />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
                         Optional - select relevant tags for this item
                       </div>
@@ -276,18 +372,18 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-[#E5E7EB]">
+          <div className="flex justify-end gap-3 pt-6 ">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors"
+              className="px-6 py-1.5 text-sm border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition-colors"
+              className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
               Add Stock ({stockEntries.length} items)

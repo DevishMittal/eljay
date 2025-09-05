@@ -235,7 +235,7 @@ export default function AddItemModal({
     <div className="fixed inset-0  backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E5E7EB]">
+        <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-3">
             
             <div>
@@ -257,7 +257,7 @@ export default function AddItemModal({
           </div>
           <button
             onClick={onClose}
-            className="text-[#4A5565] hover:text-[#101828] transition-colors"
+            className="text-[#4A5565] hover:text-[#101828] transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             <svg
@@ -275,6 +275,9 @@ export default function AddItemModal({
             </svg>
           </button>
         </div>
+
+        {/* Separator Line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
@@ -500,7 +503,7 @@ export default function AddItemModal({
                     type="button"
                     aria-label="Select expiry date"
                     onClick={() => setIsExpiryOpen((o) => !o)}
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent text-left flex items-center justify-between"
+                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent text-left flex items-center justify-between cursor-pointer"
                     style={{
                       fontFamily: "Segoe UI",
                       color: formData.expiresAt ? "#374151" : "#9CA3AF",
@@ -566,7 +569,7 @@ export default function AddItemModal({
                       onClick={() =>
                         setFormData({ ...formData, expiresAt: "" })
                       }
-                      className="text-xs text-orange-600 hover:underline"
+                      className="text-xs text-orange-600 hover:underline cursor-pointer"
                     >
                       Clear date
                     </button>
@@ -609,7 +612,7 @@ export default function AddItemModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-1.5 text-sm  border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+              className="px-6 py-1.5 text-sm  border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50 cursor-pointer"
               style={{ fontFamily: "Segoe UI" }}
             >
               Cancel
@@ -617,7 +620,7 @@ export default function AddItemModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               style={{ fontFamily: "Segoe UI" }}
             >
               {loading ? (
