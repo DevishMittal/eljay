@@ -13,7 +13,7 @@ import { Payment } from '@/types';
 
 export default function EditPaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { token, isAuthenticated, authLoading } = useAuth();
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
   const resolvedParams = use(params);
   
   const [payment, setPayment] = useState<Payment | null>(null);

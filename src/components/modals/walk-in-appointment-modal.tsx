@@ -302,7 +302,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       }
       
       // Prepare referral source data
-      let referralSourceData = undefined;
+      let referralSourceData: {
+        type: string;
+        sourceName: string;
+        contactNumber: string;
+        hospital: string;
+        specialization: string;
+      } | undefined = undefined;
       
       if (formData.referralSource === 'Direct') {
         // For Direct referrals, send a referral source object

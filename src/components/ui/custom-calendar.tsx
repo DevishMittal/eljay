@@ -43,7 +43,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
-    const days = [];
+    const days: Date[] = [];
     const currentDate = new Date(startDate);
 
     for (let i = 0; i < 42; i++) { // 6 weeks * 7 days

@@ -101,16 +101,40 @@ export default function CreateDiagnosticPlanModal({
         {
           id: '1',
           name: 'Dr. John Smith',
+          email: 'john.smith@example.com',
+          countrycode: '+91',
           phoneNumber: '9876543210',
+          specialization: 'ENT',
+          qualification: 'MD',
+          bdmName: 'John BDM',
+          bdmContact: '9876543210',
+          commissionRate: 10,
           facilityName: 'City Hospital',
-          specialization: 'ENT'
+          location: 'Mumbai',
+          organizationId: 'org-1',
+          isAvailable: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          appointments: []
         },
         {
           id: '2',
           name: 'Dr. Sarah Johnson',
+          email: 'sarah.johnson@example.com',
+          countrycode: '+91',
           phoneNumber: '9876543211',
+          specialization: 'General Medicine',
+          qualification: 'MD',
+          bdmName: 'Sarah BDM',
+          bdmContact: '9876543211',
+          commissionRate: 12,
           facilityName: 'General Hospital',
-          specialization: 'General Medicine'
+          location: 'Delhi',
+          organizationId: 'org-1',
+          isAvailable: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          appointments: []
         }
       ];
       setReferralDoctors(mockDoctors);
@@ -173,6 +197,12 @@ export default function CreateDiagnosticPlanModal({
 
     setLoading(true);
     try {
+      // Calculate total cost from selected procedures
+      const totalCost = selectedProcedureIds.reduce((sum, procedureId) => {
+        const procedure = procedures.find(p => p.id === procedureId);
+        return sum + (procedure?.price || 0);
+      }, 0);
+
       // Create diagnostic appointment
       const appointmentData: CreateDiagnosticAppointmentData = {
         userId: patientId,
@@ -180,7 +210,10 @@ export default function CreateDiagnosticPlanModal({
         appointmentDate: formData.appointmentDate,
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.appointmentDuration),
-        procedures: formData.procedures || 'General Diagnostic'
+        procedures: formData.procedures || 'General Diagnostic',
+        cost: totalCost,
+        status: 'planned'
+        
       };
 
       const response = await diagnosticAppointmentsService.createDiagnosticAppointment(
@@ -188,7 +221,7 @@ export default function CreateDiagnosticPlanModal({
         token || undefined
       );
 
-      onSuccess(response);
+      onSuccess({ status: 'success', data: response });
       onClose();
     } catch (error) {
       console.error('Error creating diagnostic appointment:', error);
@@ -650,9 +683,9 @@ export default function CreateDiagnosticPlanModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
+        <div className="flex items-center justify-between mb-6 p-6">
           <h2 className="text-xl font-semibold text-gray-900">Create Diagnostic Plan</h2>
           <button
             onClick={onClose}
@@ -666,15 +699,17 @@ export default function CreateDiagnosticPlanModal({
         </div>
 
         {/* Progress Bar */}
-        {renderProgressBar()}
+        <div className="px-6">
+          {renderProgressBar()}
+        </div>
 
         {/* Form Content */}
-        <div className="mb-6">
+        <div className="mb-6 px-6">
           {renderCurrentStage()}
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between">
+        <div className="flex justify-between px-6 pb-6">
           <button
             onClick={handleBack}
             disabled={currentStage === 1}

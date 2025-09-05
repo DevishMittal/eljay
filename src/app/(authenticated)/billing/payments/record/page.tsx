@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function RecordPaymentPage() {
   const router = useRouter();
-  const { token, isAuthenticated, authLoading } = useAuth();
+  const { token, isAuthenticated, loading: authLoading } = useAuth();
   
   const [paymentDate, setPaymentDate] = useState('');
   const [patientName, setPatientName] = useState('');

@@ -1,6 +1,6 @@
 import { ReferralSource, Appointment, Invoice } from '@/types';
 import { appointmentService } from './appointmentService';
-import { InvoiceService } from './invoiceService';
+import InvoiceService from './invoiceService';
 import { calculateCommission, calculateTotalCommission, formatCurrency } from '@/utils/commissionUtils';
 
 export interface ReferralAnalytics {
