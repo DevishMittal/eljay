@@ -3,15 +3,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import CustomCalendar from '@/components/ui/custom-calendar';
+import { InventoryService } from '@/services/inventoryService';
+import { InventoryItem } from '@/types';
 
 interface StockEntry {
   id: number;
+  itemId: string;
   itemName: string;
   quantity: string;
-  serialNumber: string;
-  color: string;
-  restockingDate: Date | null;
-  itemTags: string;
+  batchNumber: string;
+  expiryDate: Date | null;
+  supplierName: string;
+  supplierContact: string;
+  purchasePrice: string;
+  warranty: string;
+  authorizedBy: string;
 }
 
 interface AddStockModalProps {
@@ -20,12 +26,21 @@ interface AddStockModalProps {
   onSuccess?: () => void;
 }
 
-export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
-  const [stockDate, setStockDate] = useState(new Date('2025-07-25'));
+export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockModalProps) {
+  const [stockDate, setStockDate] = useState(new Date());
   const [isStockDateOpen, setIsStockDateOpen] = useState(false);
-  const [isRestockingDateOpen, setIsRestockingDateOpen] = useState(false);
+  const [openExpiryCalendarId, setOpenExpiryCalendarId] = useState<number | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const stockDateButtonRef = useRef<HTMLButtonElement>(null);
-  const restockingDateButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Fetch inventory items when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchInventoryItems();
+    }
+  }, [isOpen]);
 
   // Close stock date calendar on outside click
   useEffect(() => {
@@ -41,76 +56,95 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close restocking date calendar on outside click
+  // Close expiry date calendar on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        restockingDateButtonRef.current &&
-        !restockingDateButtonRef.current.contains(event.target as Node)
-      ) {
-        setIsRestockingDateOpen(false);
+      if (openExpiryCalendarId !== null) {
+        const calendarElement = document.querySelector(`[data-calendar-id="${openExpiryCalendarId}"]`);
+        if (calendarElement && !calendarElement.contains(event.target as Node)) {
+          setOpenExpiryCalendarId(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openExpiryCalendarId]);
+
+  // Fetch inventory items
+  const fetchInventoryItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await InventoryService.getInventoryItems(1, 100); // Get first 100 items
+      setInventoryItems(response.items);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory items';
+      setError(errorMessage);
+      console.error('Error fetching inventory items:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Dropdown options
   const itemNameOptions = [
     { value: '', label: 'Select an item' },
-    { value: 'Hearing Aid Cleaning Kit', label: 'Hearing Aid Cleaning Kit' },
-    { value: 'Oticon ConnectClip', label: 'Oticon ConnectClip' },
-    { value: 'Oticon More 1 Universal', label: 'Oticon More 1 Universal' },
-    { value: 'Phonak Audéo Paradise P90 Left', label: 'Phonak Audéo Paradise P90 Left' },
-    { value: 'Phonak Audéo Paradise P90 Right', label: 'Phonak Audéo Paradise P90 Right' },
+    ...inventoryItems.map(item => ({
+      value: item.id,
+      label: `${item.itemName} (${item.itemCode})`
+    }))
   ];
 
-  const colorOptions = [
-    { value: 'No color specified', label: 'No color specified' },
-    { value: 'Blue', label: 'Blue' },
-    { value: 'Silver', label: 'Silver' },
-    { value: 'Beige', label: 'Beige' },
-    { value: 'Black', label: 'Black' },
-    { value: 'White', label: 'White' },
-    { value: 'Brown', label: 'Brown' },
-  ];
-
-  const itemTagsOptions = [
-    { value: '', label: 'Select tags' },
-    { value: 'Premium', label: 'Premium' },
-    { value: 'Standard', label: 'Standard' },
-    { value: 'Rechargeable', label: 'Rechargeable' },
-    { value: 'Bluetooth', label: 'Bluetooth' },
-  ];
   const [stockEntries, setStockEntries] = useState<StockEntry[]>([
     {
       id: 1,
+      itemId: '',
       itemName: '',
       quantity: '',
-      serialNumber: '',
-      color: 'No color specified',
-      restockingDate: null,
-      itemTags: ''
+      batchNumber: '',
+      expiryDate: null,
+      supplierName: '',
+      supplierContact: '',
+      purchasePrice: '',
+      warranty: '',
+      authorizedBy: 'Current User'
     }
   ]);
 
   const addStockEntry = () => {
     const newEntry: StockEntry = {
       id: stockEntries.length + 1,
+      itemId: '',
       itemName: '',
       quantity: '',
-      serialNumber: '',
-      color: 'No color specified',
-      restockingDate: null,
-      itemTags: ''
+      batchNumber: '',
+      expiryDate: null,
+      supplierName: '',
+      supplierContact: '',
+      purchasePrice: '',
+      warranty: '',
+      authorizedBy: 'Current User'
     };
     setStockEntries([...stockEntries, newEntry]);
   };
 
   const updateStockEntry = (id: number, field: keyof StockEntry, value: string | Date) => {
-    setStockEntries(stockEntries.map(entry =>
-      entry.id === id ? { ...entry, [field]: value } : entry
-    ));
+    setStockEntries(stockEntries.map(entry => {
+      if (entry.id === id) {
+        const updatedEntry = { ...entry, [field]: value };
+        
+        // If itemId is being updated, also update itemName
+        if (field === 'itemId' && typeof value === 'string') {
+          const selectedItem = inventoryItems.find(item => item.id === value);
+          if (selectedItem) {
+            updatedEntry.itemName = selectedItem.itemName;
+          }
+        }
+        
+        return updatedEntry;
+      }
+      return entry;
+    }));
   };
 
   const removeStockEntry = (id: number) => {
@@ -119,16 +153,54 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Stock entries:', stockEntries);
-    onClose();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Process each stock entry
+      const promises = stockEntries
+        .filter(entry => entry.itemId && entry.quantity)
+        .map(async (entry) => {
+          const additionalData = {
+            batchNumber: entry.batchNumber || undefined,
+            expiryDate: entry.expiryDate ? entry.expiryDate.toISOString() : undefined,
+            supplierName: entry.supplierName || undefined,
+            supplierContact: entry.supplierContact || undefined,
+            purchasePrice: entry.purchasePrice ? parseFloat(entry.purchasePrice) : undefined,
+            warranty: entry.warranty || undefined,
+            authorizedBy: entry.authorizedBy || undefined,
+          };
+
+          return InventoryService.updateStock(
+            entry.itemId,
+            parseInt(entry.quantity),
+            'add',
+            additionalData
+          );
+        });
+
+      await Promise.all(promises);
+      
+      // Call success callback and close modal
+      if (onSuccess) {
+        onSuccess();
+      }
+      onClose();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add stock';
+      setError(errorMessage);
+      console.error('Error adding stock:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-6">
@@ -186,7 +258,10 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
               </button>
 
               {isStockDateOpen && (
-                <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                <div 
+                  className="absolute z-[60] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <CustomCalendar
                     value={stockDate}
                     onChange={(date) => {
@@ -249,8 +324,8 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                       </label>
                       <CustomDropdown
                         options={itemNameOptions}
-                        value={entry.itemName}
-                        onChange={(value) => updateStockEntry(entry.id, 'itemName', value)}
+                        value={entry.itemId}
+                        onChange={(value) => updateStockEntry(entry.id, 'itemId', value)}
                         placeholder="Select an item"
                         className="w-full"
                         aria-label="Select item name"
@@ -264,6 +339,7 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                       <input
                         type="number"
                         required
+                        min="1"
                         value={entry.quantity}
                         onChange={(e) => updateStockEntry(entry.id, 'quantity', e.target.value)}
                         placeholder="e.g., 10"
@@ -274,52 +350,34 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
 
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Serial Number
+                        Batch Number
                       </label>
                       <input
                         type="text"
-                        value={entry.serialNumber}
-                        onChange={(e) => updateStockEntry(entry.id, 'serialNumber', e.target.value)}
-                        placeholder="e.g., SN123456"
+                        value={entry.batchNumber}
+                        onChange={(e) => updateStockEntry(entry.id, 'batchNumber', e.target.value)}
+                        placeholder="e.g., BATCH-2024-001"
                         className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
                         style={{ fontFamily: 'Segoe UI' }}
                       />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                        Optional - for tracked items
+                        Optional - batch or lot number
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Color
-                      </label>
-                      <CustomDropdown
-                        options={colorOptions}
-                        value={entry.color}
-                        onChange={(value) => updateStockEntry(entry.id, 'color', value)}
-                        placeholder="No color specified"
-                        className="w-full"
-                        aria-label="Select color"
-                      />
-                      <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                        Optional - item color/finish
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Restocking Date
+                        Expiry Date
                       </label>
                       <div className="relative">
                         <button
-                          ref={restockingDateButtonRef}
                           type="button"
-                          onClick={() => setIsRestockingDateOpen(!isRestockingDateOpen)}
+                          onClick={() => setOpenExpiryCalendarId(openExpiryCalendarId === entry.id ? null : entry.id)}
                           className="w-full px-3 py-1 bg-gray-100 rounded-lg  text-left flex items-center justify-between"
                           style={{ fontFamily: 'Segoe UI' }}
                         >
                           <span className="truncate">
-                            {entry.restockingDate ? entry.restockingDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select date'}
+                            {entry.expiryDate ? entry.expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Select date'}
                           </span>
                           <svg
                             className="w-4 h-4 text-gray-500 ml-2 flex-shrink-0"
@@ -331,13 +389,17 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                           </svg>
                         </button>
 
-                        {isRestockingDateOpen && (
-                          <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                        {openExpiryCalendarId === entry.id && (
+                          <div 
+                            className="absolute z-[60] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg"
+                            data-calendar-id={entry.id}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <CustomCalendar
-                              value={entry.restockingDate || undefined}
+                              value={entry.expiryDate || undefined}
                               onChange={(date) => {
-                                updateStockEntry(entry.id, 'restockingDate', date);
-                                setIsRestockingDateOpen(false);
+                                updateStockEntry(entry.id, 'expiryDate', date);
+                                setOpenExpiryCalendarId(null);
                               }}
                               className="w-[18rem]"
                             />
@@ -345,25 +407,83 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
                         )}
                       </div>
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                        Optional - for restocking schedule
+                        Optional - expiry date for perishable items
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Item Tags
+                        Supplier Name
                       </label>
-                      <CustomDropdown
-                        options={itemTagsOptions}
-                        value={entry.itemTags}
-                        onChange={(value) => updateStockEntry(entry.id, 'itemTags', value)}
-                        placeholder="Select tags"
-                        className="w-full"
-                        aria-label="Select item tags"
+                      <input
+                        type="text"
+                        value={entry.supplierName}
+                        onChange={(e) => updateStockEntry(entry.id, 'supplierName', e.target.value)}
+                        placeholder="e.g., Hearing Aid Supplies Ltd"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
+                        style={{ fontFamily: 'Segoe UI' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                        Supplier Contact
+                      </label>
+                      <input
+                        type="text"
+                        value={entry.supplierContact}
+                        onChange={(e) => updateStockEntry(entry.id, 'supplierContact', e.target.value)}
+                        placeholder="e.g., +1-234-567-8900"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
+                        style={{ fontFamily: 'Segoe UI' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                        Purchase Price
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={entry.purchasePrice}
+                        onChange={(e) => updateStockEntry(entry.id, 'purchasePrice', e.target.value)}
+                        placeholder="e.g., 1500.00"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
+                        style={{ fontFamily: 'Segoe UI' }}
                       />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                        Optional - select relevant tags for this item
+                        Optional - cost per unit
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                        Warranty
+                      </label>
+                      <input
+                        type="text"
+                        value={entry.warranty}
+                        onChange={(e) => updateStockEntry(entry.id, 'warranty', e.target.value)}
+                        placeholder="e.g., 12 months"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
+                        style={{ fontFamily: 'Segoe UI' }}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                        Authorized By
+                      </label>
+                      <input
+                        type="text"
+                        value={entry.authorizedBy}
+                        onChange={(e) => updateStockEntry(entry.id, 'authorizedBy', e.target.value)}
+                        placeholder="e.g., John Smith"
+                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
+                        style={{ fontFamily: 'Segoe UI' }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -371,11 +491,21 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-sm text-red-800" style={{ fontFamily: 'Segoe UI' }}>
+                {error}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-6 ">
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
               className="px-6 py-1.5 text-sm border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
@@ -383,13 +513,23 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
             </button>
             <button
               type="submit"
+              disabled={loading || stockEntries.every(entry => !entry.itemId || !entry.quantity)}
               className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              Add Stock ({stockEntries.length} items)
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Adding Stock...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  Add Stock ({stockEntries.filter(entry => entry.itemId && entry.quantity).length} items)
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -167,7 +167,13 @@ export default function InventoryPage() {
     if (quantity && !isNaN(parseInt(quantity))) {
       try {
         setOpenDropdownId(null); // Close dropdown
-        await InventoryService.updateStock(itemId, parseInt(quantity), action);
+        
+        // For quick updates, we'll use minimal additional data
+        const additionalData = {
+          authorizedBy: 'Current User', // You might want to get this from auth context
+        };
+
+        await InventoryService.updateStock(itemId, parseInt(quantity), action, additionalData);
         refreshInventory();
       } catch (err) {
         console.error(`Error ${action}ing stock:`, err);

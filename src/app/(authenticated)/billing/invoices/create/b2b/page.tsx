@@ -6,25 +6,42 @@ import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/utils';
 import InvoiceService from '@/services/invoiceService';
 import { CreateInvoiceData, InvoiceScreening } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import CustomDropdown from '@/components/ui/custom-dropdown';
+import DatePicker from '@/components/ui/date-picker';
+import { PROCEDURE_PRICING } from '@/utils/commissionUtils';
 
 export default function B2BInvoicePage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [invoiceDate, setInvoiceDate] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
   const [patientName, setPatientName] = useState('');
   const [organizationName, setOrganizationName] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Partial'>('Pending');
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
   const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Diagnostic options for dropdown
+  const diagnosticOptions = PROCEDURE_PRICING
+    .filter(procedure => procedure.category === 'diagnostic')
+    .map(procedure => ({
+      value: procedure.name,
+      label: procedure.name
+    }));
+
+  // Payment status options
+  const paymentStatusOptions = [
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Paid', label: 'Paid' },
+    { value: 'Cancelled', label: 'Cancelled' }
+  ];
 
   // Authentication check
   useEffect(() => {
@@ -37,7 +54,7 @@ export default function B2BInvoicePage() {
 
   const addScreening = () => {
     const newScreening: InvoiceScreening = {
-      screeningDate: '',
+      screeningDate: new Date().toISOString().split('T')[0],
       opNumber: '',
       bioName: '',
       diagnosticName: '',
@@ -124,7 +141,7 @@ export default function B2BInvoicePage() {
       setLoading(true);
       
       const invoiceData: CreateInvoiceData = {
-        invoiceDate: InvoiceService.formatDateForAPI(invoiceDate),
+        invoiceDate: InvoiceService.formatDateForAPI(invoiceDate.toISOString().split('T')[0]),
         patientName,
         organizationName,
         invoiceType: 'B2B',
@@ -162,11 +179,11 @@ export default function B2BInvoicePage() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h1 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
               Create B2B Invoice
             </h1>
-            <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-              Create a new invoice for corporate hearing screening services.
+            <p className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
+              Create screening-based invoice for B2B organization.
             </p>
           </div>
           <div className="flex space-x-3">
@@ -174,38 +191,36 @@ export default function B2BInvoicePage() {
               Cancel
             </Button>
             <Button 
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-orange-600 hover:bg-orange-700 text-white"
               onClick={handleSaveInvoice}
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Save Invoice'}
+              {loading ? 'Creating...' : 'Create Invoice'}
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
             {/* Invoice Information */}
             <Card className="bg-white">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
                   Invoice Information
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Invoice Date*
                     </label>
-                    <Input
-                      type="date"
-                      value={invoiceDate}
-                      onChange={(e) => setInvoiceDate(e.target.value)}
-                      className="bg-white border-gray-300"
+                    <DatePicker
+                      value={invoiceDate?.toISOString().split('T')[0] || ''}
+                      onChange={(date) => setInvoiceDate(new Date(date))}
+                      placeholder="Select date"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Patient Name*
                     </label>
                     <Input
@@ -216,7 +231,7 @@ export default function B2BInvoicePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       Organization Name*
                     </label>
                     <Input
@@ -234,12 +249,12 @@ export default function B2BInvoicePage() {
             <Card className="bg-white">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                  <h2 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                     Screening Details
                   </h2>
                   <Button 
                     onClick={addScreening}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                   >
                     + Add Screening
                   </Button>
@@ -249,20 +264,20 @@ export default function B2BInvoicePage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">S.No</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Date of Screening*</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">OP/IP No*</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Bio Name*</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Diagnostic Name*</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Amount*</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Discount</th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {screenings.map((screening, index) => (
                         <tr key={index} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-sm text-gray-900">{index + 1}</td>
+                          <td className="py-3 px-4 text-xs text-gray-900">{index + 1}</td>
                           <td className="py-3 px-4">
                             <Input
                               type="date"
@@ -287,14 +302,20 @@ export default function B2BInvoicePage() {
                               className="w-32 bg-white border-gray-300"
                             />
                           </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.diagnosticName}
-                              onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
-                              placeholder="Diagnostic Name"
-                              className="w-48 bg-white border-gray-300"
-                            />
-                          </td>
+                                                     <td className="py-3 px-4">
+                             <select
+                               value={screening.diagnosticName}
+                               onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
+                               className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
+                             >
+                               <option value="">Select Diagnostic</option>
+                               {diagnosticOptions.map((option) => (
+                                 <option key={option.value} value={option.value}>
+                                   {option.label}
+                                 </option>
+                               ))}
+                             </select>
+                           </td>
                           <td className="py-3 px-4">
                             <Input
                               type="number"
@@ -330,137 +351,150 @@ export default function B2BInvoicePage() {
               </CardContent>
             </Card>
 
-            {/* Invoice Settings */}
-            <Card className="bg-white">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
-                  Invoice Settings
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Status
-                    </label>
-                    <select
-                      value={paymentStatus}
-                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Partial')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                      aria-label="Select payment status"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Partial">Partial</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      SGST Rate (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={sgstRate}
-                      onChange={(e) => setSgstRate(parseInt(e.target.value) || 0)}
-                      className="bg-white border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      CGST Rate (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={cgstRate}
-                      onChange={(e) => setCgstRate(parseInt(e.target.value) || 0)}
-                      className="bg-white border-gray-300"
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Additional notes for this invoice"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white h-20 resize-none"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {/* Bottom Section - Two Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Invoice Settings */}
+              <div className="space-y-6">
+                {/* Invoice Settings */}
+                <Card className="bg-white">
+                  <CardContent className="p-6">
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                      Invoice Settings
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                          Payment Status
+                        </label>
+                        <CustomDropdown
+                          options={paymentStatusOptions}
+                          value={paymentStatus}
+                          onChange={(value) => setPaymentStatus(value as 'Pending' | 'Paid' | 'Cancelled')}
+                          placeholder="Select Status"
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                          Overall Discount (₹)
+                        </label>
+                        <Input
+                          type="number"
+                          value={calculateTotalDiscount()}
+                          className="bg-white border-gray-300"
+                          readOnly
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                          SGST Rate (%)
+                        </label>
+                        <Input
+                          type="number"
+                          value={sgstRate}
+                          onChange={(e) => setSgstRate(parseInt(e.target.value) || 0)}
+                          className="bg-white border-gray-300"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                          CGST Rate (%)
+                        </label>
+                        <Input
+                          type="number"
+                          value={cgstRate}
+                          onChange={(e) => setCgstRate(parseInt(e.target.value) || 0)}
+                          className="bg-white border-gray-300"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Notes
+                      </label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Additional notes for this invoice"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white h-20 resize-none"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* General Warranty Information */}
-            <Card className="bg-white">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
-                  General Warranty Information
-                </h2>
-                <textarea
-                  value={warrantyInfo}
-                  onChange={(e) => setWarrantyInfo(e.target.value)}
-                  placeholder="General warranty terms and conditions"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white h-20 resize-none"
-                />
-              </CardContent>
-            </Card>
-          </div>
+                {/* General Warranty Information */}
+                <Card className="bg-white">
+                  <CardContent className="p-6">
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                      General Warranty Information
+                    </h2>
+                    <textarea
+                      value={warrantyInfo}
+                      onChange={(e) => setWarrantyInfo(e.target.value)}
+                      placeholder="General warranty terms and conditions"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white h-20 resize-none"
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Invoice Summary */}
-          <div className="lg:col-span-1">
-            <Card className="bg-white sticky top-6">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
-                  Invoice Summary
-                </h2>
+              {/* Right Column - Invoice Summary */}
+              <div>
+                <Card className="bg-white sticky top-6">
+                  <CardContent className="p-6">
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                      Invoice Summary
+                    </h2>
                 
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">₹{calculateSubtotal().toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">Subtotal:</span>
+                    <span className="text-xs font-medium">₹{calculateSubtotal().toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Discount:</span>
-                    <span className="font-medium text-red-600">-₹{calculateTotalDiscount().toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">Total Discount:</span>
+                    <span className="text-xs font-medium text-red-600">-₹{calculateTotalDiscount().toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Taxable Amount:</span>
-                    <span className="font-medium">₹{calculateTaxableAmount().toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">Taxable Amount:</span>
+                    <span className="text-xs font-medium">₹{calculateTaxableAmount().toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-600">SGST ({sgstRate}%):</span>
-                    <span className="font-medium">₹{calculateTax().sgst.toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">SGST ({sgstRate}%):</span>
+                    <span className="text-xs font-medium">₹{calculateTax().sgst.toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-600">CGST ({cgstRate}%):</span>
-                    <span className="font-medium">₹{calculateTax().cgst.toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">CGST ({cgstRate}%):</span>
+                    <span className="text-xs font-medium">₹{calculateTax().cgst.toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Tax:</span>
-                    <span className="font-medium">₹{calculateTax().total.toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">Total Tax:</span>
+                    <span className="text-xs font-medium">₹{calculateTax().total.toLocaleString()}</span>
                   </div>
                   
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between text-lg font-semibold">
+                  <div className="pt-3">
+                    <div className="flex justify-between text-sm font-semibold">
                       <span>Total Amount:</span>
                       <span>₹{calculateFinalAmount().toLocaleString()}</span>
                     </div>
                   </div>
-                </div>
-                
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-blue-700">
-                    *Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                    </div>
+                    
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-xs text-blue-700">
+                        *Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
-        </div>
       </div>
     </MainLayout>
   );

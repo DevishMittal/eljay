@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CustomCalendar from '@/components/ui/custom-calendar';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import { InventoryService } from '@/services/inventoryService';
+import { InventoryItem } from '@/types';
 
 interface ConsumeStockModalProps {
   isOpen: boolean;
@@ -10,7 +12,7 @@ interface ConsumeStockModalProps {
   onSuccess?: () => void;
 }
 
-export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModalProps) {
+export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: ConsumeStockModalProps) {
   const [formData, setFormData] = useState({
     selectedItem: '',
     consumptionDate: new Date(),
@@ -23,15 +25,42 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
     patientName: '',
     additionalNotes: ''
   });
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch inventory items when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchInventoryItems();
+    }
+  }, [isOpen]);
+
+  // Fetch inventory items
+  const fetchInventoryItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await InventoryService.getInventoryItems(1, 100); // Get first 100 items
+      // Filter items that have stock available
+      const itemsWithStock = response.items.filter(item => item.currentStock > 0);
+      setInventoryItems(itemsWithStock);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory items';
+      setError(errorMessage);
+      console.error('Error fetching inventory items:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Dropdown options
   const itemOptions = [
     { value: '', label: 'Choose an item from inventory' },
-    { value: 'Hearing Aid Cleaning Kit', label: 'Hearing Aid Cleaning Kit' },
-    { value: 'Oticon ConnectClip', label: 'Oticon ConnectClip' },
-    { value: 'Oticon More 1 Universal', label: 'Oticon More 1 Universal' },
-    { value: 'Phonak Audéo Paradise P90 Left', label: 'Phonak Audéo Paradise P90 Left' },
-    { value: 'Phonak Audéo Paradise P90 Right', label: 'Phonak Audéo Paradise P90 Right' },
+    ...inventoryItems.map(item => ({
+      value: item.id,
+      label: `${item.itemName} (${item.itemCode}) - Stock: ${item.currentStock}`
+    }))
   ];
 
   const consumptionTypeOptions = [
@@ -59,19 +88,51 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
     }
   }, [showCalendar]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Consume stock form submitted:', {
-      ...formData,
-      consumptionDate: formData.consumptionDate.toISOString().split('T')[0]
-    });
-    onClose();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!formData.selectedItem || !formData.quantity) {
+        throw new Error('Please select an item and enter quantity');
+      }
+
+      const additionalData = {
+        authorizedBy: formData.authorizedBy || undefined,
+        // Add consumption-specific data if needed
+        reason: formData.reason || undefined,
+        consumptionType: formData.consumptionType || undefined,
+        patientId: formData.patientId || undefined,
+        patientName: formData.patientName || undefined,
+        additionalNotes: formData.additionalNotes || undefined,
+      };
+
+      await InventoryService.updateStock(
+        formData.selectedItem,
+        parseInt(formData.quantity),
+        'consume',
+        additionalData
+      );
+      
+      // Call success callback and close modal
+      if (onSuccess) {
+        onSuccess();
+      }
+      onClose();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to consume stock';
+      setError(errorMessage);
+      console.error('Error consuming stock:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-6">
@@ -141,11 +202,15 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
                     className="w-full px-3 py-1 bg-gray-100 rounded-lg  focus:border-transparent cursor-pointer"
                     style={{ fontFamily: 'Segoe UI' }}
                     placeholder="Select date"
+                    aria-label="Consumption date"
+                    title="Consumption date"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCalendar(!showCalendar)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    aria-label="Open calendar"
+                    title="Open calendar"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -153,7 +218,11 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
                   </button>
                 </div>
                 {showCalendar && (
-                  <div ref={calendarRef} className="absolute top-full mt-1 z-50">
+                  <div 
+                    ref={calendarRef} 
+                    className="absolute top-full mt-1 z-[60]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <CustomCalendar
                       value={formData.consumptionDate}
                       onChange={(date) => {
@@ -296,11 +365,21 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
             />
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-sm text-red-800" style={{ fontFamily: 'Segoe UI' }}>
+                {error}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-6">
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
               className="px-6 py-1.5 text-sm border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
@@ -308,13 +387,23 @@ export default function ConsumeStockModal({ isOpen, onClose }: ConsumeStockModal
             </button>
             <button
               type="submit"
+              disabled={loading || !formData.selectedItem || !formData.quantity}
               className="px-6 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-              Consume Stock
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Consuming Stock...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
+                  Consume Stock
+                </>
+              )}
             </button>
           </div>
         </form>
