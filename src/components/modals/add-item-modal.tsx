@@ -237,24 +237,10 @@ export default function AddItemModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#E5E7EB]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#f97316] rounded-lg flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-            </div>
+            
             <div>
               <h2
-                className="text-xl font-semibold text-[#101828]"
+                className="text-lg font-semibold text-[#101828]"
                 style={{ fontFamily: "Segoe UI" }}
               >
                 {isEditMode ? "Edit Inventory Item" : "Add New Inventory Item"}
@@ -315,7 +301,7 @@ export default function AddItemModal({
                 />
               </div>
 
-              <div>
+              <div className="mt-7">
                 <label
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
@@ -349,7 +335,7 @@ export default function AddItemModal({
                     setFormData({ ...formData, itemType: value })
                   }
                   placeholder="Select item type"
-                  className="w-full "
+                  className="w-full h-10 "
                   aria-label="Select item type"
                 />
               </div>
@@ -368,7 +354,7 @@ export default function AddItemModal({
                     setFormData({ ...formData, category: value })
                   }
                   placeholder="Select category"
-                  className="w-full"
+                  className="w-full h-10"
                   aria-label="Select category"
                 />
               </div>
@@ -396,7 +382,7 @@ export default function AddItemModal({
 
             {/* Right Column */}
             <div className="space-y-4">
-              <div>
+              <div className="mb-2">
                 <label
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
@@ -605,7 +591,7 @@ export default function AddItemModal({
               }
               placeholder="Enter item description, features, specifications..."
               rows={4}
-              className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-100 h-24 rounded-lg "
               style={{ fontFamily: "Segoe UI" }}
             />
           </div>
@@ -618,12 +604,12 @@ export default function AddItemModal({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-[#E5E7EB]">
+          <div className="flex justify-end gap-3 mt-6 pt-6 ">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2 border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+              className="px-6 py-1.5 text-sm  border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
               style={{ fontFamily: "Segoe UI" }}
             >
               Cancel
@@ -631,7 +617,7 @@ export default function AddItemModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2"
               style={{ fontFamily: "Segoe UI" }}
             >
               {loading ? (
