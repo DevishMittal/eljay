@@ -187,11 +187,11 @@ export default function B2CInvoicePage() {
             </p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="outline" className="border-gray-300" onClick={handleCancel}>
+            <Button variant="outline" className="border-gray-300 text-sm" onClick={handleCancel}>
               Cancel
             </Button>
             <Button 
-              className="bg-orange-600 hover:bg-orange-700 text-white"
+              className="text-sm bg-orange-600 hover:bg-orange-700 text-white"
               onClick={handleSaveInvoice}
               disabled={loading}
             >
