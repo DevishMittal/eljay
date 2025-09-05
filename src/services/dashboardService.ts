@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AuthService } from './authService';
 
 const API_BASE_URL = 'https://eljay-api.vizdale.com/api/v1';

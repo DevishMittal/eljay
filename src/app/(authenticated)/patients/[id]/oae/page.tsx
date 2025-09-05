@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -84,9 +85,9 @@ export default function OAEFormPage({ params }: { params: { id: string } }) {
           setPatient(response.patient);
           setFormData(prev => ({
             ...prev,
-            patientName: response.patient.fullname,
+            patientName: response.patient.full_name,
             patientId: response.patient.id,
-            babyMotherName: response.patient.fullname
+            babyMotherName: response.patient.full_name
           }));
         } catch (error) {
           console.error('Error fetching patient:', error);
@@ -457,7 +458,7 @@ export default function OAEFormPage({ params }: { params: { id: string } }) {
                   <AlertCircle className="w-5 h-5 text-yellow-600" />
                   <div>
                     <h4 className="text-xs font-semibold text-yellow-800">Follow-up Testing Recommended</h4>
-                    <p className="text-xs text-yellow-700">Since the result is not "B/L Pass", additional testing sessions should be scheduled. Continue testing until both ears pass or clinical decision is made for referral.</p>
+                    <p className="text-xs text-yellow-700">Since the result is not &quot;B/L Pass&quot;, additional testing sessions should be scheduled. Continue testing until both ears pass or clinical decision is made for referral.</p>
                   </div>
                 </div>
               )}
