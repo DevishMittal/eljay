@@ -6,6 +6,8 @@ import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DatePicker from '@/components/ui/date-picker';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 import PaymentService from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -75,7 +77,7 @@ export default function RecordPaymentPage() {
       <MainLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading...</div>
+            <div className="text-md">Loading...</div>
           </div>
         </div>
       </MainLayout>
@@ -115,7 +117,7 @@ export default function RecordPaymentPage() {
             <Button
               variant="outline"
               onClick={handleCancel}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="text-sm border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -125,11 +127,9 @@ export default function RecordPaymentPage() {
             <Button
               onClick={handleSavePayment}
               disabled={loading}
-              className="bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+              className="text-sm bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
+            
               {loading ? 'Creating...' : 'Save Payment'}
             </Button>
           </div>
@@ -161,7 +161,7 @@ export default function RecordPaymentPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Payment Details
                 </h2>
               </div>
@@ -171,12 +171,13 @@ export default function RecordPaymentPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Date *
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    className="bg-white border-gray-300"
+                    onChange={setPaymentDate}
+                    placeholder="Select payment date"
+                    className="w-full"
                     required
+                    aria-label="Payment date"
                   />
                 </div>
 
@@ -216,38 +217,40 @@ export default function RecordPaymentPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Method *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: '', label: 'Select payment method' },
+                      { value: 'Cash', label: 'Cash' },
+                      { value: 'Card', label: 'Card' },
+                      { value: 'UPI', label: 'UPI' },
+                      { value: 'Bank Transfer', label: 'Bank Transfer' },
+                      { value: 'Cheque', label: 'Cheque' }
+                    ]}
                     value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={setMethod}
+                    placeholder="Select payment method"
+                    className="w-full"
                     aria-label="Select payment method"
-                    required
-                  >
-                    <option value="">Select payment method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cheque">Cheque</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Status *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: 'Pending', label: 'Pending' },
+                      { value: 'Completed', label: 'Completed' },
+                      { value: 'Failed', label: 'Failed' },
+                      { value: 'Cancelled', label: 'Cancelled' }
+                    ]}
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={setStatus}
+                    placeholder="Select payment status"
+                    className="w-full"
                     aria-label="Select payment status"
-                    required
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Failed">Failed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
@@ -329,7 +332,7 @@ export default function RecordPaymentPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Payment Summary
                 </h2>
               </div>
@@ -338,11 +341,11 @@ export default function RecordPaymentPage() {
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-sm text-gray-600">Payment Amount:</span>
-                    <span className="text-lg font-semibold text-gray-900">₹{parseFloat(amount) || 0}</span>
+                    <span className="text-md font-semibold text-gray-900">₹{parseFloat(amount) || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Total Payment:</span>
-                    <span className="text-lg font-semibold text-green-600">₹{parseFloat(amount) || 0}</span>
+                    <span className="text-md font-semibold text-green-600">₹{parseFloat(amount) || 0}</span>
                   </div>
                 </div>
 

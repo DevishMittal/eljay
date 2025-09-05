@@ -7,6 +7,8 @@ import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DatePicker from '@/components/ui/date-picker';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 import PaymentService from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Payment } from '@/types';
@@ -263,12 +265,13 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Date *
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    className="bg-white border-gray-300"
+                    onChange={setPaymentDate}
+                    placeholder="Select payment date"
+                    className="w-full"
                     required
+                    aria-label="Payment date"
                   />
                 </div>
 
@@ -294,39 +297,41 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Method *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: '', label: 'Select payment method' },
+                      { value: 'Cash', label: 'Cash' },
+                      { value: 'Card', label: 'Card' },
+                      { value: 'UPI', label: 'UPI' },
+                      { value: 'Bank Transfer', label: 'Bank Transfer' },
+                      { value: 'Cheque', label: 'Cheque' }
+                    ]}
                     value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={setMethod}
+                    placeholder="Select payment method"
+                    className="w-full"
                     aria-label="Select payment method"
-                    required
-                  >
-                    <option value="">Select payment method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cheque">Cheque</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Status *
                   </label>
-                  <select
+                  <CustomDropdown
+                    options={[
+                      { value: '', label: 'Select payment status' },
+                      { value: 'Pending', label: 'Pending' },
+                      { value: 'Completed', label: 'Completed' },
+                      { value: 'Failed', label: 'Failed' },
+                      { value: 'Cancelled', label: 'Cancelled' }
+                    ]}
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    onChange={setStatus}
+                    placeholder="Select payment status"
+                    className="w-full"
                     aria-label="Select payment status"
-                    required
-                  >
-                    <option value="">Select payment status</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Failed">Failed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+                  />
                 </div>
 
                 <div>

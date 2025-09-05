@@ -8,6 +8,7 @@ import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Clock, CheckCircle, TrendingUp, Filter } from 'lucide-react';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 export default function PaymentsPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -18,6 +19,7 @@ export default function PaymentsPage() {
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState('25');
 
   const fetchPayments = useCallback(async () => {
     if (!token) {
@@ -437,14 +439,17 @@ export default function PaymentsPage() {
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>
-                <select 
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                <CustomDropdown
+                  options={[
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                    { value: '100', label: '100' }
+                  ]}
+                  value={itemsPerPage}
+                  onChange={setItemsPerPage}
+                  className="w-20"
                   aria-label="Number of payments to display per page"
-                >
-                  <option>25</option>
-                  <option>50</option>
-                  <option>100</option>
-                </select>
+                />
               </div>
             </div>
           </div>
