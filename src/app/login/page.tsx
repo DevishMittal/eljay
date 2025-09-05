@@ -139,11 +139,11 @@ export default function LoginPage() {
                   Remember me
                 </label>
               </div>
-              <div className="text-sm">
+              {/* <div className="text-sm">
                 <a href="#" className="text-gray-600 hover:text-orange-500">
                   Forgot password?
                 </a>
-              </div>
+              </div> */}
             </div>
 
             {/* Sign In Button */}
