@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
+import { referralAnalyticsService } from '@/services/referralAnalyticsService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReferralSource } from '@/types';
+import { formatCurrency } from '@/utils/commissionUtils';
 import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -17,59 +19,173 @@ export default function DoctorReferralsPage() {
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
   const [referrals, setReferrals] = useState<ReferralSource[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<Array<{
+    referralId: string;
+    referralSource: ReferralSource;
+    totalAppointments: number;
+    totalRevenue: number;
+    totalCommission: number;
+    appointments: Array<{
+      id: string;
+      date: string;
+      patientName: string;
+      procedures: string[];
+      amount: number;
+      commission: number;
+      status: 'completed' | 'pending' | 'cancelled';
+    }>;
+    lastActivity: string;
+  }>>([]);
+  const [summaryStats, setSummaryStats] = useState<{
+    totalReferrals: number;
+    totalDoctorReferrals: number;
+    totalRevenue: number;
+    totalCommission: number;
+    pendingPayments: number;
+    paidThisMonth: number;
+  } | null>(null);
+  const [referralTrends, setReferralTrends] = useState<Array<{
+    month: string;
+    referrals: number;
+    revenue: number;
+    commission: number;
+  }>>([]);
+  const [topDoctors, setTopDoctors] = useState<Array<{
+    doctorId: string;
+    doctorName: string;
+    specialization: string;
+    referrals: number;
+    revenue: number;
+    commission: number;
+  }>>([]);
+  const [commissionStatements, setCommissionStatements] = useState<Array<{
+    doctorId: string;
+    doctorName: string;
+    period: string;
+    referrals: number;
+    revenue: number;
+    commission: number;
+    status: 'draft' | 'sent' | 'paid';
+    dueDate: string;
+  }>>([]);
   const { token } = useAuth();
 
-  // Fetch referrals from API
+  // Fetch referrals and analytics from API
   useEffect(() => {
-    const fetchReferrals = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await referralService.getReferrals(token || undefined);
-        if (response.status === 'success') {
-          setReferrals(response.data);
+        
+        // Fetch basic referrals
+        const referralsResponse = await referralService.getReferrals(token || undefined);
+        if (referralsResponse.status === 'success') {
+          setReferrals(referralsResponse.data);
         }
+
+        // Fetch analytics data
+        const [analyticsData, summaryData, trendsData, topDoctorsData, statementsData] = await Promise.all([
+          referralAnalyticsService.getReferralAnalytics(token || undefined),
+          referralAnalyticsService.getSummaryStats(token || undefined),
+          referralAnalyticsService.getReferralTrends(token || undefined),
+          referralAnalyticsService.getTopPerformingDoctors(token || undefined),
+          referralAnalyticsService.generateCommissionStatements(token || undefined),
+        ]);
+
+        setAnalytics(analyticsData);
+        setSummaryStats(summaryData);
+        setReferralTrends(trendsData);
+        setTopDoctors(topDoctorsData);
+        setCommissionStatements(statementsData);
       } catch (error) {
-        console.error('Error fetching referrals:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     if (token) {
-      fetchReferrals();
+      fetchData();
     }
   }, [token]);
 
   // Filter doctor referrals only (excluding direct/walk-in)
   const doctorReferrals = referrals.filter(ref => ref.type === 'doctor');
 
-  // Calculate metrics from real data
-  const totalReferrals = referrals.length;
-  const totalDoctorReferrals = doctorReferrals.length;
+  // Use real data from analytics - prioritize summaryStats over referrals.length
+  // The issue is that referrals.length might be inflated, so we trust summaryStats first
+  // If summaryStats is not available yet, show loading state instead of wrong data
+  const totalReferrals = summaryStats?.totalReferrals ?? (summaryStats === null ? 0 : referrals.length);
+  const totalDoctorReferrals = summaryStats?.totalDoctorReferrals ?? (summaryStats === null ? 0 : doctorReferrals.length);
+  
+  const totalRevenue = formatCurrency(summaryStats?.totalRevenue || 0);
+  const totalCommissions = formatCurrency(summaryStats?.totalCommission || 0);
+  const pendingPayments = formatCurrency(summaryStats?.pendingPayments || 0);
+  const paidThisMonth = formatCurrency(summaryStats?.paidThisMonth || 0);
 
-  // Mock data for charts (keeping as is since API doesn't provide this data)
-  const referralTrendsData = [
-    { month: 'Jul', referrals: 16 },
-    { month: 'Aug', referrals: 24 },
-    { month: 'Sep', referrals: 18 },
-    { month: 'Oct', referrals: 26 },
-    { month: 'Nov', referrals: 32 },
-    { month: 'Dec', referrals: 28 }
+  // Use real trends data with fallback
+  const referralTrendsData = referralTrends.length > 0 
+    ? referralTrends.map(trend => ({
+        month: trend.month,
+        referrals: trend.referrals,
+        revenue: trend.revenue,
+        commission: trend.commission
+      }))
+    : [
+        { month: 'Sep 2024', referrals: 0, revenue: 0, commission: 0 },
+        { month: 'Oct 2024', referrals: 0, revenue: 0, commission: 0 },
+        { month: 'Nov 2024', referrals: 0, revenue: 0, commission: 0 },
+        { month: 'Dec 2024', referrals: 0, revenue: 0, commission: 0 }
+      ];
+
+  // Calculate dynamic Y-axis domain based on actual data
+  const maxReferrals = Math.max(...referralTrendsData.map(trend => trend.referrals), 1);
+  const yAxisMax = Math.ceil(maxReferrals * 1.2); // Add 20% padding
+  
+  // Generate unique Y-axis ticks to avoid duplicate keys
+  const generateUniqueTicks = (max: number, count: number) => {
+    if (max <= 1) return [0, 1]; // For very small values, just use 0 and 1
+    const step = max / (count - 1);
+    const ticks = Array.from({ length: count }, (_, i) => Math.round(step * i));
+    // Remove duplicates and ensure we have at least 2 unique values
+    const uniqueTicks = [...new Set(ticks)].sort((a, b) => a - b);
+    return uniqueTicks.length >= 2 ? uniqueTicks : [0, max];
+  };
+  
+  const yAxisTicks = generateUniqueTicks(yAxisMax, 5);
+
+  // Calculate peak month and growth
+  const peakMonth = referralTrendsData.reduce((max, trend) => 
+    trend.referrals > max.referrals ? trend : max, 
+    { month: 'N/A', referrals: 0, revenue: 0, commission: 0 }
+  );
+  
+  const firstMonth = referralTrendsData[0]?.referrals || 0;
+  const lastMonth = referralTrendsData[referralTrendsData.length - 1]?.referrals || 0;
+  const growthPercentage = firstMonth > 0 ? Math.round(((lastMonth - firstMonth) / firstMonth) * 100) : 0;
+
+  // Generate real top services data from analytics
+  const procedureCounts: { [key: string]: number } = {};
+  analytics.forEach(analyticsItem => {
+    analyticsItem.appointments.forEach(appointment => {
+      appointment.procedures.forEach(procedure => {
+        procedureCounts[procedure] = (procedureCounts[procedure] || 0) + 1;
+      });
+    });
+  });
+
+  const topServicesData = Object.entries(procedureCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, count], index) => ({
+      name: name.length > 20 ? name.substring(0, 20) + '...' : name,
+      value: count,
+      color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index]
+    }));
+
+  // Fallback if no procedures found
+  const finalTopServicesData = topServicesData.length > 0 ? topServicesData : [
+    { name: 'No procedures yet', value: 1, color: '#E5E7EB' }
   ];
-
-  const topServicesData = [
-    { name: 'Pure Tone Audiometry', value: 1, color: '#3B82F6' },
-    { name: 'Tympanometry', value: 1, color: '#10B981' },
-    { name: 'OAE Testing', value: 1, color: '#F59E0B' },
-    { name: 'Balance Assessment', value: 1, color: '#EF4444' },
-    { name: 'Hearing Aid Fitting', value: 1, color: '#8B5CF6' }
-  ];
-
-  // Mock data for revenue and commissions (keeping as is since API doesn't provide this data)
-  const totalRevenue = '₹1,67,700';
-  const totalCommissions = '₹16,770';
-  const pendingPayments = '₹12,000';
-  const paidThisMonth = '₹18,500';
 
   // Summary cards data (same structure as billing invoices)
   const summaryCards = [
@@ -109,82 +225,75 @@ export default function DoctorReferralsPage() {
     { id: 'commission-statements', label: 'Commission Statements' }
   ];
 
-  // Generate mock patient data for referrals table (keeping UI the same)
-  const mockReferralData = [
-    {
-      id: '1',
-      date: '15 Dec 2024',
-      patient: { name: 'John Smith', id: 'PAT001' },
-      doctor: 'Dr. Robert Thompson',
-      services: [
-        { name: 'Pure Tone Audiometry', type: 'Diagnostic', status: 'completed' },
-        { name: 'Tympanometry', type: 'Diagnostic', status: 'completed' }
-      ],
-      amount: '₹2,500',
-      commission: '₹250',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      date: '20 Dec 2024',
-      patient: { name: 'Sarah Johnson', id: 'PAT002' },
-      doctor: 'Dr. Robert Thompson',
-      services: [
-        { name: 'OAE Testing', type: 'Diagnostic', status: 'pending' },
-        { name: 'Siemens Pure Charg...', type: 'Hearing Aid', status: 'pending' }
-      ],
-      amount: '₹86,200',
-      commission: '₹8,620',
-      status: 'active'
-    },
-    {
-      id: '3',
-      date: '18 Dec 2024',
-      patient: { name: 'Michael Brown', id: 'PAT003' },
-      doctor: 'Dr. Lisa Anderson',
-      services: [
-        { name: 'Balance Assessment', type: 'Diagnostic', status: 'completed' }
-      ],
-      amount: '₹2,000',
-      commission: '₹200',
-      status: 'completed'
-    },
-    {
-      id: '4',
-      date: '22 Dec 2024',
-      patient: { name: 'Emma Wilson', id: 'PAT004' },
-      doctor: 'Dr. Robert Thompson',
-      services: [
-        { name: 'Hearing Aid Consult...', type: 'Service', status: 'completed' },
-        { name: 'Phonak Audéo Para...', type: 'Hearing Aid', status: 'completed' }
-      ],
-      amount: '₹77,000',
-      commission: '₹7,700',
-      status: 'completed'
-    }
-  ];
+  // Generate referral data from analytics with truly unique keys
+  let globalCounter = 0;
+  const referralData = analytics.flatMap((analyticsItem) => 
+    analyticsItem.appointments.length > 0 
+      ? analyticsItem.appointments.map((appointment) => {
+          globalCounter++;
+          return {
+            id: `referral-${globalCounter}-${analyticsItem.referralId}-${appointment.id}`, // Absolutely unique keys
+            date: new Date(appointment.date).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            patient: { 
+              name: appointment.patientName, 
+              id: `PAT${appointment.id.slice(-3).toUpperCase()}` 
+            },
+            doctor: analyticsItem.referralSource.sourceName,
+            services: appointment.procedures.map(procedure => ({
+              name: procedure,
+              type: procedure.toLowerCase().includes('hearing aid') ? 'Hearing Aid' : 'Diagnostic',
+              status: appointment.status
+            })),
+            amount: formatCurrency(appointment.amount),
+            commission: formatCurrency(appointment.commission),
+            status: appointment.status
+          };
+        })
+      : (() => {
+          globalCounter++;
+          return [{
+            id: `referral-${globalCounter}-${analyticsItem.referralId}-no-appointments`, // Unique for no appointments
+            date: new Date(analyticsItem.lastActivity).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            patient: { 
+              name: 'No appointments yet', 
+              id: 'N/A' 
+            },
+            doctor: analyticsItem.referralSource.sourceName,
+            services: [{
+              name: 'No services',
+              type: 'N/A',
+              status: 'pending' as const
+            }],
+            amount: formatCurrency(0),
+            commission: formatCurrency(0),
+            status: 'pending' as const
+          }];
+        })()
+  );
 
-  // Mock commission statements data (keeping as is since API doesn't provide this data)
-  const mockCommissionStatements = [
-    {
-      doctor: 'Dr. Robert Thompson',
-      period: 'December 2024',
-      referrals: 8,
-      revenue: '₹18,500',
-      commission: '₹1,850',
-      status: 'sent',
-      dueDate: '15/1/2025'
-    },
-    {
-      doctor: 'Dr. Lisa Anderson',
-      period: 'December 2024',
-      referrals: 5,
-      revenue: '₹12,000',
-      commission: '₹1,200',
-      status: 'draft',
-      dueDate: '15/1/2025'
-    }
-  ];
+  // Use real commission statements data with unique keys
+  let statementCounter = 0;
+  const commissionStatementsData = commissionStatements.map((statement) => {
+    statementCounter++;
+    return {
+      id: `statement-${statementCounter}-${statement.doctorId}`, // Ensure unique keys
+      doctor: statement.doctorName,
+      period: statement.period,
+      referrals: statement.referrals,
+      revenue: formatCurrency(statement.revenue),
+      commission: formatCurrency(statement.commission),
+      status: statement.status,
+      dueDate: statement.dueDate
+    };
+  });
 
   return (
     <MainLayout>
@@ -300,8 +409,8 @@ export default function DoctorReferralsPage() {
                         <YAxis 
                           stroke="#717182"
                           fontSize={12}
-                          domain={[0, 32]}
-                          ticks={[0, 8, 16, 24, 32]}
+                          domain={[0, yAxisMax]}
+                          ticks={yAxisTicks}
                         />
                         <Tooltip 
                           contentStyle={{
@@ -322,11 +431,14 @@ export default function DoctorReferralsPage() {
                     <div className="flex items-center text-xs justify-between mt-4  bg-blue-50 rounded-lg p-2">
                       <div className="flex items-center space-x-1">
                         <TrendingUp className="w-3 h-3 text-green-600" />
-                        <span className="text-xs" style={{ color: '#717182' }}> Peak: Nov (32)</span>
+                        <span className="text-xs" style={{ color: '#717182' }}> Peak: {peakMonth.month} ({peakMonth.referrals})</span>
                       </div>
-                      <div className="flex flex-col justify-end items-end"> <span className="text-green-600 font-medium">+87% </span>
-                      <span className="text-gray-500 ">6-month growth</span></div>
-                     
+                      <div className="flex flex-col justify-end items-end"> 
+                        <span className={`font-medium ${growthPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {growthPercentage >= 0 ? '+' : ''}{growthPercentage}% 
+                        </span>
+                        <span className="text-gray-500 ">Growth</span>
+                      </div>
                     </div>
                   </div>
 
@@ -341,9 +453,9 @@ export default function DoctorReferralsPage() {
                         <div className="text-center py-4">
                           <div className="text-sm text-gray-500">Loading...</div>
                         </div>
-                      ) : doctorReferrals.length > 0 ? (
-                        doctorReferrals.slice(0, 3).map((referral, index) => (
-                          <div key={referral.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      ) : topDoctors.length > 0 ? (
+                        topDoctors.slice(0, 3).map((doctor, index) => (
+                          <div key={doctor.doctorId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                 index === 0 ? 'bg-blue-100' : index === 1 ? 'bg-green-100' : 'bg-orange-100'
@@ -353,13 +465,13 @@ export default function DoctorReferralsPage() {
                                 }`}>{index + 1}</span>
                               </div>
                               <div>
-                                <div className="font-medium text-sm" style={{ color: '#101828' }}>{referral.sourceName}</div>
-                                <div className="text-xs" style={{ color: '#717182' }}>{referral.specialization || 'General'}</div>
+                                <div className="font-medium text-sm" style={{ color: '#101828' }}>{doctor.doctorName}</div>
+                                <div className="text-xs" style={{ color: '#717182' }}>{doctor.specialization}</div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium text-sm" style={{ color: '#101828' }}>1 referral</div>
-                              <div className="text-xs" style={{ color: '#717182' }}>₹200</div>
+                              <div className="font-medium text-sm" style={{ color: '#101828' }}>{doctor.referrals} referrals</div>
+                              <div className="text-xs" style={{ color: '#717182' }}>{formatCurrency(doctor.commission)}</div>
                             </div>
                           </div>
                         ))
@@ -390,7 +502,9 @@ export default function DoctorReferralsPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm" style={{ color: '#101828' }}>{pendingPayments}</div>
-                          <div className="text-xs" style={{ color: '#717182' }}>2 statements</div>
+                          <div className="text-xs" style={{ color: '#717182' }}>
+                            {commissionStatementsData.filter(s => s.status === 'draft').length} statements
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-3 py-1 border border-green-100 bg-green-50 rounded-lg" style={{ boxShadow: '0 0 0 1px #86efac' }}>
@@ -400,7 +514,9 @@ export default function DoctorReferralsPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-sm" style={{ color: '#101828' }}>{paidThisMonth}</div>
-                          <div className="text-xs" style={{ color: '#717182' }}>3 statements</div>
+                          <div className="text-xs" style={{ color: '#717182' }}>
+                            {commissionStatementsData.filter(s => s.status === 'sent' || s.status === 'paid').length} statements
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -420,7 +536,7 @@ export default function DoctorReferralsPage() {
                         <ResponsiveContainer width="100%" height={200}>
                           <PieChart>
                             <Pie
-                              data={topServicesData}
+                              data={finalTopServicesData}
                               cx="50%"
                               cy="50%"
                               innerRadius={40}
@@ -428,7 +544,7 @@ export default function DoctorReferralsPage() {
                               paddingAngle={5}
                               dataKey="value"
                             >
-                              {topServicesData.map((service, index) => (
+                              {finalTopServicesData.map((service, index) => (
                                 <Cell key={`cell-${index}`} fill={service.color} />
                               ))}
                             </Pie>
@@ -437,7 +553,7 @@ export default function DoctorReferralsPage() {
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-2">
-                        {topServicesData.map((service, index) => (
+                        {finalTopServicesData.map((service, index) => (
                           <div key={index} className="flex items-center space-x-2 space-y-3">
                             <div 
                               className="w-3 h-3 rounded-full" 
@@ -543,8 +659,8 @@ export default function DoctorReferralsPage() {
                               Loading referrals...
                             </td>
                           </tr>
-                        ) : mockReferralData.length > 0 ? (
-                          mockReferralData.map((referral) => (
+                        ) : referralData.length > 0 ? (
+                          referralData.map((referral) => (
                             <tr key={referral.id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.date}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -617,7 +733,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Showing 1 to {Math.min(totalReferrals, 4)} of {totalReferrals}</span>
+                        <span className="text-sm text-gray-700">Showing 1 to {Math.min(referralData.length, 4)} of {referralData.length}</span>
                         <select 
                           className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
                           aria-label="Items per page"
@@ -648,7 +764,7 @@ export default function DoctorReferralsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <h2 className="text-sm" style={{ color: '#101828' }}>Commission Statements</h2>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{mockCommissionStatements.length}</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{commissionStatementsData.length}</span>
                   </div>
                 </div>
 
@@ -669,8 +785,8 @@ export default function DoctorReferralsPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {mockCommissionStatements.map((statement, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                        {commissionStatementsData.map((statement) => (
+                          <tr key={statement.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{statement.doctor}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.period}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.referrals}</td>
@@ -716,7 +832,7 @@ export default function DoctorReferralsPage() {
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>Total</strong></span>
-                        <span style={{ color: '#717182' }}>Statements: <strong>{mockCommissionStatements.length} statements</strong></span>
+                        <span style={{ color: '#717182' }}>Statements: <strong>{commissionStatementsData.length} statements</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}>Total Referrals: <strong className="text-xs">13</strong></span>
@@ -730,7 +846,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Showing 1 to {mockCommissionStatements.length} of {mockCommissionStatements.length}</span>
+                        <span className="text-sm text-gray-700">Showing 1 to {commissionStatementsData.length} of {commissionStatementsData.length}</span>
                         <select 
                           className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
                           aria-label="Items per page"

@@ -33,7 +33,6 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
   
   const { 
     tasks,
-    getTodayTasks, 
     getOverdueTasks, 
     getPendingTasks, 
     getDoneTasks,
@@ -41,7 +40,6 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
   } = useTask();
 
 
-  const todayTasks = getTodayTasks();
   const overdueTasks = getOverdueTasks();
   const pendingTasks = getPendingTasks();
   const doneTasks = getDoneTasks();
@@ -59,8 +57,13 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
         return taskDate.toDateString() === selectedDate.toDateString();
       });
       
-      // Include overdue and done tasks as well
-      return [...selectedDateTasks, ...overdueTasks, ...doneTasks];
+      // Combine all relevant tasks and remove duplicates by ID
+      const allTasks = [...selectedDateTasks, ...overdueTasks, ...doneTasks];
+      const uniqueTasks = allTasks.filter((task, index, self) => 
+        index === self.findIndex(t => t.id === task.id)
+      );
+      
+      return uniqueTasks;
     };
 
     return getTasksForSelectedDate();
@@ -99,7 +102,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
   };
 
   const getCalendarDates = () => {
-    const dates = [];
+    const dates: { date: Date; label: string; index: number }[] = [];
     const today = new Date();
     
     for (let i = 0; i < 7; i++) {

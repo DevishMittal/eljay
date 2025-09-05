@@ -20,6 +20,10 @@ import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-moda
 import ClinicalNoteModal from '@/components/modals/clinical-note-modal';
 import CreateDiagnosticPlanModal from '@/components/modals/create-diagnostic-plan-modal';
 import { useAuth } from '@/contexts/AuthContext';
+import { checkPatientProcedures, PatientProcedureInfo } from '@/utils/procedureUtils';
+import FileUploadModal from '@/components/modals/file-upload-modal';
+import FileList from '@/components/ui/file-list';
+import { fileService, UploadedFile } from '@/services/fileService';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -35,6 +39,12 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [procedureInfo, setProcedureInfo] = useState<PatientProcedureInfo>({
+    hasHAT: false,
+    hasOAE: false,
+    hatAppointments: [],
+    oaeAppointments: []
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<UpdatePatientData>({});
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -65,6 +75,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [diagnosticAppointmentsLoading, setDiagnosticAppointmentsLoading] = useState(false);
   const [showDiagnosticPlanModal, setShowDiagnosticPlanModal] = useState(false);
 
+  // File upload state
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+
   // Billing state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -77,19 +92,34 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     totalInvoices: 0
   });
 
+  // Check patient procedures
+  const checkProcedures = useCallback(async () => {
+    if (!resolvedParams.id || !token) return;
+    
+    try {
+      const info = await checkPatientProcedures(resolvedParams.id, token);
+      setProcedureInfo(info);
+    } catch (error) {
+      console.error('Error checking patient procedures:', error);
+    }
+  }, [resolvedParams.id, token]);
+
   const fetchPatient = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await patientService.getPatientById(resolvedParams.id, token || undefined);
       setPatient(response.patient);
+      
+      // Check procedures after patient is loaded
+      await checkProcedures();
     } catch (err) {
       setError('Failed to fetch patient details. Please try again.');
       console.error('Error fetching patient:', err);
     } finally {
       setLoading(false);
     }
-  }, [resolvedParams.id, token]);
+  }, [resolvedParams.id, token, checkProcedures]);
 
   const fetchAppointments = useCallback(async () => {
     if (!patient) return;
@@ -191,6 +221,26 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [patient, token]);
 
+  const fetchFiles = useCallback(async () => {
+    if (!patient || !token) return;
+    
+    try {
+      setFilesLoading(true);
+      const response = await fileService.getFiles(patient.id, token);
+      setUploadedFiles(response.data);
+      
+      // Log successful file fetch
+      console.log(`Successfully fetched ${response.data.length} files for user ${patient.id}`);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      // Don't set error state for file fetching issues since it might be expected
+      // Just log it and continue with empty file list
+      setUploadedFiles([]);
+    } finally {
+      setFilesLoading(false);
+    }
+  }, [patient, token]);
+
   useEffect(() => {
     fetchPatient();
   }, [fetchPatient]);
@@ -207,8 +257,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       fetchClinicalNotes();
       // Fetch diagnostic appointments when EMR section is opened
       fetchDiagnosticAppointments();
+      // Fetch files when EMR section is opened
+      fetchFiles();
     }
-  }, [fetchClinicalNotes, fetchDiagnosticAppointments, activeSection, patient]);
+  }, [fetchClinicalNotes, fetchDiagnosticAppointments, fetchFiles, activeSection, patient]);
 
   useEffect(() => {
     if (patient && activeSection === 'billing') {
@@ -299,9 +351,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const handleAppointmentCreated = (appointment: { id: string; date: Date; time: string; patient: string; type: string; duration: number; audiologist: string; notes: string; phoneNumber: string; email: string }) => {
     console.log('Appointment created:', appointment);
     setShowAppointmentModal(false);
-    // Refresh appointments list
+    // Refresh appointments list and procedure information
     if (patient) {
       fetchAppointments();
+      checkProcedures(); // Refresh procedure information to show new forms if needed
     }
   };
 
@@ -369,6 +422,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     fetchDiagnosticAppointments();
     // You can also add a success message here if needed
   }, [fetchDiagnosticAppointments]);
+
+  const handleFileUploaded = (file: UploadedFile) => {
+    // Add the new file to the list
+    setUploadedFiles(prev => [file, ...prev]);
+    setSuccess('File uploaded successfully');
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const handleFileDeleted = (fileId: string) => {
+    // Remove the file from the list
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+    setSuccess('File deleted successfully');
+    setTimeout(() => setSuccess(null), 3000);
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -672,8 +739,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 15 15" stroke="currentColor">
+                    <path d="M12.4668 3.56689H3.13346C2.48913 3.56689 1.9668 4.08923 1.9668 4.73356V10.5669C1.9668 11.2112 2.48913 11.7336 3.13346 11.7336H12.4668C13.1111 11.7336 13.6335 11.2112 13.6335 10.5669V4.73356C13.6335 4.08923 13.1111 3.56689 12.4668 3.56689Z" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1.9668 6.48389H13.6335" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                   <span className="text-xs font-medium">Billing</span>
                 </div>
@@ -728,7 +796,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="26" height="26" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <g clipPath="url(#clip0_1_45442)">
                             <path d="M2.43359 1.81689V13.4836L3.60026 12.9002L4.76693 13.4836L5.93359 12.9002L7.10026 13.4836L8.26693 12.9002L9.43359 13.4836L10.6003 12.9002L11.7669 13.4836V1.81689L10.6003 2.40023L9.43359 1.81689L8.26693 2.40023L7.10026 1.81689L5.93359 2.40023L4.76693 1.81689L3.60026 2.40023L2.43359 1.81689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M9.43229 5.31689H5.93229C5.62287 5.31689 5.32613 5.43981 5.10733 5.6586C4.88854 5.8774 4.76563 6.17414 4.76562 6.48356C4.76563 6.79298 4.88854 7.08973 5.10733 7.30852C5.32613 7.52731 5.62287 7.65023 5.93229 7.65023H8.26562C8.57504 7.65023 8.87179 7.77314 9.09058 7.99194C9.30937 8.21073 9.43229 8.50748 9.43229 8.81689C9.43229 9.12631 9.30937 9.42306 9.09058 9.64185C8.87179 9.86064 8.57504 9.98356 8.26562 9.98356H4.76562" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
@@ -750,7 +818,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="26" height="26" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <g clipPath="url(#clip0_1_45448)">
                             <path d="M11.1829 4.73372V2.98372C11.1829 2.82901 11.1215 2.68064 11.0121 2.57124C10.9027 2.46185 10.7543 2.40039 10.5996 2.40039H3.01628C2.70686 2.40039 2.41011 2.52331 2.19132 2.7421C1.97253 2.96089 1.84961 3.25764 1.84961 3.56706C1.84961 3.87648 1.97253 4.17322 2.19132 4.39202C2.41011 4.61081 2.70686 4.73372 3.01628 4.73372H11.7663C11.921 4.73372 12.0694 4.79518 12.1788 4.90458C12.2882 5.01397 12.3496 5.16235 12.3496 5.31706V7.65039M12.3496 7.65039H10.5996C10.2902 7.65039 9.99344 7.77331 9.77465 7.9921C9.55586 8.21089 9.43294 8.50764 9.43294 8.81706C9.43294 9.12648 9.55586 9.42322 9.77465 9.64201C9.99344 9.86081 10.2902 9.98372 10.5996 9.98372H12.3496C12.5043 9.98372 12.6527 9.92227 12.7621 9.81287C12.8715 9.70347 12.9329 9.5551 12.9329 9.40039V8.23372C12.9329 8.07901 12.8715 7.93064 12.7621 7.82124C12.6527 7.71185 12.5043 7.65039 12.3496 7.65039Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M1.84961 3.56689V11.7336C1.84961 12.043 1.97253 12.3397 2.19132 12.5585C2.41011 12.7773 2.70686 12.9002 3.01628 12.9002H11.7663C11.921 12.9002 12.0694 12.8388 12.1788 12.7294C12.2882 12.62 12.3496 12.4716 12.3496 12.3169V9.98356" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
@@ -771,7 +839,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <svg width="16" height="16" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="26" height="26" viewBox="0 0 25 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <g clipPath="url(#clip0_1_45454)">
                             <path d="M11.7656 3.56689H2.43229C1.78796 3.56689 1.26562 4.08923 1.26562 4.73356V10.5669C1.26562 11.2112 1.78796 11.7336 2.43229 11.7336H11.7656C12.41 11.7336 12.9323 11.2112 12.9323 10.5669V4.73356C12.9323 4.08923 12.41 3.56689 11.7656 3.56689Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M1.26562 6.48389H12.9323" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1291,25 +1359,66 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   {/* Separator Line */}
                   <hr className="my-6 border-gray-200" />
 
-                  {/* Specialized Procedures Section */}
-                  <div className="rounded-md pt-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 text-sm">Specialized Procedures</h3>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Volume2 size={16} className="text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 text-sm">Hearing Aid Trial (HAT)</h4>
-                          <p className="text-gray-600 text-xs">Record hearing aid trial sessions</p>
-                        </div>
-                        <div className="text-right text-gray-500 text-xs">
-                          <div>Last updated</div>
-                          <div>Never</div>
-                        </div>
+
+                  {/* Specialized Procedures Section - Only show if patient has HAT or OAE procedures */}
+                  {(procedureInfo.hasHAT || procedureInfo.hasOAE) && (
+                    <div className="rounded-md pt-6">
+                      <h3 className="font-semibold text-gray-900 mb-4 text-sm">Specialized Procedures</h3>
+                      <div className="space-y-3">
+                        {/* HAT Procedure - Only show if patient has HAT appointments */}
+                        {procedureInfo.hasHAT && (
+                          <div 
+                            className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 cursor-pointer transition-colors"
+                            onClick={() => router.push(`/patients/${patient?.id}/hat`)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Volume2 size={16} className="text-blue-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm">Hearing Aid Trial (HAT)</h4>
+                                <p className="text-gray-600 text-xs">Record hearing aid trial sessions</p>
+                                <p className="text-blue-600 text-xs mt-1">
+                                  {procedureInfo.hatAppointments.length} appointment{procedureInfo.hatAppointments.length !== 1 ? 's' : ''} scheduled
+                                </p>
+                              </div>
+                              <div className="text-right text-gray-500 text-xs">
+                                <div>Last updated</div>
+                                <div>Never</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* OAE Testing Procedure - Only show if patient has OAE appointments */}
+                        {procedureInfo.hasOAE && (
+                          <div
+                            className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 cursor-pointer transition-colors"
+                            onClick={() => router.push(`/patients/${patient?.id}/oae`)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm">OAE Testing</h4>
+                                <p className="text-gray-600 text-xs">Otoacoustic Emissions testing for hearing assessment</p>
+                                <p className="text-green-600 text-xs mt-1">
+                                  {procedureInfo.oaeAppointments.length} appointment{procedureInfo.oaeAppointments.length !== 1 ? 's' : ''} scheduled
+                                </p>
+                              </div>
+                              <div className="text-right text-gray-500 text-xs">
+                                <div>Last updated</div>
+                                <div>Never</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Clinical Notes Section */}
@@ -1420,29 +1529,29 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 {/* Patient Files Section */}
                 <div id="patient-files" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
-                    <button className="bg-orange-600 text-white px-4 py-1 rounded-lg text-sm flex items-center space-x-2 hover:bg-orange-700 transition-colors">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
+                    </div>
+                    <button 
+                      onClick={() => setShowFileUploadModal(true)}
+                      className="bg-orange-600 text-white px-4 py-1 rounded-lg text-sm flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                       <span>Upload File</span>
                     </button>
                   </div>
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-medium mb-2 text-gray-900">No files uploaded</h3>
-                    <p className="text-gray-500 text-sm mb-6">Upload patient files and documents</p>
-                    <button className="bg-orange-600 text-white px-6 py-1 rounded-lg text-sm flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <span>Upload Files</span>
-                    </button>
-                  </div>
+                  
+                  <FileList 
+                    files={uploadedFiles}
+                    onFileDeleted={handleFileDeleted}
+                    isLoading={filesLoading}
+                    token={token || undefined}
+                  />
                 </div>
 
                 {/* Medical History Section */}
@@ -1947,6 +2056,15 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         onClose={() => setShowDiagnosticPlanModal(false)}
         onSuccess={handleDiagnosticPlanCreated}
         patientId={patient?.id || ''}
+      />
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={showFileUploadModal}
+        onClose={() => setShowFileUploadModal(false)}
+        userId={patient?.id || ''}
+        token={token || undefined}
+        onFileUploaded={handleFileUploaded}
       />
     </MainLayout>
   );
