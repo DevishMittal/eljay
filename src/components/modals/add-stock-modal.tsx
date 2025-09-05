@@ -386,6 +386,9 @@ export default function AddStockModal({ isOpen, onClose }: AddStockModalProps) {
               className="px-6 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               style={{ fontFamily: 'Segoe UI' }}
             >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
               Add Stock ({stockEntries.length} items)
             </button>
           </div>
