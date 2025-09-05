@@ -97,42 +97,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           <span className="text-sm text-gray-500">{stats.unread} unread</span>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={cn(
-              'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-              activeTab === 'all'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            )}
-          >
-            All ({stats.total})
-          </button>
-          <button
-            onClick={() => setActiveTab('unread')}
-            className={cn(
-              'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-              activeTab === 'unread'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            )}
-          >
-            Unread ({stats.unread})
-          </button>
-          <button
-            onClick={() => setActiveTab('action_required')}
-            className={cn(
-              'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-              activeTab === 'action_required'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            )}
-          >
-            Action ({stats.actionRequired})
-          </button>
-        </div>
+       
       </div>
 
       {/* Notifications List */}

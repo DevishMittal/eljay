@@ -632,7 +632,7 @@ export default function InventoryAdjustmentsPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button 
               onClick={() => setShowAddStockModal(true)}
-              className="flex items-center gap-2 px-6 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm font-medium" 
+              className="flex items-center gap-2 px-6 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm font-medium" 
               style={{ fontFamily: 'Segoe UI' }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -642,7 +642,7 @@ export default function InventoryAdjustmentsPage() {
             </button>
             <button 
               onClick={() => setShowConsumeStockModal(true)}
-              className="flex items-center gap-2 px-6 py-2 border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors text-sm" 
+              className="flex items-center gap-2 px-6 py-1.5 border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] transition-colors text-sm" 
               style={{ fontFamily: 'Segoe UI' }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -656,17 +656,9 @@ export default function InventoryAdjustmentsPage() {
         {/* Search Bar */}
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           <div className="flex-1 max-w-md">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search transactions, items, suppliers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-[#E5E7EB] rounded-lg bg-[#F9FAFB] text-[#101828] placeholder-[#717182] "
-                style={{ fontFamily: 'Segoe UI' }}
-              />
+            <div className="relative ">
               <svg
-                className="absolute left-3 top-2.5 h-4 w-4 text-[#717182]"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -678,6 +670,13 @@ export default function InventoryAdjustmentsPage() {
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
+              <input
+                type="text"
+                placeholder="Search transactions, items, suppliers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
           </div>
         </div>

@@ -148,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-base font-bold text-[#101828]">Eljay</span>
-              <span className="text-xs text-[#667085]">Hearing Care Management</span>
+              <span className="text-[11px] text-[#667085]">Hearing Care Management</span>
             </div>
           )}
         </div>
@@ -208,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                     )}
                   </button>
                   {!isCollapsed && isExpanded(item.title) && item.subItems && (
-                    <ul className="ml-4 space-y-1">
+                    <ul className="ml-4 space-y-2">
                       {item.subItems.map((subItem) => (
                         <li key={subItem.href} className="px-1">
                           <Link

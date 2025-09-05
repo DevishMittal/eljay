@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/main-layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
 import PaymentService from '@/services/paymentService';
 import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { CreditCard, Clock, CheckCircle, TrendingUp, Filter } from 'lucide-react';
 
 export default function PaymentsPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -19,10 +17,7 @@ export default function PaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [totalAmount, setTotalAmount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
 
   const fetchPayments = useCallback(async () => {
     if (!token) {
@@ -33,11 +28,9 @@ export default function PaymentsPage() {
 
     try {
       setLoading(true);
-      const response = await PaymentService.getPayments(currentPage, 10);
+      const response = await PaymentService.getPayments(1, 10);
       setPayments(response.data.payments);
-      setTotalPages(response.data.pagination.pages);
       setTotalAmount(response.data.summary.totalAmount);
-      setTotalCount(response.data.summary.count);
       setError(null);
     } catch (err: unknown) {
       console.error('Error fetching payments:', err);
@@ -46,7 +39,7 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage]);
+  }, [token]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -64,58 +57,37 @@ export default function PaymentsPage() {
   // Calculate summary data from payments
   const completedPayments = payments.filter(p => p.status === 'Completed');
   const pendingPayments = payments.filter(p => p.status === 'Pending');
-  const failedPayments = payments.filter(p => p.status === 'Failed');
   const averagePayment = payments.length > 0 ? totalAmount / payments.length : 0;
 
   const summaryCards = [
     {
-      title: 'Total Received',
+      title: "Total Received",
       value: PaymentService.formatCurrency(totalAmount),
-      icon: (
-        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-          </svg>
-        </div>
-      ),
-      color: 'text-green-600'
+      icon: CreditCard,
+      bgColor: "bg-green-100",
+      iconColor: "text-green-700",
     },
     {
-      title: 'Pending',
+      title: "Pending",
       value: pendingPayments.length.toString(),
-      icon: (
-        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-          <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-      ),
-      color: 'text-yellow-600'
+      icon: Clock,
+      bgColor: "bg-yellow-100",
+      iconColor: "text-yellow-700",
     },
     {
-      title: 'Completed',
+      title: "Completed",
       value: completedPayments.length.toString(),
-      icon: (
-        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      ),
-      color: 'text-blue-600'
+      icon: CheckCircle,
+      bgColor: "bg-blue-100",
+      iconColor: "text-blue-700",
     },
     {
-      title: 'Average Payment',
+      title: "Average Payment",
       value: PaymentService.formatCurrency(averagePayment),
-      icon: (
-        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-          <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-        </div>
-      ),
-      color: 'text-purple-600'
-    }
+      icon: TrendingUp,
+      bgColor: "bg-purple-100",
+      iconColor: "text-purple-700",
+    },
   ];
 
   const handleSelectAll = () => {
@@ -214,12 +186,12 @@ export default function PaymentsPage() {
               {error.includes('token') || error.includes('authentication') ? (
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">Please try logging in again.</p>
-                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                  <button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700 text-white inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-10 px-4 py-2">
                     Go to Login
-                  </Button>
+                  </button>
                 </div>
               ) : (
-                <Button onClick={fetchPayments} className="ml-4">Retry</Button>
+                <button onClick={fetchPayments} className="ml-4 bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-10 px-4 py-2">Retry</button>
               )}
             </div>
           </div>
@@ -241,88 +213,103 @@ export default function PaymentsPage() {
               Track payment receipts and transactions
             </p>
           </div>
-          <Button 
+          <button
+            className="bg-orange-600 hover:bg-orange-500 text-white text-xs inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background px-3 py-1.5"
             onClick={handleNewPayment}
-            className="bg-[#FF6900] hover:bg-orange-300 text-white"
           >
             + New Payment
-          </Button>
+          </button>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {summaryCards.map((card, index) => (
-            <Card key={index} className="bg-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#4A5565]" style={{ fontFamily: 'Segoe UI' }}>
-                      {card.title}
-                    </p>
-                    <p className={cn("text-xl font-semibold", card.color)} style={{ fontFamily: 'Segoe UI' }}>
-                      {card.value}
-                    </p>
+          {summaryCards.map((card, index) => {
+            const IconComponent = card.icon;
+            return (
+              <div key={index} className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p
+                        className="text-xs text-[#4A5565]"
+                        style={{ fontFamily: "Segoe UI" }}
+                      >
+                        {card.title}
+                      </p>
+                      <p
+                        className="text-xl font-semibold text-gray-900"
+                        style={{ fontFamily: "Segoe UI" }}
+                      >
+                        {card.value}
+                      </p>
+                    </div>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${card.bgColor}`}
+                    >
+                      <IconComponent className={`w-5 h-5 ${card.iconColor}`} />
+                    </div>
                   </div>
-                  {card.icon}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
         {/* Payment List Section */}
-        <Card className="bg-white">
-          <CardContent className="p-6">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="p-6">
             {/* Section Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                Payments {payments.length}
-              </h2>
-            </div>
-
-            {/* Search and Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <div className="relative">
-                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <div className="flex justify-between items-center p-6 mb-6">
+              <div className="flex items-center space-x-3">
+                <h2 className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                  Payments
+                </h2>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{payments.length}</span>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative w-64">
+                  <svg
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
-                  <Input
+                  <input
+                    type="text"
                     placeholder="Search payments..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-[#F9FAFB] border-[#E5E7EB] placeholder-[#717182]"
+                    className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                  </svg>
+                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
+                  <Filter className="w-4 h-4 mr-2"/>
                   All Type
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </Button>
-                <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                  </svg>
+                </button>
+                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
+                  <Filter className="w-4 h-4 mr-2"/>
                   All Method
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </Button>
-                <Button variant="outline" className="bg-white border-gray-300 text-gray-700">
-                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                  </svg>
+                </button>
+                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
+                  <Filter className="w-4 h-4 mr-2"/>
                   All Status
                   <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -444,7 +431,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
               <p className="text-sm text-gray-600">
                 Showing 1 to {payments.length} of {payments.length} payments
               </p>
@@ -460,8 +447,8 @@ export default function PaymentsPage() {
                 </select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
