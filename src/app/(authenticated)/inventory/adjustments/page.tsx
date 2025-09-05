@@ -656,7 +656,7 @@ export default function InventoryAdjustmentsPage() {
         {/* Search Bar */}
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           <div className="flex-1 max-w-md">
-            <div className="relative w-64">
+            <div className="relative ">
               <svg
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
                 fill="none"

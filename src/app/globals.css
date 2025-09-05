@@ -151,8 +151,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
-  border-radius: 4px;
+  background: rgb(199, 199, 199) ;
 }
 
 ::-webkit-scrollbar-thumb:hover {
