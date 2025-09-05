@@ -283,10 +283,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <span className={cn(
                           "inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 px-4 py-2 text-sm",
                           invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800 border-green-200' :
-                          invoice.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                          invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
                           'bg-blue-100 text-blue-800 border-blue-200'
                         )}>
-                          {invoice.paymentStatus === 'Partial' ? 'Partially Paid' : invoice.paymentStatus}
+                          {invoice.paymentStatus}
                         </span>
                       </div>
                       <div className="text-sm md:text-base text-gray-600 space-y-1">
@@ -467,8 +467,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <span className="text-xs md:text-sm text-gray-600">Amount Paid:</span>
                         <span className="text-xs md:text-sm font-medium text-gray-900">
                           ₹{(
-                            invoice.paymentStatus === 'Paid' ? invoice.totalAmount :
-                            invoice.paymentStatus === 'Partial' ? invoice.totalAmount * 0.5 : 0
+                            invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 0
                           ).toLocaleString()}
                         </span>
                       </div>
@@ -476,9 +475,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <span className="text-xs md:text-sm text-gray-600">Balance Due:</span>
                         <span className="text-xs md:text-sm font-medium text-red-600">
                           ₹{(
-                            invoice.paymentStatus === 'Paid' ? 0 :
-                            invoice.paymentStatus === 'Partial' ? invoice.totalAmount * 0.5 :
-                            invoice.totalAmount
+                            invoice.paymentStatus === 'Paid' ? 0 : invoice.totalAmount
                           ).toLocaleString()}
                         </span>
                       </div>
@@ -524,7 +521,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 <div className={cn(
                   "inline-block px-3 py-1 rounded-full text-sm font-medium mb-2",
                   invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                  invoice.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-800' :
+                  invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800' :
                   'bg-blue-100 text-blue-800'
                 )}>
                   {invoice.paymentStatus}

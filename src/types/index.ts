@@ -824,7 +824,7 @@ export interface Invoice {
   patientName: string;
   organizationName: string;
   invoiceType: 'B2B' | 'B2C';
-  paymentStatus: 'Pending' | 'Paid' | 'Partial';
+  paymentStatus: 'Pending' | 'Paid' | 'Cancelled';
   sgstRate: number;
   cgstRate: number;
   subtotal: number;
@@ -847,7 +847,7 @@ export interface CreateInvoiceData {
   organizationName: string;
   invoiceType: 'B2B' | 'B2C';
   screenings: InvoiceScreening[];
-  paymentStatus: 'Pending' | 'Paid' | 'Partial';
+  paymentStatus: 'Pending' | 'Paid' | 'Cancelled';
   sgstRate: number;
   cgstRate: number;
   notes?: string;
@@ -856,7 +856,7 @@ export interface CreateInvoiceData {
 
 export interface UpdateInvoiceData {
   invoiceDate?: string;
-  paymentStatus?: 'Pending' | 'Paid' | 'Partial';
+  paymentStatus?: 'Pending' | 'Paid' | 'Cancelled';
   sgstRate?: number;
   cgstRate?: number;
   screenings?: InvoiceScreening[];
@@ -1029,7 +1029,7 @@ export interface TransferItem {
     itemName: string;
     itemCode: string;
     brand: string;
-    mrp: number;
+    mrp?: number;
     currentStock?: number;
   };
 }

@@ -415,7 +415,7 @@ export default function TransferDetailsPage({ params }: { params: Promise<{ id: 
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold text-gray-900">Qty: {item.quantity}</p>
-                          <p className="text-sm text-gray-600">₹{item.inventoryItem.mrp}</p>
+                          <p className="text-sm text-gray-600">₹{item.inventoryItem.mrp || 'N/A'}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

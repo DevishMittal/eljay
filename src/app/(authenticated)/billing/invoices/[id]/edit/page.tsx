@@ -23,7 +23,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   
   // Form state
   const [invoiceDate, setInvoiceDate] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Partial'>('Pending');
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
@@ -434,13 +434,14 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                     </label>
                     <select
                       value={paymentStatus}
-                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Partial')}
+                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Cancelled')}
+                      
                       className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                       aria-label="Select payment status"
                     >
                       <option value="Pending">Pending</option>
                       <option value="Paid">Paid</option>
-                      <option value="Partial">Partial</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
                   <div>
