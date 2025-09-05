@@ -6,11 +6,13 @@ import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DatePicker from '@/components/ui/date-picker';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import ExpenseService from '@/services/expenseService';
 import { CreateExpenseData } from '@/types';
 
 export default function AddExpensePage() {
-  const [expenseDate, setExpenseDate] = useState('');
+  const [expenseDate, setExpenseDate] = useState<string>('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('0.00');
@@ -32,12 +34,12 @@ export default function AddExpensePage() {
       setError(null);
 
       const expenseData: CreateExpenseData = {
-        date: expenseDate,
+        date: expenseDate, // DatePicker already returns YYYY-MM-DD string format
         category,
         description,
         amount: parseFloat(amount),
         taxAmount: parseFloat(taxAmount),
-        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer',
+        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer',
         vendor,
         remarks: remarks || undefined
       };
@@ -65,6 +67,8 @@ export default function AddExpensePage() {
         return 'bg-green-100 text-green-800';
       case 'Card':
         return 'bg-blue-100 text-blue-800';
+      case 'Credit Card':
+        return 'bg-indigo-100 text-indigo-800';
       case 'Cheque':
         return 'bg-orange-100 text-orange-800';
       case 'Bank Transfer':
@@ -168,13 +172,13 @@ export default function AddExpensePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Expense Date *
                       </label>
-                      <Input
-                        type="date"
+                      <DatePicker
                         value={expenseDate}
-                        onChange={(e) => setExpenseDate(e.target.value)}
-                        className="bg-white border-gray-300"
+                        onChange={setExpenseDate}
                         placeholder="dd - mm - yyyy"
+                        className="w-full"
                         required
+                        aria-label="Select expense date"
                       />
                     </div>
 
@@ -182,18 +186,19 @@ export default function AddExpensePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Category *
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={[
+                          { value: '', label: 'Select category' },
+                          ...ExpenseService.getExpenseCategories().map(cat => ({
+                            value: cat,
+                            label: cat
+                          }))
+                        ]}
                         value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={setCategory}
+                        placeholder="Select category"
                         aria-label="Select category"
-                        required
-                      >
-                        <option value="">Select category</option>
-                        {ExpenseService.getExpenseCategories().map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </div>
 
@@ -255,17 +260,16 @@ export default function AddExpensePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Payment Method *
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={ExpenseService.getPaymentMethods().map(method => ({
+                          value: method,
+                          label: method
+                        }))}
                         value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        onChange={setPaymentMethod}
+                        placeholder="Select payment method"
                         aria-label="Select payment method"
-                        required
-                      >
-                        {ExpenseService.getPaymentMethods().map(method => (
-                          <option key={method} value={method}>{method}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>

@@ -869,7 +869,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div className="w-11 h-11 bg-orange-100 rounded-full flex items-center justify-center">
                   <span className="text-orange-600 font-regular text-xs">{getInitials(patient.full_name)}</span>
                 </div>
-                <h1 className="text-md font-semibold text-gray-900">{patient.full_name}</h1>
+                <h1 className="text-sm font-semibold text-gray-900">{patient.full_name}</h1>
               </div>
               <div className="flex items-center space-x-3">
                 <button
@@ -907,7 +907,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <path d="M17.125 18.875V17.125C17.125 16.1967 16.7563 15.3065 16.0999 14.6501C15.4435 13.9937 14.5533 13.625 13.625 13.625H8.375C7.44674 13.625 6.5565 13.9937 5.90013 14.6501C5.24375 15.3065 4.875 16.1967 4.875 17.125V18.875" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                         <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <h2 className="text-md font-semibold text-gray-900">Patient Information</h2>
+                      <h2 className="text-sm font-semibold text-gray-900">Patient Information</h2>
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
@@ -976,7 +976,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   <div className="space-y-6">
                     {/* Personal Details Section */}
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-4 text-sm">Personal Details</h3>
+                      <h3 className="font-medium text-gray-900 mb-4 text-xs">Personal Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
@@ -1058,7 +1058,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
                     {/* Contact Information Section */}
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-4 text-sm">Contact Information</h3>
+                      <h3 className="font-medium text-gray-900 mb-4 text-xs">Contact Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
@@ -1187,7 +1187,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-sm font-medium mb-2 text-gray-900">No appointments yet</h3>
+                      <h3 className="text-xs font-medium mb-2 text-gray-900">No appointments yet</h3>
                       <p className="text-gray-500 mb-6">Schedule the first appointment for this patient</p>
                       <button 
                         onClick={handleBookAppointment}
@@ -1212,20 +1212,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               </div>
                               <div>
                                 <h3 className="font-medium text-xs text-gray-900">{appointment.procedures}</h3>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs text-gray-500">
                                   {patientService.formatDate(appointment.appointmentDate)} at {patientService.formatTime(appointment.appointmentTime)}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">{appointment.appointmentDuration} minutes</div>
+                              <div className="text-xs font-medium text-gray-900">{appointment.appointmentDuration} minutes</div>
                               <div className="text-xs text-gray-500">
                                 {appointment.referralSource ? appointment.referralSource.sourceName : 'Direct'}
                               </div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center space-x-4 text-gray-600">
                               <div className="flex items-center space-x-1">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1301,7 +1301,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
                         </div>
-                        <h3 className="text-sm font-medium mb-2 text-gray-900">No diagnostic plans yet</h3>
+                        <h3 className="text-xs font-medium mb-2 text-gray-900">No diagnostic plans yet</h3>
                         <p className="text-gray-500 text-xs mb-6">Create your first diagnostic plan to get started</p>
                         <button 
                           onClick={() => setShowDiagnosticPlanModal(true)}
@@ -1323,7 +1323,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <h3 className="font-medium text-gray-900 text-sm">{appointment.procedures || 'Not specified'}</h3>
+                                <h3 className="font-medium text-gray-900 text-xs">{appointment.procedures || 'Not specified'}</h3>
                                 <span className={`px-2 py-1 text-xs rounded-full ${diagnosticAppointmentsService.getStatusColor(appointment.status || 'planned')}`}>
                                   {appointment.status || 'planned'}
                                 </span>
@@ -1363,7 +1363,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   {/* Specialized Procedures Section - Only show if patient has HAT or OAE procedures */}
                   {(procedureInfo.hasHAT || procedureInfo.hasOAE) && (
                     <div className="rounded-md pt-6">
-                      <h3 className="font-semibold text-gray-900 mb-4 text-sm">Specialized Procedures</h3>
+                      <h3 className="font-semibold text-gray-900 mb-4 text-xs">Specialized Procedures</h3>
                       <div className="space-y-3">
                         {/* HAT Procedure - Only show if patient has HAT appointments */}
                         {procedureInfo.hasHAT && (
@@ -1376,7 +1376,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 <Volume2 size={16} className="text-blue-600" />
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-medium text-gray-900 text-sm">Hearing Aid Trial (HAT)</h4>
+                                <h4 className="font-medium text-gray-900 text-xs">Hearing Aid Trial (HAT)</h4>
                                 <p className="text-gray-600 text-xs">Record hearing aid trial sessions</p>
                                 <p className="text-blue-600 text-xs mt-1">
                                   {procedureInfo.hatAppointments.length} appointment{procedureInfo.hatAppointments.length !== 1 ? 's' : ''} scheduled
@@ -1403,7 +1403,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 </svg>
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-medium text-gray-900 text-sm">OAE Testing</h4>
+                                <h4 className="font-medium text-gray-900 text-xs">OAE Testing</h4>
                                 <p className="text-gray-600 text-xs">Otoacoustic Emissions testing for hearing assessment</p>
                                 <p className="text-green-600 text-xs mt-1">
                                   {procedureInfo.oaeAppointments.length} appointment{procedureInfo.oaeAppointments.length !== 1 ? 's' : ''} scheduled
@@ -1425,14 +1425,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="clinical-notes" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="mb-6 flex gap-2 items-center">
                     <NotepadText size={16} className="text-gray-900" />
-                    <h2 className="text-base font-semibold text-gray-900">Clinical Notes</h2>
+                    <h2 className="text-sm font-semibold text-gray-900">Clinical Notes</h2>
                   </div>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center relative">
                       <input
                         type="text"
                         placeholder="Search notes..."
-                        className="pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-sm w-96 "
+                        className="pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-xs w-96 "
                       />
                       <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     </div>
@@ -1468,8 +1468,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-sm font-medium mb-2 text-gray-900">No clinical notes yet</h3>
-                      <p className="text-gray-500 text-sm mb-6">Start documenting patient care with your first clinical note</p>
+                      <h3 className="text-xs font-medium mb-2 text-gray-900">No clinical notes yet</h3>
+                      <p className="text-gray-500 text-xs mb-6">Start documenting patient care with your first clinical note</p>
                       <button 
                         onClick={handleAddClinicalNote}
                         className="bg-orange-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto hover:bg-orange-700 transition-colors"
@@ -1487,12 +1487,12 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <h3 className="font-medium text-gray-900">{note.title}</h3>
+                                <h3 className="font-medium text-gray-900 text-xs">{note.title}</h3>
                                 <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(note.category)}`}>
                                   {note.category}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 mb-2">{note.content}</p>
+                              <p className="text-xs text-gray-600 mb-2">{note.content}</p>
                               <p className="text-xs text-gray-500">
                                 {new Date(note.createdAt).toLocaleDateString()} at {new Date(note.createdAt).toLocaleTimeString()}
                               </p>
@@ -1533,11 +1533,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Patient Files</h2>
+                      <h2 className="text-sm font-semibold text-gray-900">Patient Files</h2>
                     </div>
                     <button 
                       onClick={() => setShowFileUploadModal(true)}
-                      className="bg-orange-600 text-white px-4 py-1 rounded-lg text-sm flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                      className="bg-orange-600 text-white px-4 py-1 rounded-lg text-xs flex items-center space-x-2 hover:bg-orange-700 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -1556,15 +1556,15 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
                 {/* Medical History Section */}
                 <div id="medical-history" className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold mb-6 text-gray-900">Medical History Timeline</h2>
+                  <h2 className="text-sm font-semibold mb-6 text-gray-900">Medical History Timeline</h2>
                   <div className="text-center py-16">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-sm font-medium mb-2 text-gray-900">Medical History Coming Soon</h3>
-                    <p className="text-gray-500 text-sm">Medical history functionality will be available soon.</p>
+                    <h3 className="text-xs font-medium mb-2 text-gray-900">Medical History Coming Soon</h3>
+                    <p className="text-gray-500 text-xs">Medical history functionality will be available soon.</p>
                   </div>
                 </div>
               </div>
@@ -1575,7 +1575,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 {/* Billing Overview Section */}
                 <div id="billing-overview" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Billing Overview</h2>
+                    <h2 className="text-sm font-semibold text-gray-900">Billing Overview</h2>
                   </div>
                   
                   {/* Financial Summary Cards */}
@@ -1588,10 +1588,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                   </svg>
                 </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900">
+                          <h3 className="text-sm font-bold text-gray-900">
                             {invoicesLoading ? '...' : `₹${billingSummary.totalPaid.toLocaleString()}`}
                           </h3>
-                          <p className="text-sm text-gray-600">Total Paid</p>
+                          <p className="text-xs text-gray-600">Total Paid</p>
                         </div>
                       </div>
                     </div>
@@ -1604,10 +1604,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           </svg>
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900">
+                          <h3 className="text-sm font-bold text-gray-900">
                             {invoicesLoading ? '...' : `₹${billingSummary.outstanding.toLocaleString()}`}
                           </h3>
-                          <p className="text-sm text-gray-600">Outstanding</p>
+                          <p className="text-xs text-gray-600">Outstanding</p>
                         </div>
                       </div>
                     </div>
@@ -1620,10 +1620,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           </svg>
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900">
+                          <h3 className="text-sm font-bold text-gray-900">
                             {invoicesLoading ? '...' : billingSummary.totalInvoices}
                           </h3>
-                          <p className="text-sm text-gray-600">Total Invoices</p>
+                          <p className="text-xs text-gray-600">Total Invoices</p>
                         </div>
                       </div>
                     </div>
@@ -1637,16 +1637,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Invoices</h2>
+                      <h2 className="text-sm font-semibold text-gray-900">Invoices</h2>
                     </div>
                     <button 
                       onClick={() => window.open('/billing/invoices/create/b2c', '_blank')}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                      className="text-xs bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      <span>+ Create Invoice</span>
+                      <span>Create Invoice</span>
                     </button>
                   </div>
                   
@@ -1663,7 +1663,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <h3 className="text-sm font-medium mb-2 text-gray-900">No invoices found</h3>
+                        <h3 className="text-xs font-medium mb-2 text-gray-900">No invoices found</h3>
                         <p className="text-gray-500">This patient has no invoices yet.</p>
                       </div>
                     ) : (
@@ -1683,21 +1683,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               </span>
                             </div>
                             <div className="text-right">
-                              <div className="text-lg font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</div>
-                              <div className="text-sm text-gray-600">{invoice.screenings.length} item(s)</div>
+                              <div className="text-sm font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</div>
+                              <div className="text-xs text-gray-600">{invoice.screenings.length} item(s)</div>
                             </div>
                           </div>
                           
                           {/* Invoice Details */}
                           <div className="mb-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-xs text-gray-600">
                               <div><span className="font-medium">Created:</span> {PatientInvoiceService.formatDateForDisplay(invoice.invoiceDate)}</div>
                               <div><span className="font-medium">Type:</span> {invoice.invoiceType}</div>
                             </div>
                             
                             {/* Items & Services */}
                             <div className="mb-4">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Items & Services</h4>
+                              <h4 className="text-xs font-medium text-gray-900 mb-2">Items & Services</h4>
                               {invoice.screenings.map((screening, index) => (
                                 <div key={screening.id || index} className="bg-gray-50 rounded-lg p-3 mb-2">
                                   <div className="flex items-center justify-between mb-2">
@@ -1706,7 +1706,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                       <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">service</span>
                                     </div>
                                     <div className="text-right">
-                                      <div className="text-sm font-medium text-gray-900">₹{screening.amount.toLocaleString()}</div>
+                                      <div className="text-xs font-medium text-gray-900">₹{screening.amount.toLocaleString()}</div>
                                       {screening.discount > 0 && (
                                         <div className="text-xs text-red-600">- ₹{screening.discount.toLocaleString()} discount</div>
                                       )}
@@ -1722,8 +1722,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             
                             {/* Cost Breakdown */}
                             <div className="bg-gray-50 rounded-lg p-3">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Cost Breakdown</h4>
-                              <div className="space-y-1 text-sm">
+                              <h4 className="text-xs font-medium text-gray-900 mb-2">Cost Breakdown</h4>
+                              <div className="space-y-1 text-xs">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Subtotal:</span>
                                   <span className="font-medium">₹{invoice.subtotal.toLocaleString()}</span>
@@ -1742,7 +1742,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                   <span className="text-gray-600">CGST ({invoice.cgstRate}%):</span>
                                   <span className="font-medium">₹{invoice.cgstAmount.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between pt-2 border-t border-gray-200">
+                                <div className="flex justify-between pt-2 border-gray-200">
                                   <span className="font-medium text-gray-900">Total Amount:</span>
                                   <span className="font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</span>
                                 </div>
@@ -1756,14 +1756,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                            <div className="text-sm text-gray-600">
+                          <div className="flex items-center justify-between pt-4 border-gray-200">
+                            <div className="text-xs text-gray-600">
                               Invoice: {invoice.invoiceNumber}
                             </div>
                             <div className="flex items-center space-x-2">
                               <button 
                                 onClick={() => window.open(`/billing/invoices/${invoice.id}`, '_blank')}
-                                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                                className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1771,13 +1771,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 </svg>
                                 <span className="text-gray-600">View</span>
                               </button>
-                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                              <button className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span className="text-gray-600">Download</span>
                               </button>
-                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                              <button className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
@@ -1798,15 +1798,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                     </svg>
-                      <h2 className="text-lg font-semibold text-gray-900">Recent Payments</h2>
+                      <h2 className="text-sm font-semibold text-gray-900">Recent Payments</h2>
                   </div>
                     <button 
                       onClick={() => window.open('/billing/payments/record', '_blank')}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
+                      className="text-xs bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-700 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
+                  
                       <span>Record Payment</span>
                     </button>
                   </div>
@@ -1824,7 +1822,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                           </svg>
                         </div>
-                        <h3 className="text-sm font-medium mb-2 text-gray-900">No payments found</h3>
+                        <h3 className="text-xs font-medium mb-2 text-gray-900">No payments found</h3>
                         <p className="text-gray-500">This patient has no payment records yet.</p>
                       </div>
                     ) : (
@@ -1838,12 +1836,12 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               </span>
                             </div>
                             <div className="text-right">
-                              <div className="text-lg font-bold text-gray-900">₹{payment.amount.toLocaleString()}</div>
-                              <div className="text-sm text-gray-600">Received by {payment.receivedBy}</div>
+                              <div className="text-sm font-bold text-gray-900">₹{payment.amount.toLocaleString()}</div>
+                              <div className="text-xs text-gray-600">Received by {payment.receivedBy}</div>
                             </div>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-xs text-gray-600">
                             <div><span className="font-medium">Date:</span> {PatientPaymentService.formatDateForDisplay(payment.paymentDate)}</div>
                             <div><span className="font-medium">Method:</span> 
                               <span className={`ml-1 px-2 py-1 text-xs rounded-full ${PatientPaymentService.getMethodColor(payment.method)}`}>
@@ -1856,7 +1854,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {/* Payment Status */}
                           <div className="mb-4">
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-900">Status:</span>
+                              <span className="text-xs font-medium text-gray-900">Status:</span>
                               <span className={`px-2 py-1 text-xs rounded-full ${PatientPaymentService.getStatusColor(payment.status)}`}>
                                 {payment.status}
                               </span>
@@ -1866,20 +1864,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {/* Notes if available */}
                           {payment.notes && (
                             <div className="mb-4">
-                              <div className="text-sm text-gray-600">
+                              <div className="text-xs text-gray-600">
                                 <span className="font-medium">Notes:</span> {payment.notes}
                 </div>
               </div>
             )}
                           
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                            <div className="text-sm text-gray-600">
+                          <div className="flex items-center justify-between pt-4  border-gray-200">
+                            <div className="text-xs text-gray-600">
                               Receipt: {payment.receiptNumber}
             </div>
                             <div className="flex items-center space-x-2">
                               <button 
                                 onClick={() => window.open(`/billing/payments/${payment.id}`, '_blank')}
-                                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                                className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1887,13 +1885,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 </svg>
                                 <span className="text-gray-600">View</span>
                               </button>
-                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                              <button className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span className="text-gray-600">Download</span>
                               </button>
-                              <button className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                              <button className="flex items-center space-x-1 px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
@@ -1913,7 +1911,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h2 className="text-lg font-semibold text-gray-900">Payment History</h2>
+                    <h2 className="text-sm font-semibold text-gray-900">Payment History</h2>
                   </div>
                   
                   <div className="space-y-6">
@@ -1929,7 +1927,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-sm font-medium mb-2 text-gray-900">No payment history found</h3>
+                        <h3 className="text-xs font-medium mb-2 text-gray-900">No payment history found</h3>
                         <p className="text-gray-500">This patient has no payment or invoice history yet.</p>
                       </div>
                     ) : (
@@ -1937,7 +1935,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         const groupedEvents = PatientPaymentHistoryService.groupEventsByDate(paymentHistory);
                         return Object.entries(groupedEvents).map(([date, events]) => (
                           <div key={date}>
-                            <h3 className="font-medium mb-4 text-gray-900">{date}</h3>
+                            <h3 className="text-sm font-medium mb-4 text-gray-900">{date}</h3>
                             <div className="space-y-3">
                               {events.map((event, index) => (
                                 <div key={event.id} className="flex items-start space-x-4">
@@ -1957,14 +1955,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                   {/* Event Content */}
                                   <div className="flex-1">
                                     <div className="flex items-center space-x-2 mb-2">
-                                      <span className="font-medium text-gray-900">{event.title}</span>
-                                      <span className="text-sm text-gray-500">{event.time}</span>
+                                      <span className="text-sm font-medium text-gray-900">{event.title}</span>
+                                      <span className="text-xs text-gray-500">{event.time}</span>
                                       <span className={`px-2 py-1 text-xs rounded-full ${event.statusColor}`}>
                                         {event.status}
                                       </span>
                                     </div>
                                     
-                                    <div className="text-sm text-gray-600">
+                                    <div className="text-xs text-gray-600">
                                       {event.type === 'invoice_generated' ? (
                                         <p>
                                           Invoice: {event.details.invoiceNumber} • 

@@ -1,12 +1,14 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DatePicker from '@/components/ui/date-picker';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import ExpenseService from '@/services/expenseService';
 import { Expense, UpdateExpenseData } from '@/types';
 
@@ -19,7 +21,7 @@ export default function EditExpensePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [expenseDate, setExpenseDate] = useState('');
+  const [expenseDate, setExpenseDate] = useState<string>('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [vendor, setVendor] = useState('');
@@ -29,13 +31,7 @@ export default function EditExpensePage() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [approvedBy, setApprovedBy] = useState('');
 
-  useEffect(() => {
-    if (expenseId) {
-      fetchExpense();
-    }
-  }, [expenseId]);
-
-  const fetchExpense = async () => {
+  const fetchExpense = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +40,7 @@ export default function EditExpensePage() {
       setExpense(expenseData);
       
       // Set form values
-      setExpenseDate(expenseData.date.split('T')[0]); // Convert ISO date to YYYY-MM-DD
+      setExpenseDate(expenseData.date.split('T')[0]); // Convert ISO date to YYYY-MM-DD string
       setCategory(expenseData.category);
       setDescription(expenseData.description);
       setVendor(expenseData.vendor);
@@ -59,7 +55,13 @@ export default function EditExpensePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [expenseId]);
+
+  useEffect(() => {
+    if (expenseId) {
+      fetchExpense();
+    }
+  }, [expenseId, fetchExpense]);
 
   const handleBack = () => {
     window.location.href = `/billing/expenses/${expenseId}`;
@@ -76,12 +78,12 @@ export default function EditExpensePage() {
       setError(null);
 
       const updateData: UpdateExpenseData = {
-        date: expenseDate,
+        date: expenseDate, // DatePicker already returns YYYY-MM-DD string format
         category,
         description,
         amount: parseFloat(expenseAmount),
         taxAmount: parseFloat(taxAmount),
-        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer',
+        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer',
         vendor,
         approvedBy: approvedBy || undefined,
         remarks: remarks || undefined
@@ -213,45 +215,44 @@ export default function EditExpensePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Date *
                     </label>
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={expenseDate}
-                      onChange={(e) => setExpenseDate(e.target.value)}
-                      className="bg-white border-gray-300"
+                      onChange={setExpenseDate}
+                      placeholder="dd - mm - yyyy"
+                      className="w-full"
                       required
+                      aria-label="Select expense date"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category *
                     </label>
-                    <select
+                    <CustomDropdown
+                      options={ExpenseService.getExpenseCategories().map(cat => ({
+                        value: cat,
+                        label: cat
+                      }))}
                       value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      onChange={setCategory}
+                      placeholder="Select category"
                       aria-label="Select category"
-                      required
-                    >
-                      {ExpenseService.getExpenseCategories().map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Payment Method *
                     </label>
-                    <select
+                    <CustomDropdown
+                      options={ExpenseService.getPaymentMethods().map(method => ({
+                        value: method,
+                        label: method
+                      }))}
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      onChange={setPaymentMethod}
+                      placeholder="Select payment method"
                       aria-label="Select payment method"
-                      required
-                    >
-                      {ExpenseService.getPaymentMethods().map(method => (
-                        <option key={method} value={method}>{method}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -376,7 +377,11 @@ export default function EditExpensePage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
-                    <span className="text-gray-900">{expenseDate}</span>
+                    <span className="text-gray-900">{expenseDate ? new Date(expenseDate).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : ''}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Category:</span>

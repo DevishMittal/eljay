@@ -235,6 +235,7 @@ class ExpenseService {
     return [
       'Cash',
       'Card',
+      'Credit Card',
       'Cheque',
       'Bank Transfer'
     ];

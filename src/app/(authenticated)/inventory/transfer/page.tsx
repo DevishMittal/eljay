@@ -1,89 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { cn } from "@/utils";
 import CreateTransferModal from "@/components/modals/create-transfer-modal";
+import { InventoryTransferService } from "@/services/inventoryTransferService";
+import { InventoryTransfer } from "@/types";
 
-interface TransferData {
-  id: string;
-  transferId: string;
-  trackingNumber: string;
-  type: "Branch" | "Repair" | "Internal";
-  fromLocation: string;
-  toLocation: string;
-  items: {
-    count: number;
-    description: string;
-  };
-  transferDate: string;
-  transferredDate: string;
-  transferredBy: string;
-  status: "Delivered" | "In Transit" | "Pending";
-  urgency: "High" | "Medium" | "Low";
-  approvedBy: string;
-  approvedByRole: string;
-}
-
-const transferData: TransferData[] = [
-  {
-    id: "1",
-    transferId: "TXN-001",
-    trackingNumber: "TRK123456",
-    type: "Branch",
-    fromLocation: "Main Warehouse",
-    toLocation: "Branch Office",
-    items: {
-      count: 2,
-      description: "Phonak Audéo Paradise P90-R",
-    },
-    transferDate: "15 Dec 2024",
-    transferredDate: "Not specified",
-    transferredBy: "Staff",
-    status: "Delivered",
-    urgency: "Medium",
-    approvedBy: "Dr. Sarah Johnson",
-    approvedByRole: "Approved by: Manager",
-  },
-  {
-    id: "2",
-    transferId: "TXN-002",
-    trackingNumber: "TRK123457",
-    type: "Repair",
-    fromLocation: "Branch Office",
-    toLocation: "Repair Center",
-    items: {
-      count: 1,
-      description: "Oticon More 1",
-    },
-    transferDate: "16 Dec 2024",
-    transferredDate: "Not specified",
-    transferredBy: "Staff",
-    status: "In Transit",
-    urgency: "High",
-    approvedBy: "Dr. Michael Brow",
-    approvedByRole: "Approved by: Manager",
-  },
-  {
-    id: "3",
-    transferId: "TXN-003",
-    trackingNumber: "TRK123458",
-    type: "Internal",
-    fromLocation: "Main Warehouse",
-    toLocation: "Branch Office",
-    items: {
-      count: 5,
-      description: "Widex EVOKE 440, Signia Pure Charge&Go X",
-    },
-    transferDate: "17 Dec 2024",
-    transferredDate: "Not specified",
-    transferredBy: "Staff",
-    status: "Pending",
-    urgency: "Low",
-    approvedBy: "Dr. Jennifer Lee",
-    approvedByRole: "Approved by: Manager",
-  },
-];
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -141,6 +64,22 @@ const getTypeIcon = (type: string) => {
           />
         </svg>
       );
+    case "External":
+      return (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+          />
+        </svg>
+      );
     default:
       return null;
   }
@@ -151,6 +90,7 @@ const getStatusBadge = (status: string) => {
     Delivered: { bg: "bg-green-100", text: "text-green-800" },
     "In Transit": { bg: "bg-blue-100", text: "text-blue-800" },
     Pending: { bg: "bg-yellow-100", text: "text-yellow-800" },
+    Cancelled: { bg: "bg-red-100", text: "text-red-800" },
   };
 
   const config = statusMap[status] || {
@@ -174,6 +114,7 @@ const getStatusBadge = (status: string) => {
 
 const getUrgencyBadge = (urgency: string) => {
   const urgencyMap: { [key: string]: { bg: string; text: string } } = {
+    Critical: { bg: "bg-red-100", text: "text-red-800" },
     High: { bg: "bg-orange-100", text: "text-orange-800" },
     Medium: { bg: "bg-blue-100", text: "text-blue-800" },
     Low: { bg: "bg-gray-100", text: "text-gray-600" },
@@ -201,19 +142,49 @@ const getUrgencyBadge = (urgency: string) => {
 export default function InventoryTransferPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateTransferModal, setShowCreateTransferModal] = useState(false);
+  const [transfers, setTransfers] = useState<InventoryTransfer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredTransfers = transferData.filter(
+  // Fetch transfers on component mount
+  useEffect(() => {
+    const fetchTransfers = async () => {
+      try {
+        setLoading(true);
+        const response = await InventoryTransferService.getInventoryTransfers();
+        setTransfers(response.transfers);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch transfers');
+        console.error('Error fetching transfers:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransfers();
+  }, []);
+
+  const filteredTransfers = transfers.filter(
     (transfer) =>
-      transfer.transferId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transfer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transfer.trackingNumber
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       transfer.fromLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transfer.toLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transfer.items.description
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      transfer.transferItems.some(item => 
+        item.inventoryItem.itemName.toLowerCase().includes(searchTerm.toLowerCase())
+      )
   );
+
+  const handleTransferCreated = async () => {
+    try {
+      const response = await InventoryTransferService.getInventoryTransfers();
+      setTransfers(response.transfers);
+    } catch (err) {
+      console.error('Error refreshing transfers:', err);
+    }
+  };
 
   return (
     <MainLayout>
@@ -304,196 +275,248 @@ export default function InventoryTransferPage() {
           </button>
         </div>
 
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-sm text-[#4A5565]" style={{ fontFamily: "Segoe UI" }}>
+              Loading transfers...
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="text-sm text-red-800" style={{ fontFamily: "Segoe UI" }}>
+              Error: {error}
+            </div>
+          </div>
+        )}
+
         {/* Transfer Table */}
-        <div className="bg-white rounded-lg border border-[#E5E7EB] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                <tr>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Transfer ID
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Type
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    From/To
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Items
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Transfer Date
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Transferred Date
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Transferred By
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Status
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Urgency
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
-                    style={{ fontFamily: "Segoe UI" }}
-                  >
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-[#E5E7EB]">
-                {filteredTransfers.map((transfer) => (
-                  <tr
-                    key={transfer.id}
-                    className="hover:bg-[#F9FAFB] transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div
-                          className="text-sm font-medium text-[#101828]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          {transfer.transferId}
+        {!loading && !error && (
+          <div className="bg-white rounded-lg border border-[#E5E7EB] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                  <tr>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Transfer ID
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Type
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      From/To
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Items
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Transferred Date
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Transferred By
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Urgency
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Approved By
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-[#E5E7EB]">
+                  {filteredTransfers.map((transfer) => (
+                    <tr
+                      key={transfer.id}
+                      className="hover:bg-[#F9FAFB] transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div
+                            className="text-xs font-medium text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            {transfer.id.slice(0, 8)}...
+                          </div>
+                          <div
+                            className="text-xs text-[#4A5565]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            Tracking: {transfer.trackingNumber}
+                          </div>
                         </div>
-                        <div
-                          className="text-xs text-[#4A5565]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          Tracking: {transfer.trackingNumber}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(transfer.transferType)}
+                          <span
+                            className="text-xs text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            {transfer.transferType}
+                          </span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(transfer.type)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div
+                            className="text-xs text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            From: {transfer.fromLocation}
+                          </div>
+                          <div
+                            className="text-xs text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            To: {transfer.toLocation}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div
+                            className="text-xs font-medium text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            {transfer.transferItems.length} items
+                          </div>
+                          <div
+                            className="text-xs text-[#4A5565] cursor-pointer hover:text-[#101828] transition-colors"
+                            style={{ fontFamily: "Segoe UI" }}
+                            onClick={() => window.location.href = `/inventory/transfer/${transfer.id}`}
+                            title="Click to view transfer details"
+                          >
+                            {transfer.transferItems.slice(0, 2).map(item => item.inventoryItem.itemName).join(', ')}
+                            {transfer.transferItems.length > 2 && '...'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <span
                           className="text-xs text-[#101828]"
                           style={{ fontFamily: "Segoe UI" }}
                         >
-                          {transfer.type}
+                          {new Date(transfer.transferredDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
                           className="text-xs text-[#101828]"
                           style={{ fontFamily: "Segoe UI" }}
                         >
-                          From: {transfer.fromLocation}
+                          {transfer.transferredBy}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(transfer.status)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {getUrgencyBadge(transfer.urgencyLevel)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div
+                            className="text-xs font-medium text-[#101828]"
+                            style={{ fontFamily: "Segoe UI" }}
+                          >
+                            {transfer.approvedBy || 'Not approved'}
+                          </div>
+                          {transfer.approvedAt && (
+                            <div
+                              className="text-xs text-[#4A5565]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              {new Date(transfer.approvedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <div
-                          className="text-xs text-[#101828]"
-                          style={{ fontFamily: "Segoe UI" }}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => window.location.href = `/inventory/transfer/${transfer.id}`}
+                          className="text-gray-600 hover:text-gray-800 transition-colors"
+                          aria-label="View transfer details"
                         >
-                          To: {transfer.toLocation}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div
-                          className="text-xs font-medium text-[#101828]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          {transfer.items.count} items
-                        </div>
-                        <div
-                          className="text-xs text-[#4A5565]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          {transfer.items.description}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="text-xs text-[#101828]"
-                        style={{ fontFamily: "Segoe UI" }}
-                      >
-                        {transfer.transferDate}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="text-xs text-[#4A5565]"
-                        style={{ fontFamily: "Segoe UI" }}
-                      >
-                        {transfer.transferredDate}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="text-xs text-[#101828]"
-                        style={{ fontFamily: "Segoe UI" }}
-                      >
-                        {transfer.transferredBy}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(transfer.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      {getUrgencyBadge(transfer.urgency)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div
-                          className="text-xs font-medium text-[#101828]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          {transfer.approvedBy}
-                        </div>
-                        <div
-                          className="text-xs text-[#4A5565]"
-                          style={{ fontFamily: "Segoe UI" }}
-                        >
-                          {transfer.approvedByRole}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Create Transfer Modal */}
         <CreateTransferModal
           isOpen={showCreateTransferModal}
           onClose={() => setShowCreateTransferModal(false)}
+          onTransferCreated={handleTransferCreated}
         />
       </div>
     </MainLayout>

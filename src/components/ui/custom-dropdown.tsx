@@ -132,7 +132,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         onClick={handleToggleDropdown}
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-expanded={isOpen}
+        aria-expanded={isOpen ? "true" : "false"}
         aria-haspopup="listbox"
         className={cn(
           "w-full px-3 py-2.5 rounded-lg border text-left text-sm transition-all duration-200 flex items-center justify-between",
@@ -172,7 +172,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 key={option.value}
                 type="button"
                 role="option"
-                aria-selected={value === option.value}
+                aria-selected={value === option.value ? "true" : "false"}
                 onClick={() => handleOptionSelect(option.value)}
                 className={cn(
                   "dropdown-item",

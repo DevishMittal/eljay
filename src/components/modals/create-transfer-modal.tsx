@@ -3,36 +3,59 @@
 import React, { useState, useRef, useEffect } from "react";
 import CustomCalendar from "@/components/ui/custom-calendar";
 import CustomDropdown from "@/components/ui/custom-dropdown";
+import { InventoryTransferService } from "@/services/inventoryTransferService";
+import { InventoryService } from "@/services/inventoryService";
+import { CreateTransferData, InventoryItem } from "@/types";
 
 interface TransferItem {
   id: number;
-  item: string;
+  inventoryItemId: string;
   quantity: string;
   condition: string;
   color: string;
-  remarks: string;
+  itemRemarks: string;
 }
 
 interface CreateTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onTransferCreated?: () => void;
 }
 
 export default function CreateTransferModal({
   isOpen,
   onClose,
+  onTransferCreated,
 }: CreateTransferModalProps) {
   const [formData, setFormData] = useState({
-    transferType: "Internal",
-    urgencyLevel: "Medium",
+    transferType: "Internal" as "Internal" | "Branch" | "Repair" | "External",
+    urgencyLevel: "Medium" as "Low" | "Medium" | "High" | "Critical",
     fromLocation: "",
     toLocation: "",
     trackingNumber: "",
-    shippingCost: "0.00",
+    shippingCost: 0,
     transferredDate: new Date(),
     transferredBy: "Staff",
     additionalNotes: "",
   });
+
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch inventory items when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const fetchInventoryItems = async () => {
+        try {
+          const response = await InventoryService.getInventoryItems(1, 100);
+          setInventoryItems(response.items);
+        } catch (error) {
+          console.error('Error fetching inventory items:', error);
+        }
+      };
+      fetchInventoryItems();
+    }
+  }, [isOpen]);
 
   // Dropdown options
   const transferTypeOptions = [
@@ -67,19 +90,10 @@ export default function CreateTransferModal({
   // Transfer items dropdown options
   const itemOptions = [
     { value: "", label: "Select an item" },
-    {
-      value: "Phonak Audéo Paradise P90 Left",
-      label: "Phonak Audéo Paradise P90 Left",
-    },
-    {
-      value: "Phonak Audéo Paradise P90 Right",
-      label: "Phonak Audéo Paradise P90 Right",
-    },
-    { value: "Oticon More 1 Universal", label: "Oticon More 1 Universal" },
-    { value: "Widex EVOKE 440", label: "Widex EVOKE 440" },
-    { value: "Signia Pure Charge&Go X", label: "Signia Pure Charge&Go X" },
-    { value: "Hearing Aid Cleaning Kit", label: "Hearing Aid Cleaning Kit" },
-    { value: "Zinc-Air Battery Size 312", label: "Zinc-Air Battery Size 312" },
+    ...inventoryItems.map(item => ({
+      value: item.id,
+      label: `${item.itemName} (${item.itemCode}) - Stock: ${item.currentStock}`,
+    })),
   ];
 
   const conditionOptions = [
@@ -113,22 +127,22 @@ export default function CreateTransferModal({
   const [transferItems, setTransferItems] = useState<TransferItem[]>([
     {
       id: 1,
-      item: "",
+      inventoryItemId: "",
       quantity: "1",
       condition: "New",
       color: "",
-      remarks: "",
+      itemRemarks: "",
     },
   ]);
 
   const addTransferItem = () => {
     const newItem: TransferItem = {
       id: transferItems.length + 1,
-      item: "",
+      inventoryItemId: "",
       quantity: "1",
       condition: "New",
       color: "",
-      remarks: "",
+      itemRemarks: "",
     };
     setTransferItems([...transferItems, newItem]);
   };
@@ -151,16 +165,74 @@ export default function CreateTransferModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Create transfer form submitted:", {
-      ...{ formData, transferItems },
-      formData: {
-        ...formData,
+    
+    // Validate form
+    if (!formData.fromLocation || !formData.toLocation || !formData.transferredBy) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (transferItems.some(item => !item.inventoryItemId || !item.quantity)) {
+      alert('Please fill in all item details');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const transferData: CreateTransferData = {
+        transferType: formData.transferType,
+        urgencyLevel: formData.urgencyLevel,
+        fromLocation: formData.fromLocation,
+        toLocation: formData.toLocation,
+        trackingNumber: formData.trackingNumber,
+        shippingCost: formData.shippingCost,
         transferredDate: formData.transferredDate.toISOString().split("T")[0],
-      },
-    });
-    onClose();
+        transferredBy: formData.transferredBy,
+        additionalNotes: formData.additionalNotes,
+        transferItems: transferItems.map(item => ({
+          inventoryItemId: item.inventoryItemId,
+          quantity: parseInt(item.quantity),
+          condition: item.condition,
+          color: item.color,
+          itemRemarks: item.itemRemarks,
+        })),
+      };
+
+      await InventoryTransferService.createInventoryTransfer(transferData);
+      
+      // Reset form
+      setFormData({
+        transferType: "Internal",
+        urgencyLevel: "Medium",
+        fromLocation: "",
+        toLocation: "",
+        trackingNumber: "",
+        shippingCost: 0,
+        transferredDate: new Date(),
+        transferredBy: "Staff",
+        additionalNotes: "",
+      });
+      
+      setTransferItems([{
+        id: 1,
+        inventoryItemId: "",
+        quantity: "1",
+        condition: "New",
+        color: "",
+        itemRemarks: "",
+      }]);
+
+      onTransferCreated?.();
+      onClose();
+    } catch (error) {
+      console.error('Error creating transfer:', error);
+      alert('Failed to create transfer. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const totalItems = transferItems.length;
@@ -237,7 +309,7 @@ export default function CreateTransferModal({
                   options={transferTypeOptions}
                   value={formData.transferType}
                   onChange={(value) =>
-                    setFormData({ ...formData, transferType: value })
+                    setFormData({ ...formData, transferType: value as typeof formData.transferType })
                   }
                   placeholder="Select transfer type"
                   aria-label="Select transfer type"
@@ -255,7 +327,7 @@ export default function CreateTransferModal({
                   options={urgencyLevelOptions}
                   value={formData.urgencyLevel}
                   onChange={(value) =>
-                    setFormData({ ...formData, urgencyLevel: value })
+                    setFormData({ ...formData, urgencyLevel: value as typeof formData.urgencyLevel })
                   }
                   placeholder="Select urgency level"
                   aria-label="Select urgency level"
@@ -329,7 +401,7 @@ export default function CreateTransferModal({
                   step="0.01"
                   value={formData.shippingCost}
                   onChange={(e) =>
-                    setFormData({ ...formData, shippingCost: e.target.value })
+                    setFormData({ ...formData, shippingCost: parseFloat(e.target.value) || 0 })
                   }
                   placeholder="0.00"
                   className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
@@ -366,6 +438,7 @@ export default function CreateTransferModal({
                     type="button"
                     onClick={() => setShowCalendar(!showCalendar)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    aria-label="Open calendar"
                   >
                     <svg
                       className="w-4 h-4"
@@ -517,9 +590,9 @@ export default function CreateTransferModal({
                       </label>
                       <CustomDropdown
                         options={itemOptions}
-                        value={item.item}
+                        value={item.inventoryItemId}
                         onChange={(value) =>
-                          updateTransferItem(item.id, "item", value)
+                          updateTransferItem(item.id, "inventoryItemId", value)
                         }
                         placeholder="Select an item"
                         aria-label="Select item"
@@ -596,9 +669,9 @@ export default function CreateTransferModal({
                       </label>
                       <input
                         type="text"
-                        value={item.remarks}
+                        value={item.itemRemarks}
                         onChange={(e) =>
-                          updateTransferItem(item.id, "remarks", e.target.value)
+                          updateTransferItem(item.id, "itemRemarks", e.target.value)
                         }
                         placeholder="Any notes about this item..."
                         className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
@@ -663,10 +736,11 @@ export default function CreateTransferModal({
             </button>
             <button
               type="submit"
-              className="px-6 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors"
+              disabled={submitting}
+              className="px-6 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "Segoe UI" }}
             >
-              Create Transfer
+              {submitting ? 'Creating...' : 'Create Transfer'}
             </button>
           </div>
         </form>

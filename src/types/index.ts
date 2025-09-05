@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Navigation types
 export interface NavItem {
@@ -960,7 +959,7 @@ export interface Expense {
   amount: number;
   taxAmount: number;
   totalAmount: number;
-  paymentMethod: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor: string;
   approvedBy: string | null;
   remarks?: string;
@@ -974,7 +973,7 @@ export interface CreateExpenseData {
   description: string;
   amount: number;
   taxAmount: number;
-  paymentMethod: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor: string;
   remarks?: string;
 }
@@ -985,7 +984,7 @@ export interface UpdateExpenseData {
   description?: string;
   amount?: number;
   taxAmount?: number;
-  paymentMethod?: 'Cash' | 'Card' | 'Cheque' | 'Bank Transfer';
+  paymentMethod?: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor?: string;
   approvedBy?: string;
   remarks?: string;
@@ -1012,4 +1011,93 @@ export interface ExpensesResponse {
 export interface ExpenseResponse {
   status: string;
   data: Expense;
+}
+
+// Inventory Transfer types
+export interface TransferItem {
+  id: string;
+  transferId: string;
+  inventoryItemId: string;
+  quantity: number;
+  condition: string;
+  color: string;
+  itemRemarks: string;
+  createdAt: string;
+  updatedAt: string;
+  inventoryItem: {
+    id: string;
+    itemName: string;
+    itemCode: string;
+    brand: string;
+    mrp: number;
+    currentStock?: number;
+  };
+}
+
+export interface InventoryTransfer {
+  id: string;
+  organizationId: string;
+  transferType: "Internal" | "Branch" | "Repair" | "External";
+  urgencyLevel: "Low" | "Medium" | "High" | "Critical";
+  fromLocation: string;
+  toLocation: string;
+  trackingNumber: string;
+  shippingCost: number;
+  transferredDate: string;
+  transferredBy: string;
+  additionalNotes: string;
+  status: "Pending" | "In Transit" | "Delivered" | "Cancelled";
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  transferItems: TransferItem[];
+  organization?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface CreateTransferData {
+  transferType: "Internal" | "Branch" | "Repair" | "External";
+  urgencyLevel: "Low" | "Medium" | "High" | "Critical";
+  fromLocation: string;
+  toLocation: string;
+  trackingNumber: string;
+  shippingCost: number;
+  transferredDate: string;
+  transferredBy: string;
+  additionalNotes: string;
+  transferItems: {
+    inventoryItemId: string;
+    quantity: number;
+    condition: string;
+    color: string;
+    itemRemarks: string;
+  }[];
+}
+
+export interface TransfersResponse {
+  status: string;
+  data: {
+    transfers: InventoryTransfer[];
+    summary: {
+      total: number;
+      pending: number;
+      inTransit: number;
+      delivered: number;
+      cancelled: number;
+    };
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface TransferResponse {
+  status: string;
+  data: InventoryTransfer;
 }
