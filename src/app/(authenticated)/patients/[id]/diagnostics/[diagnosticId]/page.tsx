@@ -252,7 +252,7 @@ export default function DiagnosticPlanPage({
                 onChange={(e) => setDocumentDescription(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-xs w-48"
               />
-              <label className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-xs flex items-center space-x-2 cursor-pointer">
+              <label className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs flex items-center space-x-2 cursor-pointer">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
@@ -300,7 +300,7 @@ export default function DiagnosticPlanPage({
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
-                      onClick={() => fileService.viewFile(doc.fileUrl)}
+                      onClick={() => fileService.viewFile(doc.fileUrl, token || undefined)}
                       className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="View document"
                       title="View document"
@@ -310,7 +310,7 @@ export default function DiagnosticPlanPage({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
-                    <button 
+                    {/* <button 
                       onClick={() => window.open(doc.fileUrl, '_blank')}
                       className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="Download document"
@@ -319,7 +319,7 @@ export default function DiagnosticPlanPage({
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                    </button>
+                    </button> */}
                     <button 
                       onClick={() => handleDeleteFile(doc.id)}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
@@ -342,7 +342,7 @@ export default function DiagnosticPlanPage({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Comments & Notes</h2>
             <button 
-              onClick={() => setShowCommentModal(true)}
+              onClick={() => setShowCommentModal(!showCommentModal)}
               className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs flex items-center space-x-2"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,6 +351,44 @@ export default function DiagnosticPlanPage({
               <span>Add Comment</span>
             </button>
           </div>
+          
+          {/* Inline Comment Form */}
+          {showCommentModal && (
+            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+              <textarea
+                placeholder="Enter your internal comment..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs h-20 resize-none"
+                rows={3}
+              />
+              
+              <div className="flex items-center justify-end space-x-3 mt-3">
+                <button 
+                  onClick={() => {
+                    setShowCommentModal(false);
+                    setCommentContent('');
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Cancel</span>
+                </button>
+                <button 
+                  onClick={handleAddComment}
+                  disabled={addingComment || !commentContent.trim()}
+                  className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Save Comment</span>
+                </button>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-3">
             {comments.length === 0 ? (
@@ -373,55 +411,6 @@ export default function DiagnosticPlanPage({
             )}
           </div>
         </div>
-
-        {/* Comment Modal */}
-        {showCommentModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900">Add Comment</h3>
-                <button 
-                  onClick={() => setShowCommentModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <textarea
-                placeholder="Enter your internal comment..."
-                value={commentContent}
-                onChange={(e) => setCommentContent(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs h-24 resize-none"
-                rows={4}
-              />
-              
-              <div className="flex items-center justify-end space-x-3 mt-4">
-                <button 
-                  onClick={() => setShowCommentModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Cancel</span>
-                </button>
-                <button 
-                  onClick={handleAddComment}
-                  disabled={addingComment || !commentContent.trim()}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Save Comment</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </MainLayout>
   );

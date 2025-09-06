@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/utils';
 import PaymentService from '@/services/paymentService';
 import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Clock, CheckCircle, TrendingUp, Filter } from 'lucide-react';
+import { CreditCard, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 
 export default function PaymentsPage() {
@@ -20,6 +20,15 @@ export default function PaymentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState('25');
+
+  // Filter states
+  const [typeFilter, setTypeFilter] = useState<string>("All Types");
+  const [methodFilter, setMethodFilter] = useState<string>("All Methods");
+  const [statusFilter, setStatusFilter] = useState<string>("All Status");
+  
+  // Sorting states
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const fetchPayments = useCallback(async () => {
     if (!token) {
@@ -149,6 +158,103 @@ export default function PaymentsPage() {
     router.push('/billing/payments/record');
   };
 
+  // Filter and sort logic
+  const filteredAndSortedPayments = useMemo(() => {
+    const filtered = payments.filter((payment) => {
+      // Search filter
+      const matchesSearch = 
+        payment.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.receivedBy.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Type filter
+      const matchesType = typeFilter === "All Types" || payment.paymentType === typeFilter;
+
+      // Method filter
+      const matchesMethod = methodFilter === "All Methods" || payment.method === methodFilter;
+
+      // Status filter
+      const matchesStatus = statusFilter === "All Status" || payment.status === statusFilter;
+
+      return matchesSearch && matchesType && matchesMethod && matchesStatus;
+    });
+
+    // Sort logic
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue: string | number | Date;
+        let bValue: string | number | Date;
+
+        switch (sortField) {
+          case "date":
+            aValue = new Date(a.paymentDate);
+            bValue = new Date(b.paymentDate);
+            break;
+          case "receiptNumber":
+            aValue = a.receiptNumber;
+            bValue = b.receiptNumber;
+            break;
+          case "patient":
+            aValue = a.patientName;
+            bValue = b.patientName;
+            break;
+          case "type":
+            aValue = a.paymentType;
+            bValue = b.paymentType;
+            break;
+          case "amount":
+            aValue = a.amount;
+            bValue = b.amount;
+            break;
+          case "method":
+            aValue = a.method;
+            bValue = b.method;
+            break;
+          case "status":
+            aValue = a.status;
+            bValue = b.status;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [payments, searchTerm, typeFilter, methodFilter, statusFilter, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return (
+        <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === "asc" ? (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+      </svg>
+    ) : (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+      </svg>
+    );
+  };
+
   if (authLoading) {
     return (
       <MainLayout>
@@ -266,7 +372,7 @@ export default function PaymentsPage() {
                 <h2 className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Payments
                 </h2>
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{payments.length}</span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{filteredAndSortedPayments.length}</span>
               </div>
               <div className="flex gap-2">
                 <div className="relative w-64">
@@ -291,27 +397,46 @@ export default function PaymentsPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Type
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Method
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Status
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                <CustomDropdown
+                  options={[
+                    { value: "All Types", label: "All Types" },
+                    { value: "Full", label: "Full" },
+                    { value: "Partial", label: "Partial" }
+                  ]}
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  placeholder="All Types"
+                  className="h-9 text-xs"
+                  aria-label="Filter by payment type"
+                />
+                <CustomDropdown
+                  options={[
+                    { value: "All Methods", label: "All Methods" },
+                    { value: "Cash", label: "Cash" },
+                    { value: "Card", label: "Card" },
+                    { value: "UPI", label: "UPI" },
+                    { value: "Bank Transfer", label: "Bank Transfer" },
+                    { value: "Cheque", label: "Cheque" }
+                  ]}
+                  value={methodFilter}
+                  onChange={setMethodFilter}
+                  placeholder="All Methods"
+                  className="h-9 text-xs"
+                  aria-label="Filter by payment method"
+                />
+                <CustomDropdown
+                  options={[
+                    { value: "All Status", label: "All Status" },
+                    { value: "Completed", label: "Completed" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Failed", label: "Failed" }
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  placeholder="All Status"
+                  className="h-9 text-xs"
+                  aria-label="Filter by payment status"
+                />
               </div>
             </div>
 
@@ -329,44 +454,61 @@ export default function PaymentsPage() {
                         aria-label="Select all payments"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("date")}
+                    >
                       Date
-                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("date")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Receipt #</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("receiptNumber")}
+                    >
+                      Receipt #
+                      {getSortIcon("receiptNumber")}
+                    </th>
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("patient")}
+                    >
                       Patient
-                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("patient")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("type")}
+                    >
+                      Type
+                      {getSortIcon("type")}
+                    </th>
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("amount")}
+                    >
                       Amount
-                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("amount")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("method")}
+                    >
                       Method
-                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("method")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("status")}
+                    >
                       Status
-                      <svg className="w-4 h-4 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("status")}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Received By</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((payment) => (
+                  {filteredAndSortedPayments.map((payment) => (
                     <tr 
                       key={payment.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
@@ -435,7 +577,7 @@ export default function PaymentsPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
               <p className="text-sm text-gray-600">
-                Showing 1 to {payments.length} of {payments.length} payments
+                Showing 1 to {filteredAndSortedPayments.length} of {filteredAndSortedPayments.length} payments
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>

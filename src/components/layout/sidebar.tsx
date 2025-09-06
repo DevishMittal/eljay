@@ -155,7 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 py-4">
+      <nav className="flex-1 py-2">
         <ul className="space-y-1">
           {navigationItems.map((item) => (
             <li key={item.href} className={cn(!isCollapsed && 'px-2')}>
@@ -164,7 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                   <button
                     onClick={() => toggleExpanded(item.title)}
                     className={cn(
-                      'flex items-center w-full px-3 py-2.5 text-xs transition-colors',
+                      'flex items-center w-full px-3 py-2.5 text-xs transition-colors mb-2',
                       isCollapsed ? 'justify-center' : 'space-x-2',
                       'rounded-lg', // rounded rectangle
                       item.isActive

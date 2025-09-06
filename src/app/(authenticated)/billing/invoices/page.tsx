@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { cn } from "@/utils";
 import InvoiceService from "@/services/invoiceService";
@@ -8,6 +9,7 @@ import { Invoice } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { FileText, AlertCircle, CheckCircle, PlusIcon, Filter } from "lucide-react";
+import CustomDropdown from "@/components/ui/custom-dropdown";
 
 export default function InvoicesPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -23,6 +25,15 @@ export default function InvoicesPage() {
     totalTax: 0,
     count: 0,
   });
+
+  // Filter states
+  const [typeFilter, setTypeFilter] = useState<string>("All Types");
+  const [patientTypeFilter, setPatientTypeFilter] = useState<string>("All Patients");
+  const [statusFilter, setStatusFilter] = useState<string>("All Status");
+  
+  // Sorting states
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const fetchInvoices = useCallback(async () => {
     if (!token) {
@@ -117,6 +128,101 @@ export default function InvoicesPage() {
 
   const formatDate = (dateString: string) => {
     return InvoiceService.formatDateForDisplay(dateString);
+  };
+
+  // Filter and sort logic
+  const filteredAndSortedInvoices = useMemo(() => {
+    const filtered = invoices.filter((invoice) => {
+      // Search filter
+      const matchesSearch = 
+        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        invoice.organizationName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Type filter
+      const matchesType = typeFilter === "All Types" || invoice.invoiceType === typeFilter;
+
+      // Patient type filter
+      const matchesPatientType = patientTypeFilter === "All Patients" || 
+        (patientTypeFilter === "Direct" && invoice.invoiceType === "B2C") ||
+        (patientTypeFilter === "Organizations" && invoice.invoiceType === "B2B");
+
+      // Status filter
+      const matchesStatus = statusFilter === "All Status" || invoice.paymentStatus === statusFilter;
+
+      return matchesSearch && matchesType && matchesPatientType && matchesStatus;
+    });
+
+    // Sort logic
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortField) {
+          case "date":
+            aValue = new Date(a.invoiceDate);
+            bValue = new Date(b.invoiceDate);
+            break;
+          case "invoiceNumber":
+            aValue = a.invoiceNumber;
+            bValue = b.invoiceNumber;
+            break;
+          case "type":
+            aValue = a.invoiceType;
+            bValue = b.invoiceType;
+            break;
+          case "patient":
+            aValue = a.invoiceType === "B2C" ? a.patientName : a.organizationName;
+            bValue = b.invoiceType === "B2C" ? b.patientName : b.organizationName;
+            break;
+          case "amount":
+            aValue = a.totalAmount;
+            bValue = b.totalAmount;
+            break;
+          case "status":
+            aValue = a.paymentStatus;
+            bValue = b.paymentStatus;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [invoices, searchTerm, typeFilter, patientTypeFilter, statusFilter, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return (
+        <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === "asc" ? (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+      </svg>
+    ) : (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+      </svg>
+    );
   };
 
   const summaryCards = [
@@ -376,7 +482,7 @@ export default function InvoicesPage() {
                   Invoices
                 </h2>
                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
-                  {invoices.length}
+                  {filteredAndSortedInvoices.length}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -402,40 +508,43 @@ export default function InvoicesPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <button className="bg-white  text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Types
-                  <svg
-                    className="w-4 h-4 ml-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-                <button className="bg-white  text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Status
-                  <svg
-                    className="w-4 h-4 ml-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
+                <CustomDropdown
+                  options={[
+                    { value: "All Types", label: "All Types" },
+                    { value: "B2C", label: "B2C" },
+                    { value: "B2B", label: "B2B" }
+                  ]}
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  placeholder="All Types"
+                  className="h-9 text-xs"
+                  aria-label="Filter by invoice type"
+                />
+                <CustomDropdown
+                  options={[
+                    { value: "All Patients", label: "All Patients" },
+                    { value: "Direct", label: "Direct" },
+                    { value: "Organizations", label: "Organizations" }
+                  ]}
+                  value={patientTypeFilter}
+                  onChange={setPatientTypeFilter}
+                  placeholder="All Patients"
+                  className="h-9 text-xs"
+                  aria-label="Filter by patient type"
+                />
+                <CustomDropdown
+                  options={[
+                    { value: "All Status", label: "All Status" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Paid", label: "Paid" },
+                    { value: "Cancelled", label: "Cancelled" }
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  placeholder="All Status"
+                  className="h-9 text-xs"
+                  aria-label="Filter by invoice status"
+                />
               </div>
             </div>
 
@@ -453,104 +562,50 @@ export default function InvoicesPage() {
                         aria-label="Select all invoices"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("date")}
+                    >
                       Date
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("date")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("invoiceNumber")}
+                    >
                       Invoice #
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("invoiceNumber")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("type")}
+                    >
                       Type
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("type")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("patient")}
+                    >
                       Patient/Org
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("patient")}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                       Items
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("amount")}
+                    >
                       Amount
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("amount")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("status")}
+                    >
                       Status
-                      <svg
-                        className="inline w-4 h-4 ml-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      {getSortIcon("status")}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
                       Actions
@@ -558,7 +613,7 @@ export default function InvoicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice) => (
+                  {filteredAndSortedInvoices.map((invoice) => (
                     <tr
                       key={invoice.id}
                       className="border-b border-gray-100 hover:bg-gray-50"
@@ -671,7 +726,7 @@ export default function InvoicesPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
               <p className="text-sm text-gray-600">
-                Showing 1 to {invoices.length} of {invoices.length} invoices.
+                Showing 1 to {filteredAndSortedInvoices.length} of {filteredAndSortedInvoices.length} invoices.
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>

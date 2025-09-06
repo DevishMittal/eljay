@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/utils';
 import ExpenseService from '@/services/expenseService';
 import { Expense, ExpensesResponse } from '@/types';
-import { DollarSign, Receipt, Calculator, TrendingDown, PlusIcon, Filter } from 'lucide-react';
+import { DollarSign, Receipt, Calculator, TrendingDown, PlusIcon } from 'lucide-react';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 export default function ExpensesPage() {
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
@@ -25,6 +26,14 @@ export default function ExpensesPage() {
     limit: 10,
     pages: 0
   });
+
+  // Filter states
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
+  const [methodFilter, setMethodFilter] = useState<string>("All Methods");
+  
+  // Sorting states
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     fetchExpenses();
@@ -110,12 +119,101 @@ export default function ExpensesPage() {
     window.location.href = '/billing/expenses/add';
   };
 
-  const filteredExpenses = expenses.filter(expense =>
-    expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    expense.expenseNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter and sort logic
+  const filteredAndSortedExpenses = useMemo(() => {
+    const filtered = expenses.filter((expense) => {
+      // Search filter
+      const matchesSearch = 
+        expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        expense.expenseNumber.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Category filter
+      const matchesCategory = categoryFilter === "All Categories" || expense.category === categoryFilter;
+
+      // Method filter
+      const matchesMethod = methodFilter === "All Methods" || expense.paymentMethod === methodFilter;
+
+      return matchesSearch && matchesCategory && matchesMethod;
+    });
+
+    // Sort logic
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortField) {
+          case "date":
+            aValue = new Date(a.date);
+            bValue = new Date(b.date);
+            break;
+          case "expenseNumber":
+            aValue = a.expenseNumber;
+            bValue = b.expenseNumber;
+            break;
+          case "category":
+            aValue = a.category;
+            bValue = b.category;
+            break;
+          case "description":
+            aValue = a.description;
+            bValue = b.description;
+            break;
+          case "amount":
+            aValue = a.amount;
+            bValue = b.amount;
+            break;
+          case "paymentMethod":
+            aValue = a.paymentMethod;
+            bValue = b.paymentMethod;
+            break;
+          case "vendor":
+            aValue = a.vendor;
+            bValue = b.vendor;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [expenses, searchTerm, categoryFilter, methodFilter, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return (
+        <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === "asc" ? (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+      </svg>
+    ) : (
+      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+      </svg>
+    );
+  };
+
 
   const summaryCards = [
     {
@@ -249,7 +347,7 @@ export default function ExpensesPage() {
                 <h2 className="text-sm text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Expenses
                 </h2>
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{expenses.length}</span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{filteredAndSortedExpenses.length}</span>
               </div>
               <div className="flex gap-2">
                 <div className="relative w-64">
@@ -274,20 +372,34 @@ export default function ExpensesPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Categories
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                  <Filter className="w-4 h-4 mr-2"/>
-                  All Payment Methods
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                <CustomDropdown
+                  options={[
+                    { value: "All Categories", label: "All Categories" },
+                    ...ExpenseService.getExpenseCategories().map(category => ({
+                      value: category,
+                      label: category
+                    }))
+                  ]}
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  placeholder="All Categories"
+                  className="h-9 text-xs"
+                  aria-label="Filter by expense category"
+                />
+                <CustomDropdown
+                  options={[
+                    { value: "All Methods", label: "All Methods" },
+                    ...ExpenseService.getPaymentMethods().map(method => ({
+                      value: method,
+                      label: method
+                    }))
+                  ]}
+                  value={methodFilter}
+                  onChange={setMethodFilter}
+                  placeholder="All Methods"
+                  className="h-9 text-xs"
+                  aria-label="Filter by payment method"
+                />
               </div>
             </div>
 
@@ -305,43 +417,60 @@ export default function ExpensesPage() {
                         aria-label="Select all expenses"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("date")}
+                    >
                       Date
-                      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("date")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("expenseNumber")}
+                    >
                       Expense #
-                      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("expenseNumber")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("category")}
+                    >
                       Category
-                      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("category")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Description</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("description")}
+                    >
+                      Description
+                      {getSortIcon("description")}
+                    </th>
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("amount")}
+                    >
                       Amount
-                      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("amount")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("paymentMethod")}
+                    >
                       Payment Method
-                      <svg className="inline w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
+                      {getSortIcon("paymentMethod")}
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Vendor</th>
+                    <th 
+                      className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleSort("vendor")}
+                    >
+                      Vendor
+                      {getSortIcon("vendor")}
+                    </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredExpenses.map((expense) => (
+                  {filteredAndSortedExpenses.map((expense) => (
                     <tr 
                       key={expense.id} 
                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
@@ -414,7 +543,7 @@ export default function ExpensesPage() {
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
               <p className="text-sm text-gray-600">
-                Showing 1 to {expenses.length} of {pagination.total} expenses
+                Showing 1 to {filteredAndSortedExpenses.length} of {filteredAndSortedExpenses.length} expenses
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Show:</span>

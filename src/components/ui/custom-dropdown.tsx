@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
 
 interface DropdownOption {
@@ -34,12 +34,12 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Handler functions
-  const handleOptionSelect = (optionValue: string) => {
+  const handleOptionSelect = useCallback((optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
     setFocusedIndex(-1);
     buttonRef.current?.focus();
-  };
+  }, [onChange]);
 
   // Calculate dropdown position when opening
   const calculateDropdownPosition = () => {
@@ -132,11 +132,12 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         onClick={handleToggleDropdown}
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-expanded={isOpen}
+        aria-expanded={isOpen ? "true" : "false"}
         aria-haspopup="listbox"
         className={cn(
-          "w-full px-3 py-2.5 rounded-lg border text-left text-sm transition-all duration-200 flex items-center justify-between",
+          "w-full px-3 py-2.5 rounded-lg border text-left transition-all duration-200 flex items-center justify-between",
           "focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-transparent",
+          className.includes('text-xs') ? 'text-xs' : 'text-sm',
           disabled 
             ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" 
             : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 cursor-pointer"
@@ -172,10 +173,11 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 key={option.value}
                 type="button"
                 role="option"
-                aria-selected={value === option.value}
+                aria-selected={value === option.value ? "true" : "false"}
                 onClick={() => handleOptionSelect(option.value)}
                 className={cn(
-                  "dropdown-item",
+                  "dropdown-item w-full px-3 py-2 text-left transition-colors",
+                  className.includes('text-xs') ? 'text-xs' : 'text-sm',
                   value === option.value && "selected",
                   index === focusedIndex && "bg-gray-100"
                 )}

@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <div className="flex items-center space-x-4">
           {/* Bell Icon with Notification Badge */}
           <div className="relative">
-            <button 
+            {/* <button 
               onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
               className="p-1 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -90,13 +90,13 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                 height={15}
                 className="w-5 h-5"
               />
-              {/* Dynamic Notification Badge */}
+             
               {notificationStats.unread > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
                 </span>
               )}
-            </button>
+            </button> */}
             
             {/* Notification Dropdown */}
             <NotificationDropdown

@@ -115,10 +115,41 @@ class FileService {
     return await response.json();
   }
 
-  async viewFile(fileUrl: string): Promise<void> {
-    // Open file in new tab for viewing
-    const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${this.baseUrl}/files/${fileUrl}`;
-    window.open(fullUrl, '_blank');
+  async viewFile(fileUrl: string, token?: string): Promise<void> {
+    if (!token) {
+      throw new Error('No token provided');
+    }
+
+    try {
+      // If the fileUrl is a full URL, use it directly
+      // Otherwise, construct the full URL with authentication
+      const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${this.baseUrl}/files/${fileUrl}`;
+      
+      // For authenticated file access, we need to fetch the file with the token
+      // and then create a blob URL to open in a new tab
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Open the blob URL in a new tab
+      window.open(blobUrl, '_blank');
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (error) {
+      console.error('Error viewing file:', error);
+      throw error;
+    }
   }
 }
 
