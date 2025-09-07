@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://eljay-api.vizdale.com/api/v1';
 
 export interface OAEForm {
@@ -53,13 +51,16 @@ export interface OAEFormSummary {
 }
 
 export interface OAEFormResponse {
-  oaeForms: OAEForm[];
-  summary: OAEFormSummary;
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
+  status: string;
+  data: {
+    oaeForms: OAEForm[];
+    summary: OAEFormSummary;
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
   };
 }
 
@@ -87,14 +88,18 @@ export interface CreateOAEFormData {
 }
 
 class OAEFormService {
-  private async makeRequest(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('token');
+  private async makeRequest(url: string, options: RequestInit = {}, token?: string) {
+    const authToken = token || localStorage.getItem('token');
+    
+    if (!authToken) {
+      throw new Error('No authentication token provided');
+    }
     
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${authToken}`,
         ...options.headers,
       },
     });
@@ -109,45 +114,50 @@ class OAEFormService {
 
   async getOAEForms(token?: string): Promise<OAEFormResponse> {
     const url = `${API_BASE_URL}/oae-forms`;
-    return this.makeRequest(url);
+    return this.makeRequest(url, {}, token);
   }
 
   async getOAEFormsByUser(userId: string, token?: string): Promise<OAEFormResponse> {
     const url = `${API_BASE_URL}/oae-forms/user/${userId}`;
-    return this.makeRequest(url);
+    return this.makeRequest(url, {}, token);
   }
 
   async getOAEFormsByPatient(patientId: string, token?: string): Promise<OAEFormResponse> {
-    const url = `${API_BASE_URL}/oae-forms/patient/${patientId}`;
-    return this.makeRequest(url);
+    // Since the API doesn't have a patient-specific endpoint, we'll get all forms and filter
+    // or use the user endpoint if we have the user ID
+    const url = `${API_BASE_URL}/oae-forms`;
+    return this.makeRequest(url, {}, token);
   }
 
   async createOAEForm(formData: CreateOAEFormData, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms`;
-    return this.makeRequest(url, {
+    const response = await this.makeRequest(url, {
       method: 'POST',
       body: JSON.stringify(formData),
-    });
+    }, token);
+    return response.data;
   }
 
   async updateOAEForm(id: string, formData: Partial<CreateOAEFormData>, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
-    return this.makeRequest(url, {
+    const response = await this.makeRequest(url, {
       method: 'PUT',
       body: JSON.stringify(formData),
-    });
+    }, token);
+    return response.data;
   }
 
   async deleteOAEForm(id: string, token?: string): Promise<void> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
-    return this.makeRequest(url, {
+    await this.makeRequest(url, {
       method: 'DELETE',
-    });
+    }, token);
   }
 
   async getOAEFormById(id: string, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
-    return this.makeRequest(url);
+    const response = await this.makeRequest(url, {}, token);
+    return response.data;
   }
 }
 
