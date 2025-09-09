@@ -73,6 +73,34 @@ class PatientService {
     }
   }
 
+  // Get all users directly (for payment forms)
+  async getUsers(page: number = 1, limit: number = 10, token?: string): Promise<UsersResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/users?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
   // Get all users as patients
   async getPatients(page: number = 1, limit: number = 10, token?: string): Promise<PatientsResponse> {
     try {
@@ -111,7 +139,8 @@ class PatientService {
         created_at: user.createdAt,
         updated_at: user.updatedAt,
         alternative_number: user.alternateNumber,
-        countrycode: user.countrycode
+        countrycode: user.countrycode,
+        hospital_name: user.hospitalName
       }));
 
       return {
@@ -169,7 +198,8 @@ class PatientService {
         created_at: user.createdAt,
         updated_at: user.updatedAt,
         alternative_number: user.alternateNumber,
-        countrycode: user.countrycode
+        countrycode: user.countrycode,
+        hospital_name: user.hospitalName
       };
 
       return {
@@ -253,7 +283,7 @@ class PatientService {
     return age;
   }
 
-  // Get user appointments
+  // Get user appointments using main appointments API filtered by userId
   async getUserAppointments(userId: string, token?: string): Promise<UserAppointmentsResponse> {
     try {
       const headers: Record<string, string> = {
@@ -265,16 +295,44 @@ class PatientService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/appointments`, {
+      // Use main appointments API with high limit to get all appointments, then filter by userId
+      const response = await fetch(`${BASE_URL}/api/v1/appointments?page=1&limit=1000`, {
         method: 'GET',
         headers,
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch user appointments: ${response.statusText}`);
+        throw new Error(`Failed to fetch appointments: ${response.statusText}`);
       }
 
-      return await response.json();
+      const appointmentsData = await response.json();
+      
+      // Filter appointments by userId
+      const userAppointments = appointmentsData.data.appointments.filter(
+        (appointment: any) => appointment.userId === userId
+      );
+
+      // Transform the data to match UserAppointmentsResponse format
+      const transformedAppointments = userAppointments.map((appointment: any) => ({
+        id: appointment.id,
+        appointmentDate: appointment.appointmentDate,
+        appointmentTime: appointment.appointmentTime,
+        appointmentDuration: appointment.appointmentDuration,
+        procedures: appointment.procedures,
+        visitStatus: appointment.visitStatus,
+        referralSource: appointment.referralSource,
+        createdAt: appointment.createdAt,
+        updatedAt: appointment.updatedAt,
+        audiologist: appointment.audiologist
+      }));
+
+      return {
+        status: 'success',
+        data: {
+          total: transformedAppointments.length,
+          appointments: transformedAppointments
+        }
+      };
     } catch (error) {
       console.error('Error fetching user appointments:', error);
       throw error;

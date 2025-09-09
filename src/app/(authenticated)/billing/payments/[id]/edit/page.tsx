@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DatePicker from '@/components/ui/date-picker';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import RupeeIcon from '@/components/ui/rupee-icon';
 import PaymentService from '@/services/paymentService';
+import { patientService } from '@/services/patientService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Payment } from '@/types';
+import { Payment, User } from '@/types';
 
 export default function EditPaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -25,13 +27,32 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
   
   // Form state
   const [paymentDate, setPaymentDate] = useState('');
+  const [patientName, setPatientName] = useState('');
+  const [patientId, setPatientId] = useState('');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
   const [status, setStatus] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [paymentType, setPaymentType] = useState('');
+  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    if (!token) return;
+    
+    try {
+      setLoadingUsers(true);
+      const response = await patientService.getUsers(1, 100, token);
+      setUsers(response.data.users || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [token]);
 
   const fetchPayment = useCallback(async () => {
     if (!token) return;
@@ -44,12 +65,15 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
       
       // Set form values
       setPaymentDate(PaymentService.formatDateForAPI(paymentData.paymentDate));
+      setPatientName(paymentData.patientName);
+      setPatientId(paymentData.patientId || '');
       setAmount(paymentData.amount.toString());
       setMethod(paymentData.method);
       setStatus(paymentData.status);
-      setTransactionId(paymentData.transactionId);
-      setReceivedBy(paymentData.receivedBy);
+      setTransactionId(paymentData.transactionId || '');
+      setReceivedBy(paymentData.receivedBy || '');
       setPaymentType(paymentData.paymentType);
+      setDescription(paymentData.description || '');
       setNotes(paymentData.notes || '');
     } catch (err) {
       console.error('Error fetching payment:', err);
@@ -66,13 +90,14 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
       return;
     }
     fetchPayment();
-  }, [authLoading, isAuthenticated, router, fetchPayment]);
+    fetchUsers();
+  }, [authLoading, isAuthenticated, router, fetchPayment, fetchUsers]);
 
   const handleSaveChanges = useCallback(async () => {
     if (!token || !payment) return;
 
     // Validation
-    if (!paymentDate || !amount || !method || !status || !receivedBy) {
+    if (!paymentDate || !patientId || !amount || !method || !status || !receivedBy) {
       setError('Please fill in all required fields');
       return;
     }
@@ -83,12 +108,15 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
     try {
       const updateData = {
         paymentDate: PaymentService.formatDateForAPI(paymentDate),
+        patientName,
+        patientId,
         amount: parseFloat(amount),
         method: method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
         status: status as 'Pending' | 'Completed' | 'Failed' | 'Cancelled',
-        transactionId,
-        receivedBy,
-        paymentType: paymentType as 'Full' | 'Partial',
+        transactionId: transactionId || undefined,
+        receivedBy: receivedBy || undefined,
+        paymentType: paymentType as 'Full' | 'Advance',
+        description: description || undefined,
         notes: notes || undefined
       };
 
@@ -102,7 +130,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
     } finally {
       setSaving(false);
     }
-  }, [token, payment, paymentDate, amount, method, status, transactionId, receivedBy, paymentType, notes, router, resolvedParams.id]);
+  }, [token, payment, paymentDate, amount, method, status, transactionId, receivedBy, paymentType, description, notes, router, resolvedParams.id]);
 
   const handleCancel = () => {
     router.push(`/billing/payments/${resolvedParams.id}`);
@@ -227,9 +255,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
             <CardContent className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                  <RupeeIcon className="w-4 h-4 text-orange-600" />
                 </div>
                 <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Payment Details
@@ -251,12 +277,28 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Patient Name
+                    Select Patient *
                   </label>
-                  <Input
-                    value={payment.patientName}
-                    className="bg-gray-50 border-gray-300"
-                    readOnly
+                  <CustomDropdown
+                    options={[
+                      { value: '', label: 'Select a patient' },
+                      ...users.map(user => ({
+                        value: user.id,
+                        label: `${user.fullname} (${user.phoneNumber})`
+                      }))
+                    ]}
+                    value={patientId}
+                    onChange={(selectedUserId: string) => {
+                      setPatientId(selectedUserId);
+                      const selectedUser = users.find(u => u.id === selectedUserId);
+                      if (selectedUser) {
+                        setPatientName(selectedUser.fullname || '');
+                      }
+                    }}
+                    placeholder="Select a patient"
+                    className="w-full"
+                    aria-label="Select patient"
+                    disabled={loadingUsers}
                   />
                 </div>
 
@@ -283,7 +325,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                     <Input
                       type="number"
-                      value={amount}
+                      value={amount || ''}
                       onChange={(e) => setAmount(e.target.value)}
                       className="pl-8 bg-white border-gray-300"
                       min="0"
@@ -339,7 +381,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                     Transaction ID
                   </label>
                   <Input
-                    value={transactionId}
+                    value={transactionId || ''}
                     onChange={(e) => setTransactionId(e.target.value)}
                     placeholder="Enter transaction ID (optional)"
                     className="bg-white border-gray-300"
@@ -351,7 +393,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                     Received By *
                   </label>
                   <Input
-                    value={receivedBy}
+                    value={receivedBy || ''}
                     onChange={(e) => setReceivedBy(e.target.value)}
                     placeholder="Enter staff name"
                     className="bg-white border-gray-300"
@@ -373,21 +415,33 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                         onChange={(e) => setPaymentType(e.target.value)}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Full</span>
+                      <span className="text-sm text-gray-700">Full Payment</span>
                     </label>
                     <label className="flex items-center">
                       <input
                         type="radio"
                         name="paymentType"
-                        value="Partial"
-                        checked={paymentType === 'Partial'}
+                        value="Advance"
+                        checked={paymentType === 'Advance'}
                         onChange={(e) => setPaymentType(e.target.value)}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Partial</span>
+                      <span className="text-sm text-gray-700">Advance Payment</span>
                     </label>
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <Input
+                  value={description || ''}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter payment description"
+                  className="bg-white border-gray-300 mb-4"
+                />
               </div>
 
               <div className="mt-6">
@@ -459,7 +513,11 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Type:</span>
-                      <span className="text-gray-900">{paymentType || 'Not selected'}</span>
+                      <span className="text-gray-900">{paymentType === 'Full' ? 'Full Payment' : paymentType === 'Advance' ? 'Advance Payment' : 'Not selected'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Description:</span>
+                      <span className="text-gray-900">{description || 'Not specified'}</span>
                     </div>
                   </div>
                 </div>

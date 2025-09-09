@@ -4,25 +4,24 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
-import diagnosticsService from '@/services/diagnosticsService';
+import hospitalService from '@/services/hospitalService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Diagnostic, CreateDiagnosticData } from '@/types';
-import CustomDropdown from '@/components/ui/custom-dropdown';
+import { Hospital, CreateHospitalData } from '@/types';
 
-const DiagnosticsPage = () => {
+const HospitalsPage = () => {
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState('diagnostics');
+  const [activeTab, setActiveTab] = useState('hospitals');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingDiagnostic, setEditingDiagnostic] = useState<Diagnostic | null>(null);
-  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreateDiagnosticData>({
+  const [formData, setFormData] = useState<CreateHospitalData>({
     name: '',
-    category: '',
-    price: 0,
-    description: ''
+    primaryContact: '',
+    address: '',
+    phoneNumber: ''
   });
 
   const tabs = [
@@ -111,56 +110,44 @@ const DiagnosticsPage = () => {
         </svg>
       )
     }
-    ];
-
-  const categories = [
-    'Hearing Assessment',
-    'Hearing Aid Services',
-    'Balance Testing',
-    'Tinnitus Evaluation'
   ];
 
-  const categoryOptions = categories.map(category => ({
-    value: category,
-    label: category
-  }));
-
-  const fetchDiagnostics = useCallback(async () => {
+  const fetchHospitals = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await diagnosticsService.getDiagnostics(token || undefined);
-      setDiagnostics(response.data);
+      const response = await hospitalService.getHospitals(token || undefined);
+      setHospitals(response.data.hospitals);
     } catch (err) {
-      setError('Failed to load diagnostics');
-      console.error('Error fetching diagnostics:', err);
+      setError('Failed to load hospitals');
+      console.error('Error fetching hospitals:', err);
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  // Fetch diagnostics data
+  // Fetch hospitals data
   useEffect(() => {
-    fetchDiagnostics();
-  }, [fetchDiagnostics]);
+    fetchHospitals();
+  }, [fetchHospitals]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' ? parseFloat(value) || 0 : value
+      [name]: value
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await diagnosticsService.createDiagnostic(formData, token || undefined);
-      await fetchDiagnostics(); // Refresh the list
+      await hospitalService.createHospital(formData, token || undefined);
+      await fetchHospitals(); // Refresh the list
       setShowAddModal(false);
-      setFormData({ name: '', category: '', price: 0, description: '' });
+      setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
     } catch (err) {
-      console.error('Error creating diagnostic:', err);
+      console.error('Error creating hospital:', err);
       // You might want to show an error message to the user here
     }
   };
@@ -168,44 +155,44 @@ const DiagnosticsPage = () => {
   const handleCancel = () => {
     setShowAddModal(false);
     setShowEditModal(false);
-    setEditingDiagnostic(null);
-    setFormData({ name: '', category: '', price: 0, description: '' });
+    setEditingHospital(null);
+    setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
   };
 
-  const handleEdit = (diagnostic: Diagnostic) => {
-    setEditingDiagnostic(diagnostic);
+  const handleEdit = (hospital: Hospital) => {
+    setEditingHospital(hospital);
     setFormData({
-      name: diagnostic.name,
-      category: diagnostic.category,
-      price: diagnostic.price,
-      description: diagnostic.description
+      name: hospital.name,
+      primaryContact: hospital.primaryContact,
+      address: hospital.address,
+      phoneNumber: hospital.phoneNumber
     });
     setShowEditModal(true);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingDiagnostic) return;
+    if (!editingHospital) return;
     
     try {
-      await diagnosticsService.updateDiagnostic(editingDiagnostic.id, formData, token || undefined);
-      await fetchDiagnostics(); // Refresh the list
+      await hospitalService.updateHospital(editingHospital.id, formData, token || undefined);
+      await fetchHospitals(); // Refresh the list
       setShowEditModal(false);
-      setEditingDiagnostic(null);
-      setFormData({ name: '', category: '', price: 0, description: '' });
+      setEditingHospital(null);
+      setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
     } catch (err) {
-      console.error('Error updating diagnostic:', err);
+      console.error('Error updating hospital:', err);
       // You might want to show an error message to the user here
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this diagnostic?')) {
+    if (window.confirm('Are you sure you want to delete this hospital?')) {
       try {
-        await diagnosticsService.deleteDiagnostic(id, token || undefined);
-        await fetchDiagnostics(); // Refresh the list
+        await hospitalService.deleteHospital(id, token || undefined);
+        await fetchHospitals(); // Refresh the list
       } catch (err) {
-        console.error('Error deleting diagnostic:', err);
+        console.error('Error deleting hospital:', err);
         // You might want to show an error message to the user here
       }
     }
@@ -247,11 +234,11 @@ const DiagnosticsPage = () => {
           </div>
         </div>
 
-        {/* Diagnostics Content */}
+        {/* Hospitals Content */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-              Diagnostics
+              Hospitals
             </h2>
             <button
               onClick={() => setShowAddModal(true)}
@@ -260,35 +247,35 @@ const DiagnosticsPage = () => {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Diagnostic</span>
+              <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Hospital</span>
             </button>
           </div>
 
-          {/* Diagnostics Table */}
+          {/* Hospitals Table */}
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                <span className="ml-3 text-gray-600">Loading diagnostics...</span>
+                <span className="ml-3 text-gray-600">Loading hospitals...</span>
               </div>
             ) : error ? (
               <div className="text-center py-8">
                 <p className="text-red-600 mb-4">{error}</p>
                 <button 
-                  onClick={fetchDiagnostics}
+                  onClick={fetchHospitals}
                   className="text-orange-600 hover:text-orange-700 underline"
                 >
                   Try again
                 </button>
               </div>
-            ) : diagnostics.length === 0 ? (
+            ) : hospitals.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">No diagnostics found</p>
+                <p className="text-gray-600 mb-4">No hospitals found</p>
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="text-orange-600 hover:text-orange-700 underline"
                 >
-                  Add your first diagnostic
+                  Add your first hospital
                 </button>
               </div>
             ) : (
@@ -296,16 +283,16 @@ const DiagnosticsPage = () => {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Diagnostic Name
+                      Hospital Name
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Category
+                      Primary Contact
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Price
+                      Address
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Description
+                      Phone Number
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                       Actions
@@ -313,37 +300,35 @@ const DiagnosticsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {diagnostics.map((diagnostic) => (
-                    <tr key={diagnostic.id} className="border-b border-border hover:bg-muted/30">
+                  {hospitals.map((hospital) => (
+                    <tr key={hospital.id} className="border-b border-border hover:bg-muted/30">
                       <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {diagnostic.name}
+                        {hospital.name}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-block bg-[#F3F3F5] text-[#717182] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                          {diagnostic.category}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-[#101828] font-semibold text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        ₹{diagnostic.price}
+                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {hospital.primaryContact}
                       </td>
                       <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {diagnostic.description}
+                        {hospital.address}
+                      </td>
+                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {hospital.phoneNumber}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
                           <button 
-                            onClick={() => handleEdit(diagnostic)}
+                            onClick={() => handleEdit(hospital)}
                             className="p-1 hover:bg-muted rounded transition-colors"
-                            aria-label={`Edit ₹{diagnostic.name}`}
+                            aria-label={`Edit ${hospital.name}`}
                           >
                             <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
                           <button 
-                            onClick={() => handleDelete(diagnostic.id)}
+                            onClick={() => handleDelete(hospital.id)}
                             className="p-1 hover:bg-muted rounded transition-colors"
-                            aria-label={`Delete ₹{diagnostic.name}`}
+                            aria-label={`Delete ${hospital.name}`}
                           >
                             <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -359,13 +344,13 @@ const DiagnosticsPage = () => {
           </div>
         </div>
 
-        {/* Add Diagnostic Modal */}
+        {/* Add Hospital Modal */}
         {showAddModal && (
           <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Add New Diagnostic</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Add New Hospital</h2>
                 <button
                   onClick={handleCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -379,63 +364,67 @@ const DiagnosticsPage = () => {
 
               {/* Form */}
               <div className="p-6 space-y-6">
-                {/* Diagnostic Name */}
+                {/* Hospital Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Diagnostic Name
+                    Hospital Name
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Enter diagnostic name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                  />
-                </div>
-
-                                 {/* Category */}
-                 <div>
-                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                     Category
-                   </label>
-                   <CustomDropdown
-                     options={categoryOptions}
-                     value={formData.category}
-                     onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                     placeholder="Select category"
-                     aria-label="Select diagnostic category"
-                   />
-                 </div>
-
-                {/* Price */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="Enter price..."
+                    placeholder="Enter hospital name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required
                   />
                 </div>
 
-                {/* Description */}
+                {/* Primary Contact */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Description (Optional)
+                    Primary Contact
+                  </label>
+                  <input
+                    type="text"
+                    name="primaryContact"
+                    value={formData.primaryContact}
+                    onChange={handleInputChange}
+                    placeholder="Enter primary contact..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Address
                   </label>
                   <textarea
-                    name="description"
-                    value={formData.description}
+                    name="address"
+                    value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Enter description..."
+                    placeholder="Enter address..."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="Enter phone number..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
                   />
                 </div>
               </div>
@@ -452,20 +441,20 @@ const DiagnosticsPage = () => {
                   onClick={handleSubmit}
                   className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
-                  Add Diagnostic
+                  Add Hospital
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Edit Diagnostic Modal */}
-        {showEditModal && editingDiagnostic && (
+        {/* Edit Hospital Modal */}
+        {showEditModal && editingHospital && (
           <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Edit Diagnostic</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Edit Hospital</h2>
                 <button
                   onClick={handleCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -479,63 +468,67 @@ const DiagnosticsPage = () => {
 
               {/* Form */}
               <div className="p-6 space-y-6">
-                {/* Diagnostic Name */}
+                {/* Hospital Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Diagnostic Name
+                    Hospital Name
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Enter diagnostic name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                  />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <CustomDropdown
-                    options={categoryOptions}
-                    value={formData.category}
-                    onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    placeholder="Select category"
-                    aria-label="Select diagnostic category"
-                  />
-                </div>
-
-                {/* Price */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="Enter price..."
+                    placeholder="Enter hospital name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required
                   />
                 </div>
 
-                {/* Description */}
+                {/* Primary Contact */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Description (Optional)
+                    Primary Contact
+                  </label>
+                  <input
+                    type="text"
+                    name="primaryContact"
+                    value={formData.primaryContact}
+                    onChange={handleInputChange}
+                    placeholder="Enter primary contact..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Address
                   </label>
                   <textarea
-                    name="description"
-                    value={formData.description}
+                    name="address"
+                    value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Enter description..."
+                    placeholder="Enter address..."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="Enter phone number..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
                   />
                 </div>
               </div>
@@ -552,7 +545,7 @@ const DiagnosticsPage = () => {
                   onClick={handleUpdate}
                   className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
-                  Update Diagnostic
+                  Update Hospital
                 </button>
               </div>
             </div>
@@ -563,4 +556,4 @@ const DiagnosticsPage = () => {
   );
 };
 
-export default DiagnosticsPage;
+export default HospitalsPage;

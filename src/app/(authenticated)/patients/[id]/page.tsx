@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
 import { patientService } from '@/services/patientService';
+import { appointmentService } from '@/services/appointmentService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
 import PatientInvoiceService from '@/services/patientInvoiceService';
@@ -126,8 +127,23 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     
     try {
       setAppointmentsLoading(true);
-      const response = await patientService.getUserAppointments(patient.id, token || undefined);
-      setAppointments(response.data.appointments);
+      const response = await appointmentService.getAppointmentsByUserId(patient.id, token || undefined);
+      
+      // Transform the appointments to match UserAppointment format
+      const transformedAppointments: UserAppointment[] = response.data.appointments.map((appointment: any) => ({
+        id: appointment.id,
+        appointmentDate: appointment.appointmentDate,
+        appointmentTime: appointment.appointmentTime,
+        appointmentDuration: appointment.appointmentDuration,
+        procedures: appointment.procedures,
+        visitStatus: appointment.visitStatus,
+        referralSource: appointment.referralSource,
+        createdAt: appointment.createdAt,
+        updatedAt: appointment.updatedAt,
+        audiologist: appointment.audiologist
+      }));
+      
+      setAppointments(transformedAppointments);
     } catch (err) {
       console.error('Error fetching appointments:', err);
       // Don't show error for appointments, just log it
@@ -310,7 +326,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         gender: patient?.gender || 'Male',
         occupation: patient?.occupation || '',
         alternative_number: patient?.alternative_number || '',
-        countrycode: patient?.countrycode || '+91'
+        countrycode: patient?.countrycode || '+91',
+        hospital_name: patient?.hospital_name || ''
       });
     }
   };
@@ -455,6 +472,56 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get appointment status color
+  const getAppointmentStatusColor = (status?: string | null, appointmentDate?: string) => {
+    // Check if appointment date has passed and no status is set
+    if (!status && appointmentDate) {
+      const appointmentDateTime = new Date(appointmentDate);
+      const now = new Date();
+      if (appointmentDateTime < now) {
+        return 'bg-orange-100 text-orange-800'; // Absent for past appointments
+      }
+    }
+    
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    switch (status) {
+      case 'check_in':
+        return 'bg-green-100 text-green-800';
+      case 'no_show':
+        return 'bg-red-100 text-red-800';
+      case 'absent':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get appointment status text
+  const getAppointmentStatusText = (status?: string | null, appointmentDate?: string) => {
+    // Check if appointment date has passed and no status is set
+    if (!status && appointmentDate) {
+      const appointmentDateTime = new Date(appointmentDate);
+      const now = new Date();
+      if (appointmentDateTime < now) {
+        return 'Absent'; // Absent for past appointments
+      }
+    }
+    
+    if (!status) return 'Pending';
+    
+    switch (status) {
+      case 'check_in':
+        return 'Checked In';
+      case 'no_show':
+        return 'No Show';
+      case 'absent':
+        return 'Absent';
+      default:
+        return 'Pending';
     }
   };
 
@@ -1145,6 +1212,27 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             {patient.type || 'Regular'}
                           </div>
                         </div>
+
+                        {/* Hospital field - only show for B2B patients */}
+                        {patient.type === 'B2B' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Hospital Name</label>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editFormData.hospital_name || ''}
+                                onChange={(e) => handleInputChange('hospital_name', e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                placeholder="Enter hospital name"
+                                aria-label="Hospital name"
+                              />
+                            ) : (
+                              <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
+                                {patient.hospital_name || 'Not provided'}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1221,6 +1309,12 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               <div className="text-xs font-medium text-gray-900">{appointment.appointmentDuration} minutes</div>
                               <div className="text-xs text-gray-500">
                                 {appointment.referralSource ? appointment.referralSource.sourceName : 'Direct'}
+                              </div>
+                              {/* Appointment Status */}
+                              <div className="mt-1">
+                                <span className={`px-2 py-1 text-xs rounded-full ${getAppointmentStatusColor(appointment.visitStatus, appointment.appointmentDate)}`}>
+                                  {getAppointmentStatusText(appointment.visitStatus, appointment.appointmentDate)}
+                                </span>
                               </div>
                             </div>
                           </div>

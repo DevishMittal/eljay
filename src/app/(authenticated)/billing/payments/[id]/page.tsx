@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import RupeeIcon from '@/components/ui/rupee-icon';
 import PaymentService from '@/services/paymentService';
 import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -223,11 +224,9 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
             <Card className="bg-white border border-gray-200">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <RupeeIcon className="w-4 h-4 text-orange-600" />
+                </div>
                   <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                     Payment Information
                   </h2>
@@ -263,7 +262,11 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Transaction ID</label>
-                                         <p className="text-lg font-semibold text-gray-900">{payment.transactionId}</p>
+                    <p className="text-lg font-semibold text-gray-900">{payment.transactionId || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <p className="text-lg font-semibold text-gray-900">{payment.description || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -283,9 +286,24 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
                   </h2>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">Total Payment</span>
-                                     <span className="text-2xl font-bold text-gray-900">{PaymentService.formatCurrency(payment.amount)}</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900">Total Payment</span>
+                    <span className="text-2xl font-bold text-gray-900">{PaymentService.formatCurrency(payment.amount)}</span>
+                  </div>
+                  
+                  {payment.paymentType === 'Advance' && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Applied Amount</span>
+                        <span className="text-lg font-semibold text-green-600">{PaymentService.formatCurrency(payment.appliedAmount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Remaining Amount</span>
+                        <span className="text-lg font-semibold text-orange-600">{PaymentService.formatCurrency(payment.remainingAmount)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -169,6 +169,7 @@ export interface Patient {
   last_visited?: string;
   alternative_number?: string | null;
   occupation?: string;
+  hospital_name?: string; // For B2B patients
   existing_hearing_aid_user?: boolean;
   previous_hearing_aid_model?: string;
   reason_for_visit?: string;
@@ -200,6 +201,7 @@ export interface UpdatePatientData {
   occupation?: string;
   alternative_number?: string;
   countrycode?: string;
+  hospital_name?: string; // For B2B patients
 }
 
 export interface PatientsResponse {
@@ -236,6 +238,7 @@ export interface User {
   alternateNumber?: string | null;
   occupation: string;
   customerType: string;
+  hospitalName?: string; // For B2B patients
   createdAt: string;
   updatedAt: string;
   organization?: {
@@ -255,6 +258,7 @@ export interface CreateUserData {
   occupation: string;
   customerType: string;
   alternateNumber?: string;
+  hospitalName?: string; // For B2B patients
 }
 
 export interface UpdateUserData {
@@ -267,6 +271,7 @@ export interface UpdateUserData {
   occupation?: string;
   customerType?: string;
   alternateNumber?: string;
+  hospitalName?: string; // For B2B patients
 }
 
 export interface UsersResponse {
@@ -321,6 +326,7 @@ export interface UserAppointment {
   appointmentTime: string;
   appointmentDuration: number;
   procedures: string;
+  visitStatus?: 'check_in' | 'no_show' | 'absent' | null;
   referralSource?: ReferralSource;
   createdAt: string;
   updatedAt: string;
@@ -345,12 +351,14 @@ export interface Appointment {
   id: string;
   audiologistId: string;
   userId: string;
+  visitStatus?: 'check_in' | 'no_show' | 'absent' | null;
   referralSourceId?: string;
   referralSource?: ReferralSource;
   appointmentDate: string;
   appointmentDuration: number;
   appointmentTime: string;
   procedures: string;
+  hospitalName?: string;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -372,6 +380,7 @@ export interface AppointmentSummary {
   time: string;
   duration: number;
   procedures: string;
+  visitStatus?: 'check_in' | 'no_show' | 'absent' | null;
   referralSource?: ReferralSource;
   patient: {
     id: string;
@@ -396,6 +405,7 @@ export interface CreateAppointmentData {
   appointmentTime: string;
   appointmentDuration: number;
   procedures: string;
+  hospitalName?: string; // For B2B patients
   referralSource?: {
     type: string;
     sourceName: string;
@@ -718,6 +728,23 @@ export interface AuthState {
 }
 
 // Inventory types
+export interface BranchStockDistribution {
+  branchName: string;
+  branchStock: number;
+  status: string;
+  lastUpdated: string;
+  minimumStock: number;
+  maximumStock: number;
+  notes?: string | null;
+}
+
+export interface BranchStatistics {
+  totalBranches: number;
+  branchesWithStock: number;
+  totalBranchStock: number;
+  overallStatus: string[];
+}
+
 export interface InventoryItem {
   id: string;
   itemName: string;
@@ -736,6 +763,24 @@ export interface InventoryItem {
   organizationId: string;
   createdAt: string;
   updatedAt: string;
+  tags?: string[];
+  branchStockDistribution?: BranchStockDistribution[];
+  branchStatistics?: BranchStatistics;
+}
+
+export interface InventoryViewResponse {
+  status: string;
+  data: {
+    items: InventoryItem[];
+    view: 'branch' | 'network';
+    availableBranches: string[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
 }
 
 export interface InventoryTransaction {
@@ -816,15 +861,76 @@ export interface InvoiceScreening {
   updatedAt?: string;
 }
 
+export interface InvoiceService {
+  id?: string;
+  invoiceId?: string;
+  serviceName: string;
+  description: string;
+  quantity: number;
+  unitCost: number;
+  discount: number;
+  total?: number; // This is calculated by the backend
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OutstandingPayment {
+  id: string;
+  receiptNumber: string;
+  paymentMethod: string;
+  description: string;
+  date: string;
+  availableAmount: number;
+  originalAmount: number;
+  appliedAmount: number;
+}
+
+export interface OutstandingPaymentsResponse {
+  status: string;
+  data: {
+    patient: {
+      id: string;
+      name: string;
+      phoneNumber: string;
+    };
+    outstandingPayments: OutstandingPayment[];
+    totalOutstanding: number;
+    count: number;
+  };
+}
+
+export interface AppliedAdvancePayment {
+  paymentId: string;
+  appliedAmount: number;
+}
+
+export interface Diagnostic {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  description: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiagnosticsResponse {
+  status: string;
+  data: Diagnostic[];
+}
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
   organizationId: string;
   invoiceDate: string;
   patientName: string;
-  organizationName: string;
+  patientId?: string;
+  organizationName?: string;
   invoiceType: 'B2B' | 'B2C';
-  paymentStatus: 'Pending' | 'Paid' | 'Cancelled';
+  paymentStatus: 'Pending' | 'Paid' | 'Cancelled' | 'Partially Paid';
+  overallDiscount?: number;
   sgstRate: number;
   cgstRate: number;
   subtotal: number;
@@ -839,24 +945,29 @@ export interface Invoice {
   createdAt: string;
   updatedAt: string;
   screenings: InvoiceScreening[];
+  services: InvoiceService[];
 }
 
 export interface CreateInvoiceData {
   invoiceDate: string;
   patientName: string;
-  organizationName: string;
+  patientId?: string;
+  organizationName?: string;
   invoiceType: 'B2B' | 'B2C';
-  screenings: InvoiceScreening[];
-  paymentStatus: 'Pending' | 'Paid' | 'Cancelled';
+  screenings?: InvoiceScreening[];
+  services?: Omit<InvoiceService, 'id' | 'invoiceId' | 'total' | 'createdAt' | 'updatedAt'>[];
+  overallDiscount?: number;
+  paymentStatus: 'Pending' | 'Paid' | 'Cancelled' | 'Partially Paid';
   sgstRate: number;
   cgstRate: number;
   notes?: string;
   warranty?: string;
+  appliedAdvancePayments?: AppliedAdvancePayment[];
 }
 
 export interface UpdateInvoiceData {
   invoiceDate?: string;
-  paymentStatus?: 'Pending' | 'Paid' | 'Cancelled';
+  paymentStatus?: 'Pending' | 'Paid' | 'Cancelled' | 'Partially Paid';
   sgstRate?: number;
   cgstRate?: number;
   screenings?: InvoiceScreening[];
@@ -892,13 +1003,17 @@ export interface Payment {
   organizationId: string;
   paymentDate: string;
   patientName: string;
+  patientId?: string | null; // Required for advance payments
   amount: number;
   method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
   status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
-  transactionId: string;
-  receivedBy: string;
-  paymentType: 'Full' | 'Partial';
-  notes?: string;
+  transactionId?: string | null;
+  receivedBy?: string | null;
+  paymentType: 'Full' | 'Advance'; // Updated from 'Partial' to 'Advance'
+  description?: string | null;
+  notes?: string | null;
+  appliedAmount: number;
+  remainingAmount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -906,12 +1021,14 @@ export interface Payment {
 export interface CreatePaymentData {
   paymentDate: string;
   patientName: string;
+  patientId?: string; // Required for advance payments
   amount: number;
   method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
   status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
-  transactionId: string;
-  receivedBy: string;
-  paymentType: 'Full' | 'Partial';
+  transactionId?: string;
+  receivedBy?: string;
+  paymentType: 'Full' | 'Advance'; // Updated from 'Partial' to 'Advance'
+  description?: string;
   notes?: string;
 }
 
@@ -922,7 +1039,8 @@ export interface UpdatePaymentData {
   status?: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
   transactionId?: string;
   receivedBy?: string;
-  paymentType?: 'Full' | 'Partial';
+  paymentType?: 'Full' | 'Advance'; // Updated from 'Partial' to 'Advance'
+  description?: string;
   notes?: string;
 }
 
@@ -946,6 +1064,32 @@ export interface PaymentsResponse {
 export interface PaymentResponse {
   status: string;
   data: Payment;
+}
+
+// Outstanding Payment types
+export interface OutstandingPayment {
+  id: string;
+  receiptNumber: string;
+  paymentMethod: string;
+  description: string;
+  date: string;
+  availableAmount: number;
+  originalAmount: number;
+  appliedAmount: number;
+}
+
+export interface OutstandingPaymentsResponse {
+  status: string;
+  data: {
+    patient: {
+      id: string;
+      name: string;
+      phoneNumber: string;
+    };
+    outstandingPayments: OutstandingPayment[];
+    totalOutstanding: number;
+    count: number;
+  };
 }
 
 // Expense types
@@ -1100,4 +1244,47 @@ export interface TransfersResponse {
 export interface TransferResponse {
   status: string;
   data: InventoryTransfer;
+}
+
+// Hospital types
+export interface Hospital {
+  id: string;
+  name: string;
+  primaryContact: string;
+  address: string;
+  phoneNumber: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HospitalsResponse {
+  status: string;
+  data: {
+    hospitals: Hospital[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  };
+}
+
+export interface HospitalResponse {
+  status: string;
+  data: Hospital;
+}
+
+export interface CreateHospitalData {
+  name: string;
+  primaryContact: string;
+  address: string;
+  phoneNumber: string;
+}
+
+export interface UpdateHospitalData {
+  name?: string;
+  primaryContact?: string;
+  address?: string;
+  phoneNumber?: string;
 }

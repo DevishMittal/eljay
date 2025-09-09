@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import InvoiceService from '@/services/invoiceService';
+import HospitalService from '@/services/hospitalService';
 import { CreateInvoiceData, InvoiceScreening } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -18,8 +19,8 @@ export default function B2BInvoicePage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
-  const [patientName, setPatientName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [primaryContact, setPrimaryContact] = useState('');
+  const [hospitalName, setHospitalName] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
@@ -27,6 +28,7 @@ export default function B2BInvoicePage() {
   const [warrantyInfo, setWarrantyInfo] = useState('');
   const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hospitalOptions, setHospitalOptions] = useState<{ value: string; label: string }[]>([]);
 
   // Diagnostic options for dropdown
   const diagnosticOptions = PROCEDURE_PRICING
@@ -51,6 +53,30 @@ export default function B2BInvoicePage() {
       router.push('/login');
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // Fetch hospitals on component mount
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const response = await HospitalService.getHospitals();
+        const hospitalList = response.data.hospitals;
+        setHospitalOptions(hospitalList.map(hospital => ({
+          value: hospital.name,
+          label: hospital.name
+        })));
+      } catch (error) {
+        console.error('Error fetching hospitals:', error);
+      }
+    };
+
+    if (isAuthenticated && !authLoading) {
+      fetchHospitals();
+    }
+  }, [isAuthenticated, authLoading]);
+
+  // Auto-populate screenings when hospital is selected
+  // Note: Auto-populating screenings from hospital pending invoices is not implemented
+  // This would require a new API endpoint to fetch pending invoices for a specific hospital
 
   const addScreening = () => {
     const newScreening: InvoiceScreening = {
@@ -124,7 +150,7 @@ export default function B2BInvoicePage() {
       return;
     }
 
-    if (!invoiceDate || !patientName || !organizationName || screenings.length === 0) {
+    if (!invoiceDate || !primaryContact || !hospitalName || screenings.length === 0) {
       alert('Please fill in all required fields and add at least one screening');
       return;
     }
@@ -142,8 +168,8 @@ export default function B2BInvoicePage() {
       
       const invoiceData: CreateInvoiceData = {
         invoiceDate: InvoiceService.formatDateForAPI(invoiceDate.toISOString().split('T')[0]),
-        patientName,
-        organizationName,
+        patientName: primaryContact, // Map primaryContact to patientName for API
+        organizationName: hospitalName, // Map hospitalName to organizationName for API
         invoiceType: 'B2B',
         screenings: screenings.map(screening => ({
           ...screening,
@@ -221,24 +247,25 @@ export default function B2BInvoicePage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Patient Name*
+                      Primary Contact*
                     </label>
                     <Input
-                      value={patientName}
-                      onChange={(e) => setPatientName(e.target.value)}
-                      placeholder="Enter patient name"
+                      value={primaryContact}
+                      onChange={(e) => setPrimaryContact(e.target.value)}
+                      placeholder="Enter primary contact name"
                       className="bg-white border-gray-300"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Organization Name*
+                      Hospital Name*
                     </label>
-                    <Input
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      placeholder="Hospital/Company Name"
-                      className="bg-white border-gray-300"
+                    <CustomDropdown
+                      options={hospitalOptions}
+                      value={hospitalName}
+                      onChange={(value) => setHospitalName(value)}
+                      placeholder="Select Hospital"
+                      className="w-full"
                     />
                   </div>
                 </div>
@@ -307,6 +334,7 @@ export default function B2BInvoicePage() {
                                value={screening.diagnosticName}
                                onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
                                className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
+                               aria-label={`Select diagnostic for screening ${index + 1}`}
                              >
                                <option value="">Select Diagnostic</option>
                                {diagnosticOptions.map((option) => (

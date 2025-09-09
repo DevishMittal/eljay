@@ -151,7 +151,10 @@ export default function PaymentsPage() {
     if (type === 'Full') {
       return 'bg-purple-100 text-purple-800';
     }
-    return 'bg-blue-100 text-blue-800';
+    if (type === 'Advance') {
+      return 'bg-blue-100 text-blue-800';
+    }
+    return 'bg-gray-100 text-gray-800';
   };
 
   const handleNewPayment = () => {
@@ -165,7 +168,7 @@ export default function PaymentsPage() {
       const matchesSearch = 
         payment.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.receivedBy.toLowerCase().includes(searchTerm.toLowerCase());
+        (payment.receivedBy && payment.receivedBy.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Type filter
       const matchesType = typeFilter === "All Types" || payment.paymentType === typeFilter;
@@ -400,8 +403,8 @@ export default function PaymentsPage() {
                 <CustomDropdown
                   options={[
                     { value: "All Types", label: "All Types" },
-                    { value: "Full", label: "Full" },
-                    { value: "Partial", label: "Partial" }
+                    { value: "Full", label: "Full Payment" },
+                    { value: "Advance", label: "Advance Payment" }
                   ]}
                   value={typeFilter}
                   onChange={setTypeFilter}
@@ -544,7 +547,7 @@ export default function PaymentsPage() {
                           {payment.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{payment.receivedBy}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{payment.receivedBy || 'N/A'}</td>
                       <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex space-x-2">
                           <button 

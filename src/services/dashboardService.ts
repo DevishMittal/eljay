@@ -60,11 +60,60 @@ export interface DashboardAppointmentsData {
   };
 }
 
+export interface DashboardDoctorReferralData {
+  overview: {
+    referrals: number;
+    conversionRate: number;
+    conversionRateChange: number;
+    activeDoctors: number;
+    avgPerDoctor: number;
+    converted: number;
+    newDoctors: number;
+  };
+  financialImpact: {
+    commission: number;
+    commissionRate: number;
+    revenueChange: number;
+    patientDiscounts: number;
+    revenueGenerated: number;
+  };
+  topPerformers: {
+    bestRate: number;
+    topDoctors: Array<{
+      doctorName: string;
+      referrals: number;
+      conversionRate: number;
+    }>;
+    avgConversion: number;
+    newDoctorsAdded: number;
+  };
+  referralFlow: {
+    referred: number;
+    appointed: number;
+    completed: number;
+    converted: number;
+    appointmentRate: number;
+    completionRate: number;
+    finalConversionRate: number;
+    totalDropOff: number;
+  };
+  doctorPerformance: Array<{
+    doctorName: string;
+    specialization: string;
+    totalReferrals: number;
+    conversionRate: number;
+  }>;
+  commissionDistribution: {
+    totalCommission: number;
+    distribution: any[];
+  };
+}
+
 export interface DashboardResponse {
   status: string;
   data: {
     appointments?: DashboardAppointmentsData;
-    doctorReferral?: any;
+    doctorReferral?: DashboardDoctorReferralData;
     diagnostics?: any;
     billings?: any;
     inventory?: any;
@@ -113,6 +162,16 @@ export class DashboardService {
       return response.data.appointments || null;
     } catch (error) {
       console.error('Error fetching appointments data:', error);
+      return null;
+    }
+  }
+
+  static async getDoctorReferralData(startDate: string, endDate: string): Promise<DashboardDoctorReferralData | null> {
+    try {
+      const response = await this.getDashboardData(['doctorReferral'], startDate, endDate);
+      return response.data.doctorReferral || null;
+    } catch (error) {
+      console.error('Error fetching doctor referral data:', error);
       return null;
     }
   }

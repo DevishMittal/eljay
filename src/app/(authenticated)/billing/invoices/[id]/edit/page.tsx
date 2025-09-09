@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/utils';
 import InvoiceService from '@/services/invoiceService';
-import { Invoice, UpdateInvoiceData, InvoiceScreening } from '@/types';
+import HospitalService from '@/services/hospitalService';
+import { Invoice, UpdateInvoiceData, InvoiceScreening, InvoiceService as InvoiceServiceType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
 export default function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -23,10 +25,18 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   
   // Form state
   const [invoiceDate, setInvoiceDate] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
+  const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled' | 'Partially Paid'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
+  const [services, setServices] = useState<InvoiceServiceType[]>([]);
+  const [notes, setNotes] = useState('');
+  const [warranty, setWarranty] = useState('');
+  
+  // B2B specific fields
+  const [primaryContact, setPrimaryContact] = useState('');
+  const [hospitalName, setHospitalName] = useState('');
+  const [hospitalOptions, setHospitalOptions] = useState<{ value: string; label: string }[]>([]);
 
   const fetchInvoice = useCallback(async () => {
     if (!token) {
@@ -42,11 +52,23 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
       setInvoice(invoiceData);
       
       // Set form state
-      setInvoiceDate(invoiceData.invoiceDate);
+      setInvoiceDate(invoiceData.invoiceDate ? invoiceData.invoiceDate.split('T')[0] : '');
       setPaymentStatus(invoiceData.paymentStatus);
       setSgstRate(invoiceData.sgstRate);
       setCgstRate(invoiceData.cgstRate);
-      setScreenings(invoiceData.screenings);
+      setScreenings((invoiceData.screenings || []).map(screening => ({
+        ...screening,
+        screeningDate: screening.screeningDate ? screening.screeningDate.split('T')[0] : ''
+      })));
+      setServices(invoiceData.services || []);
+      setNotes(invoiceData.notes || '');
+      setWarranty(invoiceData.warranty || '');
+      
+      // Set B2B specific fields
+      if (invoiceData.invoiceType === 'B2B') {
+        setPrimaryContact(invoiceData.patientName);
+        setHospitalName(invoiceData.organizationName || '');
+      }
       
       setError(null);
     } catch (err: any) {
@@ -69,6 +91,26 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
       fetchInvoice();
     }
   }, [authLoading, isAuthenticated, token, fetchInvoice, router]);
+
+  // Fetch hospitals for B2B invoices
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const response = await HospitalService.getHospitals();
+        const hospitalList = response.data.hospitals;
+        setHospitalOptions(hospitalList.map(hospital => ({
+          value: hospital.name,
+          label: hospital.name
+        })));
+      } catch (error) {
+        console.error('Error fetching hospitals:', error);
+      }
+    };
+
+    if (isAuthenticated && !authLoading && invoice?.invoiceType === 'B2B') {
+      fetchHospitals();
+    }
+  }, [isAuthenticated, authLoading, invoice?.invoiceType]);
 
   const addScreening = () => {
     const newScreening: InvoiceScreening = {
@@ -93,12 +135,50 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     setScreenings(updatedScreenings);
   };
 
+  const addService = () => {
+    const newService: InvoiceServiceType = {
+      serviceName: '',
+      description: '',
+      quantity: 1,
+      unitCost: 0,
+      discount: 0,
+      total: 0
+    };
+    setServices([...services, newService]);
+  };
+
+  const removeService = (index: number) => {
+    const updatedServices = services.filter((_, i) => i !== index);
+    setServices(updatedServices);
+  };
+
+  const updateService = (index: number, field: keyof InvoiceServiceType, value: any) => {
+    const updatedServices = [...services];
+    updatedServices[index] = { ...updatedServices[index], [field]: value };
+    
+    // Recalculate total when quantity, unitCost, or discount changes
+    if (field === 'quantity' || field === 'unitCost' || field === 'discount') {
+      const service = updatedServices[index];
+      updatedServices[index].total = (service.quantity * service.unitCost) - service.discount;
+    }
+    
+    setServices(updatedServices);
+  };
+
   const calculateSubtotal = () => {
-    return screenings.reduce((sum, screening) => sum + screening.amount, 0);
+    if (invoice?.invoiceType === 'B2C') {
+      return services.reduce((sum, service) => sum + (service.quantity * service.unitCost), 0);
+    } else {
+      return screenings.reduce((sum, screening) => sum + screening.amount, 0);
+    }
   };
 
   const calculateTotalDiscount = () => {
-    return screenings.reduce((sum, screening) => sum + (screening.discount || 0), 0);
+    if (invoice?.invoiceType === 'B2C') {
+      return services.reduce((sum, service) => sum + (service.discount || 0), 0);
+    } else {
+      return screenings.reduce((sum, screening) => sum + (screening.discount || 0), 0);
+    }
   };
 
   const calculateTaxableAmount = () => {
@@ -147,16 +227,36 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     try {
       setSaving(true);
       
-      const updateData: UpdateInvoiceData = {
+      const updateData: any = {
         invoiceDate: InvoiceService.formatDateForAPI(invoiceDate),
         paymentStatus,
         sgstRate,
         cgstRate,
-        screenings: screenings.map(screening => ({
-          ...screening,
-          screeningDate: InvoiceService.formatDateForAPI(screening.screeningDate)
-        }))
+        notes,
+        warranty
       };
+
+      if (invoice.invoiceType === 'B2C') {
+        updateData.invoiceType = 'B2C';
+        updateData.services = services.map(service => ({
+          serviceName: service.serviceName,
+          description: service.description,
+          quantity: service.quantity,
+          unitCost: service.unitCost,
+          discount: service.discount
+        }));
+      } else {
+        updateData.screenings = screenings.map(screening => ({
+          screeningDate: InvoiceService.formatDateForAPI(screening.screeningDate),
+          opNumber: screening.opNumber,
+          bioName: screening.bioName,
+          diagnosticName: screening.diagnosticName,
+          amount: screening.amount,
+          discount: screening.discount || 0
+        }));
+        updateData.patientName = primaryContact;
+        updateData.organizationName = hospitalName;
+      }
 
       await InvoiceService.updateInvoice(resolvedParams.id, updateData);
       console.log('Invoice updated successfully');
@@ -180,7 +280,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
       <MainLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading invoice...</div>
+            <div className="text-sm">Loading invoice...</div>
           </div>
         </div>
       </MainLayout>
@@ -193,11 +293,11 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="text-lg text-red-600 mb-4">{error || 'Invoice not found'}</div>
+              <div className="text-sm text-red-600 mb-4">{error || 'Invoice not found'}</div>
               {error && (error.includes('token') || error.includes('authentication')) ? (
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">Please try logging in again.</p>
-                  <Button onClick={() => router.push('/login')} className="bg-red-600 hover:bg-red-700">
+                  <Button onClick={() => router.push('/login')} className="bg-orange-600 hover:bg-orange-700 text-xs">
                     Go to Login
                   </Button>
                 </div>
@@ -217,7 +317,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h1 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
               Edit Invoice {invoice.invoiceNumber}
             </h1>
             <p className="text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
@@ -229,7 +329,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
               Cancel
             </Button>
             <Button 
-              className="bg-red-600 hover:bg-red-700 text-white" 
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs" 
               onClick={handleSave}
               disabled={saving}
             >
@@ -256,7 +356,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                   <div className="mt-3">
                     <Button 
                       onClick={() => router.push('/login')} 
-                      className="bg-red-600 hover:bg-red-700 text-white text-sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                     >
                       Go to Login
                     </Button>
@@ -265,7 +365,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                   <div className="mt-3">
                     <Button 
                       onClick={() => setError(null)} 
-                      className="bg-red-600 hover:bg-red-700 text-white text-sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                     >
                       Dismiss
                     </Button>
@@ -282,7 +382,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
             {/* Invoice Information */}
             <Card className="bg-white">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-xs font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
                   Invoice Information
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -318,21 +418,50 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                     />
                   </div>
                 </div>
+                
+                {/* B2B specific fields */}
+                {invoice.invoiceType === 'B2B' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Primary Contact*
+                      </label>
+                      <Input
+                        value={primaryContact}
+                        onChange={(e) => setPrimaryContact(e.target.value)}
+                        placeholder="Enter primary contact name"
+                        className="bg-white border-gray-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Hospital Name*
+                      </label>
+                      <CustomDropdown
+                        options={hospitalOptions}
+                        value={hospitalName}
+                        onChange={(value) => setHospitalName(value)}
+                        placeholder="Select Hospital"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Screening Details */}
+            {/* Services & Items / Screening Details */}
             <Card className="bg-white">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Screening Details
+                  <h2 className="text-xs font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                    {invoice.invoiceType === 'B2C' ? 'Services & Items' : 'Screening Details'}
                   </h2>
                   <Button 
-                    onClick={addScreening}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={invoice.invoiceType === 'B2C' ? addService : addScreening}
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                   >
-                    + Add Screening
+                    + {invoice.invoiceType === 'B2C' ? 'Add Service' : 'Add Screening'}
                   </Button>
                 </div>
                 
@@ -340,81 +469,161 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount*</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
+                        {invoice.invoiceType === 'B2C' ? (
+                          <>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Service/Item*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Description</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Qty*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Unit Cost*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Discount</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Total</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Actions</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">S.No</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Date of Screening*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">OP/IP No*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Bio Name*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Diagnostic Name*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Amount*</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Discount</th>
+                            <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Actions</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {screenings.map((screening, index) => (
-                        <tr key={screening.id || index} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-sm text-gray-900">{screening.serialNumber || index + 1}</td>
-                          <td className="py-3 px-4">
-                            <Input
-                              type="date"
-                              value={screening.screeningDate}
-                              onChange={(e) => updateScreening(index, 'screeningDate', e.target.value)}
-                              className="w-32 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.opNumber}
-                              onChange={(e) => updateScreening(index, 'opNumber', e.target.value)}
-                              placeholder="OP/IP Number"
-                              className="w-24 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.bioName}
-                              onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
-                              placeholder="Patient Name"
-                              className="w-32 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.diagnosticName}
-                              onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
-                              placeholder="Diagnostic Name"
-                              className="w-48 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              type="number"
-                              value={screening.amount}
-                              onChange={(e) => updateScreening(index, 'amount', parseInt(e.target.value) || 0)}
-                              className="w-20 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              type="number"
-                              value={screening.discount || 0}
-                              onChange={(e) => updateScreening(index, 'discount', parseInt(e.target.value) || 0)}
-                              className="w-20 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <button
-                              onClick={() => removeScreening(index)}
-                              className="text-red-500 hover:text-red-700"
-                              aria-label={`Remove screening ${index + 1}`}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {invoice.invoiceType === 'B2C' ? (
+                        services.map((service, index) => (
+                          <tr key={service.id || index} className="border-b border-gray-100">
+                            <td className="py-3 px-4">
+                              <Input
+                                value={service.serviceName}
+                                onChange={(e) => updateService(index, 'serviceName', e.target.value)}
+                                placeholder="Service/Item Name"
+                                className="w-48 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={service.description}
+                                onChange={(e) => updateService(index, 'description', e.target.value)}
+                                placeholder="Description"
+                                className="w-48 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="number"
+                                value={service.quantity}
+                                onChange={(e) => updateService(index, 'quantity', parseInt(e.target.value) || 1)}
+                                className="w-20 bg-white border-gray-300"
+                                min="1"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="number"
+                                value={service.unitCost}
+                                onChange={(e) => updateService(index, 'unitCost', parseInt(e.target.value) || 0)}
+                                className="w-24 bg-white border-gray-300"
+                                min="0"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="number"
+                                value={service.discount || 0}
+                                onChange={(e) => updateService(index, 'discount', parseInt(e.target.value) || 0)}
+                                className="w-20 bg-white border-gray-300"
+                                min="0"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm font-medium">
+                                ₹{(service.total || ((service.quantity * service.unitCost) - service.discount)).toLocaleString()}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => removeService(index)}
+                                className="text-red-500 hover:text-red-700"
+                                aria-label={`Remove service ${index + 1}`}
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        screenings.map((screening, index) => (
+                          <tr key={screening.id || index} className="border-b border-gray-100">
+                            <td className="py-3 px-4 text-sm text-gray-900">{screening.serialNumber || index + 1}</td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="date"
+                                value={screening.screeningDate}
+                                onChange={(e) => updateScreening(index, 'screeningDate', e.target.value)}
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={screening.opNumber}
+                                onChange={(e) => updateScreening(index, 'opNumber', e.target.value)}
+                                placeholder="OP/IP Number"
+                                className="w-24 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={screening.bioName}
+                                onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
+                                placeholder="Patient Name"
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={screening.diagnosticName}
+                                onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
+                                placeholder="Diagnostic Name"
+                                className="w-48 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="number"
+                                value={screening.amount}
+                                onChange={(e) => updateScreening(index, 'amount', parseInt(e.target.value) || 0)}
+                                className="w-20 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                type="number"
+                                value={screening.discount || 0}
+                                onChange={(e) => updateScreening(index, 'discount', parseInt(e.target.value) || 0)}
+                                className="w-20 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => removeScreening(index)}
+                                className="text-red-500 hover:text-red-700"
+                                aria-label={`Remove screening ${index + 1}`}
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -424,7 +633,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
             {/* Invoice Settings */}
             <Card className="bg-white">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-xs font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
                   Invoice Settings
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -434,13 +643,14 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                     </label>
                     <select
                       value={paymentStatus}
-                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Cancelled')}
+                      onChange={(e) => setPaymentStatus(e.target.value as 'Pending' | 'Paid' | 'Cancelled' | 'Partially Paid')}
                       
                       className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                       aria-label="Select payment status"
                     >
                       <option value="Pending">Pending</option>
                       <option value="Paid">Paid</option>
+                      <option value="Partially Paid">Partially Paid</option>
                       <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
@@ -467,6 +677,35 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                     />
                   </div>
                 </div>
+                
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Additional notes for this invoice"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      rows={3}
+                    />
+                  </div>
+                  {invoice.invoiceType === 'B2B' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Warranty
+                      </label>
+                      <textarea
+                        value={warranty}
+                        onChange={(e) => setWarranty(e.target.value)}
+                        placeholder="Warranty terms and conditions"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                        rows={3}
+                      />
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -475,13 +714,15 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           <div className="lg:col-span-1">
             <Card className="bg-white sticky top-6">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-xs font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
                   Invoice Summary
                 </h2>
                 
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="text-gray-600">
+                      {invoice.invoiceType === 'B2C' ? 'Subtotal:' : 'Screening Subtotal:'}
+                    </span>
                     <span className="font-medium">₹{calculateSubtotal().toLocaleString()}</span>
                   </div>
                   
@@ -511,7 +752,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                   </div>
                   
                   <div className="border-t pt-3">
-                    <div className="flex justify-between text-lg font-semibold">
+                    <div className="flex justify-between text-xs font-semibold">
                       <span>Final Amount:</span>
                       <span>₹{calculateFinalAmount().toLocaleString()}</span>
                     </div>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { useAuth } from '@/contexts/AuthContext';
+import HospitalService from '@/services/hospitalService';
 
 export default function AddPatientPage() {
   const router = useRouter();
@@ -27,25 +28,58 @@ export default function AddPatientPage() {
     occupation: '',
     customerType: 'B2C',
     alternateNumber: '',
-    countrycode: '+91'
+    countrycode: '+91',
+    hospitalName: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [hospitals, setHospitals] = useState<string[]>([]);
+  const [customHospitalName, setCustomHospitalName] = useState('');
+  const [isOtherHospitalSelected, setIsOtherHospitalSelected] = useState(false);
 
   const handleInputChange = (field: keyof CreateUserData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Reset hospital name when changing customer type to B2C
+    if (field === 'customerType' && value === 'B2C') {
+      setFormData(prev => ({
+        ...prev,
+        hospitalName: ''
+      }));
+      setCustomHospitalName('');
+      setIsOtherHospitalSelected(false);
+    }
   };
+
+  // Load hospitals on component mount
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        const response = await HospitalService.getHospitals();
+        setHospitals(response.data.hospitals.map(hospital => hospital.name));
+      } catch (error) {
+        console.error('Error loading hospitals:', error);
+      }
+    };
+    
+    loadHospitals();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.fullname.trim() || !formData.phoneNumber.trim()) {
       setError('Please fill in all required fields');
+      return;
+    }
+    
+    if (formData.customerType === 'B2B' && !formData.hospitalName) {
+      setError('Please select a hospital for B2B patients');
       return;
     }
 
@@ -458,6 +492,55 @@ export default function AddPatientPage() {
                             aria-label="Select customer type"
                           />
                         </div>
+
+                        {/* Hospital field - only show for B2B patients */}
+                        {formData.customerType === 'B2B' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Hospital Name *</label>
+                            <div className="space-y-2">
+                              <CustomDropdown
+                                options={[
+                                  ...hospitals.map(hospital => ({ value: hospital, label: hospital })),
+                                  { value: 'Other', label: 'Other' }
+                                ]}
+                                value={isOtherHospitalSelected ? 'Other' : (formData.hospitalName || '')}
+                                onChange={(value) => {
+                                  if (value === 'Other') {
+                                    setIsOtherHospitalSelected(true);
+                                    setCustomHospitalName('');
+                                    handleInputChange('hospitalName', '');
+                                  } else {
+                                    setIsOtherHospitalSelected(false);
+                                    setCustomHospitalName('');
+                                    handleInputChange('hospitalName', value);
+                                  }
+                                }}
+                                placeholder="Select hospital"
+                                disabled={loading}
+                                aria-label="Hospital name"
+                              />
+                              
+                              {/* Custom hospital input - only show when "Other" is selected */}
+                              {isOtherHospitalSelected && (
+                                <div>
+                                  <input
+                                    type="text"
+                                    value={customHospitalName}
+                                    onChange={(e) => {
+                                      setCustomHospitalName(e.target.value);
+                                      // Update the hospital name directly in form data
+                                      handleInputChange('hospitalName', e.target.value);
+                                    }}
+                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                    placeholder="Enter hospital name"
+                                    disabled={loading}
+                                    aria-label="Custom hospital name"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">Alternate Number</label>

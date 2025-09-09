@@ -7,34 +7,37 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import InvoiceService from '@/services/invoiceService';
-import { CreateInvoiceData, InvoiceScreening } from '@/types';
+import { patientService } from '@/services/patientService';
+import OutstandingPaymentsService from '@/services/outstandingPaymentsService';
+import DiagnosticsService from '@/services/diagnosticsService';
+import { CreateInvoiceData, InvoiceService as InvoiceServiceType, OutstandingPayment, AppliedAdvancePayment, Patient, Diagnostic } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
-import { PROCEDURE_PRICING } from '@/utils/commissionUtils';
 
 export default function B2CInvoicePage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
-  const [patientName, setPatientName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [outstandingPayments, setOutstandingPayments] = useState<OutstandingPayment[]>([]);
+  const [selectedPayments, setSelectedPayments] = useState<{ [key: string]: number }>({});
   const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
   const [sgstRate, setSgstRate] = useState(9);
   const [cgstRate, setCgstRate] = useState(9);
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
-  const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
+  const [services, setServices] = useState<InvoiceServiceType[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Diagnostic options for dropdown
-  const diagnosticOptions = PROCEDURE_PRICING
-    .filter(procedure => procedure.category === 'diagnostic')
-    .map(procedure => ({
-      value: procedure.name,
-      label: procedure.name
-    }));
+  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [loadingOutstandingPayments, setLoadingOutstandingPayments] = useState(false);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -52,35 +55,160 @@ export default function B2CInvoicePage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  const addScreening = () => {
-    const newScreening: InvoiceScreening = {
-      screeningDate: new Date().toISOString().split('T')[0],
-      opNumber: '',
-      bioName: '',
-      diagnosticName: '',
-      amount: 0,
-      discount: 0
+  // Load patients and diagnostics on component mount
+  useEffect(() => {
+    if (token) {
+      loadPatients();
+      loadDiagnostics();
+    }
+  }, [token]);
+
+  // Load outstanding payments when patient is selected
+  useEffect(() => {
+    if (selectedPatient && token) {
+      loadOutstandingPayments(selectedPatient.id);
+    } else {
+      setOutstandingPayments([]);
+      setSelectedPayments({});
+    }
+  }, [selectedPatient, token]);
+
+  // Handle URL parameters for prefilling patient data
+  useEffect(() => {
+    const patientId = searchParams.get('patientId');
+    const patientName = searchParams.get('patientName');
+    const patientPhone = searchParams.get('patientPhone');
+    
+    if (patientId && patients.length > 0) {
+      const patient = patients.find(p => p.id === patientId);
+      if (patient) {
+        setSelectedPatient(patient);
+        setPatientSearchTerm(`${patient.full_name} - ${patient.mobile_number}`);
+      }
+    } else if (patientName && patientPhone && patients.length > 0) {
+      // Try to find patient by name and phone
+      const patient = patients.find(p => 
+        p.full_name.toLowerCase().includes(patientName.toLowerCase()) &&
+        p.mobile_number.includes(patientPhone)
+      );
+      if (patient) {
+        setSelectedPatient(patient);
+        setPatientSearchTerm(`${patient.full_name} - ${patient.mobile_number}`);
+      }
+    }
+  }, [searchParams, patients]);
+
+  const loadPatients = async () => {
+    try {
+      setLoadingPatients(true);
+      const response = await patientService.getPatients(1, 100, token || undefined);
+      setPatients(response.patients);
+    } catch (error) {
+      console.error('Error loading patients:', error);
+    } finally {
+      setLoadingPatients(false);
+    }
+  };
+
+  const loadDiagnostics = async () => {
+    try {
+      setLoadingDiagnostics(true);
+      const response = await DiagnosticsService.getDiagnostics(token || undefined);
+      setDiagnostics(response.data);
+    } catch (error) {
+      console.error('Error loading diagnostics:', error);
+    } finally {
+      setLoadingDiagnostics(false);
+    }
+  };
+
+  const loadOutstandingPayments = async (patientId: string) => {
+    try {
+      setLoadingOutstandingPayments(true);
+      const response = await OutstandingPaymentsService.getOutstandingPayments(patientId, token || undefined);
+      setOutstandingPayments(response.data.outstandingPayments);
+    } catch (error) {
+      console.error('Error loading outstanding payments:', error);
+      setOutstandingPayments([]);
+    } finally {
+      setLoadingOutstandingPayments(false);
+    }
+  };
+
+  const filteredPatients = patients.filter(patient =>
+    patient.full_name.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
+    patient.mobile_number.includes(patientSearchTerm)
+  );
+
+  const handlePatientSelect = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setPatientSearchTerm(`${patient.full_name} - ${patient.mobile_number}`);
+    setShowPatientDropdown(false);
+  };
+
+  const handlePatientSearchChange = (value: string) => {
+    setPatientSearchTerm(value);
+    setShowPatientDropdown(true);
+    if (!value) {
+      setSelectedPatient(null);
+    }
+  };
+
+  const addService = () => {
+    const newService: InvoiceServiceType & { diagnosticId?: string } = {
+      serviceName: '',
+      description: '',
+      quantity: 1,
+      unitCost: 0,
+      discount: 0,
+      total: 0,
+      diagnosticId: ''
     };
-    setScreenings([...screenings, newScreening]);
+    setServices([...services, newService]);
   };
 
-  const removeScreening = (index: number) => {
-    const updatedScreenings = screenings.filter((_, i) => i !== index);
-    setScreenings(updatedScreenings);
+  const removeService = (index: number) => {
+    const updatedServices = services.filter((_, i) => i !== index);
+    setServices(updatedServices);
   };
 
-  const updateScreening = (index: number, field: keyof InvoiceScreening, value: any) => {
-    const updatedScreenings = [...screenings];
-    updatedScreenings[index] = { ...updatedScreenings[index], [field]: value };
-    setScreenings(updatedScreenings);
+  const updateService = (index: number, field: keyof InvoiceServiceType | 'diagnosticId', value: any) => {
+    const updatedServices = [...services];
+    updatedServices[index] = { ...updatedServices[index], [field]: value };
+    
+    // If diagnostic is selected, auto-populate name, description, and unit cost
+    if (field === 'diagnosticId' && value) {
+      const selectedDiagnostic = diagnostics.find(d => d.id === value);
+      if (selectedDiagnostic) {
+        updatedServices[index].serviceName = selectedDiagnostic.name;
+        updatedServices[index].description = selectedDiagnostic.description;
+        updatedServices[index].unitCost = selectedDiagnostic.price;
+      }
+    }
+    
+    // Calculate total when quantity, unitCost, or discount changes
+    if (field === 'quantity' || field === 'unitCost' || field === 'discount' || field === 'diagnosticId') {
+      const service = updatedServices[index];
+      const total = (service.quantity * service.unitCost) - service.discount;
+      updatedServices[index].total = Math.max(0, total);
+    }
+    
+    setServices(updatedServices);
+  };
+
+  const handlePaymentSelection = (paymentId: string, amount: number) => {
+    setSelectedPayments(prev => ({
+      ...prev,
+      [paymentId]: amount
+    }));
   };
 
   const calculateSubtotal = () => {
-    return screenings.reduce((sum, screening) => sum + screening.amount, 0);
+    return services.reduce((sum, service) => sum + (service.quantity * service.unitCost), 0);
   };
 
   const calculateTotalDiscount = () => {
-    return screenings.reduce((sum, screening) => sum + (screening.discount || 0), 0);
+    return services.reduce((sum, service) => sum + service.discount, 0);
   };
 
   const calculateTaxableAmount = () => {
@@ -96,7 +224,12 @@ export default function B2CInvoicePage() {
 
   const calculateFinalAmount = () => {
     const tax = calculateTax();
-    return calculateTaxableAmount() + tax.total;
+    const appliedAmount = Object.values(selectedPayments).reduce((sum, amount) => sum + amount, 0);
+    return calculateTaxableAmount() + tax.total - appliedAmount;
+  };
+
+  const calculateTotalFromOutstandingReceipts = () => {
+    return Object.values(selectedPayments).reduce((sum, amount) => sum + amount, 0);
   };
 
   if (authLoading) {
@@ -124,15 +257,15 @@ export default function B2CInvoicePage() {
       return;
     }
 
-    if (!invoiceDate || !patientName || !organizationName || screenings.length === 0) {
-      alert('Please fill in all required fields and add at least one screening');
+    if (!invoiceDate || !selectedPatient || services.length === 0) {
+      alert('Please fill in all required fields and add at least one service');
       return;
     }
 
-    // Validate screenings
-    for (const screening of screenings) {
-      if (!screening.screeningDate || !screening.opNumber || !screening.bioName || !screening.diagnosticName || screening.amount <= 0) {
-        alert('Please fill in all required screening fields');
+    // Validate services
+    for (const service of services) {
+      if (!service.serviceName || !service.description || service.quantity <= 0 || service.unitCost <= 0) {
+        alert('Please fill in all required service fields');
         return;
       }
     }
@@ -140,20 +273,31 @@ export default function B2CInvoicePage() {
     try {
       setLoading(true);
       
+      const appliedAdvancePayments: AppliedAdvancePayment[] = Object.entries(selectedPayments)
+        .filter(([_, amount]) => amount > 0)
+        .map(([paymentId, amount]) => ({
+          paymentId,
+          appliedAmount: amount
+        }));
+      
       const invoiceData: CreateInvoiceData = {
-        invoiceDate: InvoiceService.formatDateForAPI(invoiceDate.toISOString().split('T')[0]),
-        patientName,
-        organizationName,
+        invoiceDate: invoiceDate.toISOString().split('T')[0],
+        patientName: selectedPatient.full_name,
+        patientId: selectedPatient.id,
         invoiceType: 'B2C',
-        screenings: screenings.map(screening => ({
-          ...screening,
-          screeningDate: InvoiceService.formatDateForAPI(screening.screeningDate)
+        services: services.map(service => ({
+          serviceName: service.serviceName,
+          description: service.description,
+          quantity: service.quantity,
+          unitCost: service.unitCost,
+          discount: service.discount
         })),
+        overallDiscount: 0,
         paymentStatus,
         sgstRate,
         cgstRate,
         notes,
-        warranty: warrantyInfo
+        appliedAdvancePayments: appliedAdvancePayments.length > 0 ? appliedAdvancePayments : undefined
       };
 
       const response = await InvoiceService.createInvoice(invoiceData);
@@ -183,7 +327,7 @@ export default function B2CInvoicePage() {
               Create B2C Invoice
             </h1>
             <p className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-              Create screening-based invoice for B2C organization.
+              Create service-based invoice for individual patient.
             </p>
           </div>
           <div className="flex space-x-3">
@@ -207,7 +351,17 @@ export default function B2CInvoicePage() {
                 <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
                   Invoice Information
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Invoice Number*
+                  </label>
+                  <Input
+                    value="EHC-2025-09-001"
+                    className="bg-gray-50 border-gray-300"
+                    readOnly
+                  />
+                </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                       Invoice Date*
@@ -219,44 +373,148 @@ export default function B2CInvoicePage() {
                       className="w-full"
                     />
                   </div>
-                  <div>
+                <div className="relative">
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Patient Name*
+                    Patient*
                     </label>
+                  <div className="relative">
                     <Input
-                      value={patientName}
-                      onChange={(e) => setPatientName(e.target.value)}
-                      placeholder="Enter patient name"
-                      className="bg-white border-gray-300"
+                      value={patientSearchTerm}
+                      onChange={(e) => handlePatientSearchChange(e.target.value)}
+                      placeholder="Select patient"
+                      className="bg-white border-gray-300 pr-8"
+                      onFocus={() => setShowPatientDropdown(true)}
                     />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Organization Name*
-                    </label>
+                  
+                  {/* Patient Dropdown */}
+                  {showPatientDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      <div className="p-3 border-b border-gray-200">
                     <Input
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      placeholder="Hospital/Company Name"
-                      className="bg-white border-gray-300"
-                    />
+                          placeholder="Search patients..."
+                          value={patientSearchTerm}
+                          onChange={(e) => setPatientSearchTerm(e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="py-1">
+                        {loadingPatients ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">Loading patients...</div>
+                        ) : filteredPatients.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-500">No patients found</div>
+                        ) : (
+                          filteredPatients.map((patient) => (
+                            <div
+                              key={patient.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                              onClick={() => handlePatientSelect(patient)}
+                            >
+                              <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{patient.full_name}</div>
+                                <div className="text-xs text-gray-500">{patient.mobile_number}</div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Screening Details */}
+          {/* Outstanding Receipts */}
+          {selectedPatient && outstandingPayments.length > 0 && (
             <Card className="bg-white">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Screening Details
+                    Outstanding Receipts
+                  </h2>
+                  <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    {outstandingPayments.length} Available
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mb-4">
+                  Select advance payments to apply to this invoice from {selectedPatient.full_name}.
+                </p>
+                
+                <div className="space-y-3">
+                  {outstandingPayments.map((payment) => (
+                    <div key={payment.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedPayments[payment.id] > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handlePaymentSelection(payment.id, payment.availableAmount);
+                              } else {
+                                handlePaymentSelection(payment.id, 0);
+                              }
+                            }}
+                            className="mr-3"
+                            aria-label={`Select payment ${payment.receiptNumber}`}
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{payment.receiptNumber}</div>
+                            <div className="text-xs text-gray-500 mt-1">{payment.description}</div>
+                            <div className="text-xs text-gray-500">Date: {payment.date}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">₹{payment.availableAmount.toLocaleString()} Available</div>
+                          {selectedPayments[payment.id] > 0 && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              Applied: ₹{selectedPayments[payment.id].toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          {payment.paymentMethod}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Total from Outstanding Receipts:</span>
+                    <span>₹{calculateTotalFromOutstandingReceipts().toLocaleString()}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Services & Items */}
+          <Card className="bg-white">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+                  Services & Items
                   </h2>
                   <Button 
-                    onClick={addScreening}
+                  onClick={addService}
                     className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                   >
-                    + Add Screening
+                  + Add Item
                   </Button>
                 </div>
                 
@@ -264,79 +522,86 @@ export default function B2CInvoicePage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">S.No</th>
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Date of Screening*</th>
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">OP/IP No*</th>
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Bio Name*</th>
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Diagnostic Name*</th>
-                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Amount*</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Service/Item*</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Qty*</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Unit Cost*</th>
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Discount</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Total</th>
                         <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {screenings.map((screening, index) => (
-                        <tr key={index} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-xs text-gray-900">{index + 1}</td>
+                    {services.map((service, index) => (
+                      <tr key={index} className="border-b border-gray-100">
+                        <td className="py-3 px-4">
+                          <div className="space-y-2">
+                            <select
+                              value={(service as any).diagnosticId || ''}
+                              onChange={(e) => updateService(index, 'diagnosticId', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
+                              aria-label={`Select service for item ${index + 1}`}
+                            >
+                              <option value="">Select Service/Item</option>
+                              {diagnostics.map((diagnostic) => (
+                                <option key={diagnostic.id} value={diagnostic.id}>
+                                  {diagnostic.name} - {diagnostic.category}
+                                </option>
+                              ))}
+                            </select>
+                            <Input
+                              value={service.serviceName}
+                              onChange={(e) => updateService(index, 'serviceName', e.target.value)}
+                              placeholder="Service/Item name"
+                              className="w-full bg-gray-50 border-gray-300"
+                              readOnly
+                            />
+                            <Input
+                              value={service.description}
+                              onChange={(e) => updateService(index, 'description', e.target.value)}
+                              placeholder="Description"
+                              className="w-full bg-gray-50 border-gray-300"
+                              readOnly
+                            />
+                          </div>
+                        </td>
                           <td className="py-3 px-4">
                             <Input
-                              type="date"
-                              value={screening.screeningDate}
-                              onChange={(e) => updateScreening(index, 'screeningDate', e.target.value)}
-                              className="w-32 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.opNumber}
-                              onChange={(e) => updateScreening(index, 'opNumber', e.target.value)}
-                              placeholder="OP/IP Number"
-                              className="w-24 bg-white border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={screening.bioName}
-                              onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
-                              placeholder="Patient Name"
-                              className="w-32 bg-white border-gray-300"
-                            />
-                          </td>
-                                                     <td className="py-3 px-4">
-                             <select
-                               value={screening.diagnosticName}
-                               onChange={(e) => updateScreening(index, 'diagnosticName', e.target.value)}
-                               className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
-                             >
-                               <option value="">Select Diagnostic</option>
-                               {diagnosticOptions.map((option) => (
-                                 <option key={option.value} value={option.value}>
-                                   {option.label}
-                                 </option>
-                               ))}
-                             </select>
+                            type="number"
+                            value={service.quantity}
+                            onChange={(e) => updateService(index, 'quantity', parseInt(e.target.value) || 1)}
+                            className="w-20 bg-white border-gray-300"
+                            min="1"
+                          />
                            </td>
+                        <td className="py-3 px-4">
+                          <Input
+                            type="number"
+                            value={service.unitCost}
+                            onChange={(e) => updateService(index, 'unitCost', parseInt(e.target.value) || 0)}
+                            className="w-24 bg-gray-50 border-gray-300"
+                            min="0"
+                            readOnly
+                          />
+                        </td>
                           <td className="py-3 px-4">
                             <Input
                               type="number"
-                              value={screening.amount}
-                              onChange={(e) => updateScreening(index, 'amount', parseInt(e.target.value) || 0)}
+                            value={service.discount}
+                            onChange={(e) => updateService(index, 'discount', parseInt(e.target.value) || 0)}
                               className="w-20 bg-white border-gray-300"
+                            min="0"
                             />
                           </td>
-                          <td className="py-3 px-4">
-                            <Input
-                              type="number"
-                              value={screening.discount || 0}
-                              onChange={(e) => updateScreening(index, 'discount', parseInt(e.target.value) || 0)}
-                              className="w-20 bg-white border-gray-300"
-                            />
-                          </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">
+                            ₹{(service.total || ((service.quantity * service.unitCost) - service.discount)).toLocaleString()}
+                          </div>
+                        </td>
                           <td className="py-3 px-4">
                             <button
-                              onClick={() => removeScreening(index)}
+                            onClick={() => removeService(index)}
                               className="text-red-500 hover:text-red-700"
-                              aria-label={`Remove screening ${index + 1}`}
+                            aria-label={`Remove service ${index + 1}`}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -476,10 +741,15 @@ export default function B2CInvoicePage() {
                     <span className="text-xs text-gray-600">Total Tax:</span>
                     <span className="text-xs font-medium">₹{calculateTax().total.toLocaleString()}</span>
                   </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Gross Total:</span>
+                      <span className="text-xs font-medium">₹{(calculateTaxableAmount() + calculateTax().total).toLocaleString()}</span>
+                  </div>
                   
                   <div className="pt-3">
                     <div className="flex justify-between text-sm font-semibold">
-                      <span>Total Amount:</span>
+                        <span>Final Amount:</span>
                       <span>₹{calculateFinalAmount().toLocaleString()}</span>
                     </div>
                   </div>
@@ -487,7 +757,7 @@ export default function B2CInvoicePage() {
                     
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                       <p className="text-xs text-blue-700">
-                        *Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.
+                      * Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.
                       </p>
                     </div>
                   </CardContent>

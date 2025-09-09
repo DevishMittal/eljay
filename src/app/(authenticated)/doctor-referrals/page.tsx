@@ -5,6 +5,7 @@ import MainLayout from '@/components/layout/main-layout';
 import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
 import { referralAnalyticsService } from '@/services/referralAnalyticsService';
+import { DashboardService, DashboardDoctorReferralData } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReferralSource } from '@/types';
 import { formatCurrency } from '@/utils/commissionUtils';
@@ -12,13 +13,15 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Users, DollarSign, FileText, TrendingUp, CheckCircle, ChartPie, Filter } from 'lucide-react';
+import { Users, FileText, TrendingUp, CheckCircle, ChartPie, Filter } from 'lucide-react';
+import RupeeIcon from '@/components/ui/rupee-icon';
 
 export default function DoctorReferralsPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
   const [referrals, setReferrals] = useState<ReferralSource[]>([]);
   const [loading, setLoading] = useState(true);
+  const [doctorReferralData, setDoctorReferralData] = useState<DashboardDoctorReferralData | null>(null);
   const [analytics, setAnalytics] = useState<Array<{
     referralId: string;
     referralSource: ReferralSource;
@@ -76,6 +79,20 @@ export default function DoctorReferralsPage() {
       try {
         setLoading(true);
         
+        // Get date range for last 30 days
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        
+        const dateRange = {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        };
+
+        // Fetch real doctor referral data from dashboard API
+        const doctorReferralResponse = await DashboardService.getDoctorReferralData(dateRange.startDate, dateRange.endDate);
+        setDoctorReferralData(doctorReferralResponse);
+        
         // Fetch basic referrals
         const referralsResponse = await referralService.getReferrals(token || undefined);
         if (referralsResponse.status === 'success') {
@@ -108,17 +125,20 @@ export default function DoctorReferralsPage() {
     }
   }, [token]);
 
-  // Filter doctor referrals only (excluding direct/walk-in)
+  // Filter referrals by type
   const doctorReferrals = referrals.filter(ref => ref.type === 'doctor');
+  const directReferrals = referrals.filter(ref => ref.type === 'direct');
+  const walkInReferrals = referrals.filter(ref => ref.sourceName === 'Walk-in');
 
-  // Use real data from analytics - prioritize summaryStats over referrals.length
-  // The issue is that referrals.length might be inflated, so we trust summaryStats first
-  // If summaryStats is not available yet, show loading state instead of wrong data
-  const totalReferrals = summaryStats?.totalReferrals ?? (summaryStats === null ? 0 : referrals.length);
-  const totalDoctorReferrals = summaryStats?.totalDoctorReferrals ?? (summaryStats === null ? 0 : doctorReferrals.length);
+  // Use real data from dashboard API for doctor referrals specifically
+  const totalDoctorReferrals = doctorReferralData?.overview?.referrals ?? doctorReferrals.length;
+  const totalActiveDoctors = doctorReferralData?.overview?.activeDoctors ?? doctorReferrals.length;
   
-  const totalRevenue = formatCurrency(summaryStats?.totalRevenue || 0);
-  const totalCommissions = formatCurrency(summaryStats?.totalCommission || 0);
+  // For total referrals, we want to show all types but the dashboard focuses on doctor referrals
+  const totalReferrals = referrals.length; // All referrals (direct, walk-in, doctor)
+  
+  const totalRevenue = formatCurrency(doctorReferralData?.financialImpact?.revenueGenerated ?? summaryStats?.totalRevenue ?? 0);
+  const totalCommissions = formatCurrency(doctorReferralData?.financialImpact?.commission ?? summaryStats?.totalCommission ?? 0);
   const pendingPayments = formatCurrency(summaryStats?.pendingPayments || 0);
   const paidThisMonth = formatCurrency(summaryStats?.paidThisMonth || 0);
 
@@ -187,18 +207,18 @@ export default function DoctorReferralsPage() {
     { name: 'No procedures yet', value: 1, color: '#E5E7EB' }
   ];
 
-  // Summary cards data (same structure as billing invoices)
+  // Summary cards data - focused on doctor referrals
   const summaryCards = [
     {
-      title: "Total Referrals",
-      value: totalReferrals.toString(),
+      title: "Doctor Referrals",
+      value: totalDoctorReferrals.toString(),
       icon: Users,
       bgColor: "bg-blue-100",
       iconColor: "text-blue-700",
     },
     {
-      title: "Completed",
-      value: totalDoctorReferrals.toString(),
+      title: "Active Doctors",
+      value: totalActiveDoctors.toString(),
       icon: TrendingUp,
       bgColor: "bg-green-100",
       iconColor: "text-green-700",
@@ -206,7 +226,7 @@ export default function DoctorReferralsPage() {
     {
       title: "Revenue Generated",
       value: totalRevenue,
-      icon: DollarSign,
+      icon: RupeeIcon,
       bgColor: "bg-yellow-100",
       iconColor: "text-yellow-700",
     },
@@ -225,59 +245,36 @@ export default function DoctorReferralsPage() {
     { id: 'commission-statements', label: 'Commission Statements' }
   ];
 
-  // Generate referral data from analytics with truly unique keys
-  let globalCounter = 0;
-  const referralData = analytics.flatMap((analyticsItem) => 
-    analyticsItem.appointments.length > 0 
-      ? analyticsItem.appointments.map((appointment) => {
-          globalCounter++;
-          return {
-            id: `referral-${globalCounter}-${analyticsItem.referralId}-${appointment.id}`, // Absolutely unique keys
-            date: new Date(appointment.date).toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }),
-            patient: { 
-              name: appointment.patientName, 
-              id: `PAT${appointment.id.slice(-3).toUpperCase()}` 
-            },
-            doctor: analyticsItem.referralSource.sourceName,
-            services: appointment.procedures.map(procedure => ({
-              name: procedure,
-              type: procedure.toLowerCase().includes('hearing aid') ? 'Hearing Aid' : 'Diagnostic',
-              status: appointment.status
-            })),
-            amount: formatCurrency(appointment.amount),
-            commission: formatCurrency(appointment.commission),
-            status: appointment.status
-          };
-        })
-      : (() => {
-          globalCounter++;
-          return [{
-            id: `referral-${globalCounter}-${analyticsItem.referralId}-no-appointments`, // Unique for no appointments
-            date: new Date(analyticsItem.lastActivity).toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }),
-            patient: { 
-              name: 'No appointments yet', 
-              id: 'N/A' 
-            },
-            doctor: analyticsItem.referralSource.sourceName,
-            services: [{
-              name: 'No services',
-              type: 'N/A',
-              status: 'pending' as const
-            }],
-            amount: formatCurrency(0),
-            commission: formatCurrency(0),
-            status: 'pending' as const
-          }];
-        })()
-  );
+  // Generate referral data from the referrals API with proper categorization
+  const referralData = referrals.map((referral, index) => {
+    const createdDate = new Date(referral.createdAt || new Date());
+    return {
+      id: referral.id,
+      date: createdDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }),
+      patient: { 
+        name: referral.sourceName, 
+        id: `REF${(referral.id || '000').slice(-3).toUpperCase()}` 
+      },
+      doctor: referral.type === 'doctor' ? referral.sourceName : 'N/A',
+      type: referral.type,
+      sourceName: referral.sourceName,
+      contactNumber: referral.contactNumber || 'N/A',
+      hospital: referral.hospital || 'N/A',
+      specialization: referral.specialization || 'N/A',
+      services: [{
+        name: referral.type === 'doctor' ? 'Doctor Referral' : referral.type === 'direct' ? 'Direct Referral' : 'Walk-in',
+        type: referral.type,
+        status: 'pending' as const
+      }],
+      amount: formatCurrency(0), // No amount data in referrals API
+      commission: formatCurrency(0), // No commission data in referrals API
+      status: 'pending' as const
+    };
+  });
 
   // Use real commission statements data with unique keys
   let statementCounter = 0;
@@ -453,9 +450,9 @@ export default function DoctorReferralsPage() {
                         <div className="text-center py-4">
                           <div className="text-sm text-gray-500">Loading...</div>
                         </div>
-                      ) : topDoctors.length > 0 ? (
-                        topDoctors.slice(0, 3).map((doctor, index) => (
-                          <div key={doctor.doctorId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      ) : doctorReferralData?.doctorPerformance && doctorReferralData.doctorPerformance.length > 0 ? (
+                        doctorReferralData.doctorPerformance.slice(0, 3).map((doctor, index) => (
+                          <div key={`${doctor.doctorName}-${index}`} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                 index === 0 ? 'bg-blue-100' : index === 1 ? 'bg-green-100' : 'bg-orange-100'
@@ -470,8 +467,8 @@ export default function DoctorReferralsPage() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium text-sm" style={{ color: '#101828' }}>{doctor.referrals} referrals</div>
-                              <div className="text-xs" style={{ color: '#717182' }}>{formatCurrency(doctor.commission)}</div>
+                              <div className="font-medium text-sm" style={{ color: '#101828' }}>{doctor.totalReferrals} referrals</div>
+                              <div className="text-xs" style={{ color: '#717182' }}>{doctor.conversionRate}% conversion</div>
                             </div>
                           </div>
                         ))
@@ -575,8 +572,13 @@ export default function DoctorReferralsPage() {
                 {/* Referrals Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <h2 className="text-sm " style={{ color: '#101828' }}>Referrals</h2>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{totalReferrals}</span>
+                    <h2 className="text-sm " style={{ color: '#101828' }}>All Referrals</h2>
+                    <div className="flex space-x-2">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-sm rounded-full">Doctor: {doctorReferrals.length}</span>
+                      <span className="px-2 py-1 bg-green-100 text-green-600 text-sm rounded-full">Direct: {directReferrals.length}</span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-600 text-sm rounded-full">Walk-in: {walkInReferrals.length}</span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">Total: {totalReferrals}</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <div className="relative w-64">
@@ -643,11 +645,11 @@ export default function DoctorReferralsPage() {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services & Products</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hospital</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -665,29 +667,26 @@ export default function DoctorReferralsPage() {
                               <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.date}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div>
-                                  <div className="text-xs font-medium" style={{ color: '#101828' }}>{referral.patient.name}</div>
+                                  <div className="text-xs font-medium" style={{ color: '#101828' }}>{referral.sourceName}</div>
                                   <div className="text-xs" style={{ color: '#717182' }}>{referral.patient.id}</div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.doctor}</td>
-                              <td className="px-6 py-4">
-                                <div className="space-y-1">
-                                  {referral.services.map((service, index) => (
-                                    <div key={index} className="flex items-center space-x-2">
-                                      <span className="text-xs" style={{ color: '#101828' }}>{service.name}</span>
-                                      <span className="text-xs px-2 py-1 bg-gray-100 rounded" style={{ color: '#717182' }}>{service.type}</span>
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        service.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                      }`}>{service.status}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{referral.amount}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#717182' }}>{referral.commission}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  referral.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  referral.type === 'doctor' ? 'bg-blue-100 text-blue-800' : 
+                                  referral.type === 'direct' ? 'bg-green-100 text-green-800' : 
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {referral.type === 'doctor' ? 'Doctor' : 
+                                   referral.type === 'direct' ? 'Direct' : 'Walk-in'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.contactNumber}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.hospital}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.specialization}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  referral.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                                 }`}>{referral.status}</span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-xs">
@@ -719,12 +718,15 @@ export default function DoctorReferralsPage() {
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}><strong>{totalReferrals} referrals</strong></span>
-                        <span style={{ color: '#717182' }}>Services & Products: <strong>7 items</strong></span>
+                        <span style={{ color: '#101828' }}><strong>{totalReferrals} total referrals</strong></span>
+                        <span style={{ color: '#717182' }}>Doctor: <strong>{doctorReferrals.length}</strong></span>
+                        <span style={{ color: '#717182' }}>Direct: <strong>{directReferrals.length}</strong></span>
+                        <span style={{ color: '#717182' }}>Walk-in: <strong>{walkInReferrals.length}</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}>Total Amount: <strong className="text-xs">{totalRevenue}</strong></span>
-                        <span style={{ color: '#717182' }}>Total Commission: <strong>{totalCommissions}</strong></span>
+                        <span style={{ color: '#101828' }}>Active Doctors: <strong className="text-xs">{totalActiveDoctors}</strong></span>
+                        <span style={{ color: '#717182' }}>Revenue: <strong>{totalRevenue}</strong></span>
+                        <span style={{ color: '#717182' }}>Commission: <strong>{totalCommissions}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -835,9 +837,9 @@ export default function DoctorReferralsPage() {
                         <span style={{ color: '#717182' }}>Statements: <strong>{commissionStatementsData.length} statements</strong></span>
                       </div>
                       <div className="flex items-center space-x-6">
-                        <span style={{ color: '#101828' }}>Total Referrals: <strong className="text-xs">13</strong></span>
-                        <span style={{ color: '#101828' }}>Total Revenue: <strong className="text-xs">₹30,500</strong></span>
-                        <span className="text-green-600 font-medium">Total Commission: <strong className="text-xs">₹3,050</strong></span>
+                        <span style={{ color: '#101828' }}>Total Referrals: <strong className="text-xs">{totalDoctorReferrals}</strong></span>
+                        <span style={{ color: '#101828' }}>Total Revenue: <strong className="text-xs">{totalRevenue}</strong></span>
+                        <span className="text-green-600 font-medium">Total Commission: <strong className="text-xs">{totalCommissions}</strong></span>
                       </div>
                     </div>
                   </div>

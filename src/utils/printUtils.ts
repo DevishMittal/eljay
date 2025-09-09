@@ -1,0 +1,803 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Invoice } from '@/types';
+
+/**
+ * Print utility functions for invoices and other documents
+ */
+
+export interface PrintOptions {
+  title?: string;
+  filename?: string;
+  includeStyles?: boolean;
+  customStyles?: string;
+}
+
+/**
+ * Print a specific element by ID
+ */
+export const printElement = (elementId: string, title?: string) => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Element with id "${elementId}" not found`);
+    return;
+  }
+
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    console.error('Could not open print window');
+    return;
+  }
+
+  // Get the element's HTML
+  const elementHTML = element.outerHTML;
+  
+  // Create the print document
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title || 'Print Document'}</title>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 20px;
+            color: #000;
+            line-height: 1.6;
+          }
+          @media print {
+            body { margin: 0; padding: 15px; }
+            .no-print { display: none !important; }
+            .print-break { page-break-before: always; }
+            .print-break-after { page-break-after: always; }
+            .print-break-inside { page-break-inside: avoid; }
+          }
+          
+          .print-header {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+          }
+          
+          .print-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+          }
+          
+          .print-date {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          
+          th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+          }
+          
+          .text-right {
+            text-align: right;
+          }
+          
+          .text-center {
+            text-align: center;
+          }
+          
+          .font-bold {
+            font-weight: bold;
+          }
+          
+          .text-sm {
+            font-size: 0.875rem;
+          }
+          
+          .text-xs {
+            font-size: 0.75rem;
+          }
+          
+          .mb-4 {
+            margin-bottom: 1rem;
+          }
+          
+          .mt-4 {
+            margin-top: 1rem;
+          }
+          
+          .p-4 {
+            padding: 1rem;
+          }
+          
+          .bg-gray-50 {
+            background-color: #f9fafb;
+          }
+          
+          .border {
+            border: 1px solid #e5e7eb;
+          }
+          
+          .rounded {
+            border-radius: 0.25rem;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1 class="print-title">${title || 'Document'}</h1>
+          <div class="print-date">${new Date().toLocaleDateString()}</div>
+        </div>
+        ${elementHTML}
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};
+
+/**
+ * Print invoice with proper formatting
+ */
+export const printInvoice = (invoice: Invoice, options: PrintOptions = {}) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    console.error('Could not open print window');
+    return;
+  }
+
+  const invoiceHTML = generateInvoiceHTML(invoice, options);
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${options.title || `Invoice ${invoice.invoiceNumber}`}</title>
+        <style>
+          ${getInvoicePrintStyles()}
+          ${options.customStyles || ''}
+        </style>
+      </head>
+      <body>
+        ${invoiceHTML}
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};
+
+/**
+ * Download invoice as PDF (using browser's print to PDF)
+ */
+export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {}) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    console.error('Could not open print window');
+    return;
+  }
+
+  const invoiceHTML = generateInvoiceHTML(invoice, options);
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${options.title || `Invoice ${invoice.invoiceNumber}`}</title>
+        <style>
+          ${getInvoicePrintStyles()}
+          ${options.customStyles || ''}
+        </style>
+      </head>
+      <body>
+        ${invoiceHTML}
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  
+  // Wait for content to load, then trigger print dialog
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+    
+    // Close window after a delay to allow user to save PDF
+    setTimeout(() => {
+      printWindow.close();
+    }, 1000);
+  };
+};
+
+/**
+ * Generate HTML for invoice printing
+ */
+const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  return `
+    <div class="invoice-container">
+      <!-- Header -->
+      <div class="invoice-header">
+        <div class="company-info">
+          <h1 class="company-name">Eljay Hearing Care</h1>
+          <p class="company-details">Professional Audiology Services</p>
+          <p class="company-address">123 Healthcare Avenue, Medical District</p>
+          <p class="company-address">Chennai, Tamil Nadu 600001</p>
+          <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
+        </div>
+        <div class="invoice-status">
+          <div class="status-badge status-${invoice.paymentStatus.toLowerCase()}">
+            ${invoice.paymentStatus}
+          </div>
+          <div class="contact-info">
+            <p>Phone: +91 44 1234 5678</p>
+            <p>Email: info@eljayhearing.com</p>
+            <p>Website: www.eljayhearing.com</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bill To and Invoice Details -->
+      <div class="invoice-details">
+        <div class="bill-to">
+          <h3>Bill To</h3>
+          <p class="customer-name">${invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}</p>
+          <p class="customer-type">${invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Hospital/Organization'}</p>
+          ${invoice.invoiceType === 'B2C' ? '<p class="customer-id">Patient ID: PAT001</p>' : ''}
+          ${invoice.invoiceType === 'B2B' ? `<p class="customer-contact">Primary Contact: ${invoice.patientName}</p>` : ''}
+        </div>
+        <div class="invoice-info">
+          <h3>Invoice Details</h3>
+          <div class="info-row">
+            <span>Invoice Number:</span>
+            <span class="info-value">${invoice.invoiceNumber}</span>
+          </div>
+          <div class="info-row">
+            <span>Invoice Date:</span>
+            <span class="info-value">${formatDate(invoice.invoiceDate)}</span>
+          </div>
+          <div class="info-row">
+            <span>Due Date:</span>
+            <span class="info-value">${formatDate(invoice.invoiceDate)}</span>
+          </div>
+          <div class="info-row">
+            <span>Created By:</span>
+            <span class="info-value">Dr. Michael Chen</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services Table -->
+      <div class="services-section">
+        <h3>Services & Items</h3>
+        <table class="services-table">
+          <thead>
+            <tr>
+              <th>Service/Item</th>
+              <th class="text-center">Qty</th>
+              <th class="text-right">Unit Cost</th>
+              <th class="text-right">Discount</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoice.screenings.map((screening, index) => `
+              <tr>
+                <td>
+                  <div class="service-details">
+                    <p class="service-name">${screening.diagnosticName}</p>
+                    <p class="service-patient">${screening.bioName}</p>
+                    <p class="service-date">Date: ${formatDate(screening.screeningDate)}</p>
+                  </div>
+                </td>
+                <td class="text-center">1</td>
+                <td class="text-right">₹${screening.amount.toLocaleString()}</td>
+                <td class="text-right text-red">${screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}</td>
+                <td class="text-right font-bold">₹${(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary and Additional Info -->
+      <div class="summary-section">
+        <div class="additional-info">
+          <h3>Additional Information</h3>
+          ${invoice.notes ? `
+            <div class="notes-section">
+              <h4>Notes</h4>
+              <p>${invoice.notes}</p>
+            </div>
+          ` : ''}
+          <div class="terms-section">
+            <h4>Terms & Conditions</h4>
+            <ul>
+              <li>Payment is due within 30 days of invoice date</li>
+              <li>All services provided are subject to professional terms</li>
+              <li>Warranty terms apply as per individual service agreements</li>
+              <li>For any queries, please contact us at the above details</li>
+            </ul>
+          </div>
+          <div class="tax-info">
+            <p>* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.</p>
+          </div>
+        </div>
+
+        <div class="invoice-summary">
+          <h3>Invoice Summary</h3>
+          <div class="summary-table">
+            <div class="summary-row">
+              <span>Subtotal:</span>
+              <span class="text-right">₹${invoice.subtotal.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Discount:</span>
+              <span class="text-right text-red">-₹${invoice.totalDiscount.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Taxable Amount:</span>
+              <span class="text-right">₹${invoice.taxableAmount.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>SGST (${invoice.sgstRate}%):</span>
+              <span class="text-right">₹${invoice.sgstAmount.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>CGST (${invoice.cgstRate}%):</span>
+              <span class="text-right">₹${invoice.cgstAmount.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Tax:</span>
+              <span class="text-right">₹${invoice.totalTax.toLocaleString()}</span>
+            </div>
+            <div class="summary-row total-row">
+              <span class="font-bold">Total Amount:</span>
+              <span class="text-right font-bold">₹${invoice.totalAmount.toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Amount Paid:</span>
+              <span class="text-right">₹${(invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 0).toLocaleString()}</span>
+            </div>
+            <div class="summary-row">
+              <span>Balance Due:</span>
+              <span class="text-right text-red">₹${(invoice.paymentStatus === 'Paid' ? 0 : invoice.totalAmount).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="invoice-footer">
+        <p>Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
+        <p>This is a computer-generated invoice and does not require a signature.</p>
+        <p>Generated on ${formatDate(invoice.createdAt)}</p>
+      </div>
+    </div>
+  `;
+};
+
+/**
+ * Get CSS styles for invoice printing
+ */
+const getInvoicePrintStyles = () => {
+  return `
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #000;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 15px;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-break {
+        page-break-before: always;
+      }
+      
+      .print-break-after {
+        page-break-after: always;
+      }
+      
+      .print-break-inside {
+        page-break-inside: avoid;
+      }
+    }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #333;
+    }
+
+    .company-name {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      color: #1f2937;
+    }
+
+    .company-details,
+    .company-address,
+    .company-gst {
+      margin: 5px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .invoice-status {
+      text-align: right;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .status-paid {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-cancelled {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+
+    .contact-info p {
+      margin: 3px 0;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .invoice-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 30px;
+    }
+
+    .bill-to h3,
+    .invoice-info h3 {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 15px 0;
+      color: #1f2937;
+    }
+
+    .customer-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin: 5px 0;
+      color: #1f2937;
+    }
+
+    .customer-type,
+    .customer-id,
+    .customer-contact {
+      margin: 3px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .info-value {
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .services-section {
+      margin-bottom: 30px;
+    }
+
+    .services-section h3 {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 15px 0;
+      color: #1f2937;
+    }
+
+    .services-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .services-table th,
+    .services-table td {
+      border: 1px solid #d1d5db;
+      padding: 12px 8px;
+      text-align: left;
+    }
+
+    .services-table th {
+      background-color: #f9fafb;
+      font-weight: bold;
+      color: #374151;
+    }
+
+    .service-details p {
+      margin: 2px 0;
+    }
+
+    .service-name {
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .service-patient {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .service-date {
+      color: #3b82f6;
+      font-size: 12px;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-red {
+      color: #dc2626;
+    }
+
+    .font-bold {
+      font-weight: bold;
+    }
+
+    .summary-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 30px;
+    }
+
+    .additional-info h3,
+    .invoice-summary h3 {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 15px 0;
+      color: #1f2937;
+    }
+
+    .notes-section,
+    .terms-section {
+      margin-bottom: 20px;
+    }
+
+    .notes-section h4,
+    .terms-section h4 {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+
+    .terms-section ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .terms-section li {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .tax-info {
+      background-color: #eff6ff;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+
+    .tax-info p {
+      margin: 0;
+      font-size: 12px;
+      color: #1e40af;
+    }
+
+    .summary-table {
+      background-color: #f9fafb;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .total-row {
+      border-top: 2px solid #d1d5db;
+      padding-top: 12px;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+
+    .invoice-footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #d1d5db;
+      color: #6b7280;
+    }
+
+    .invoice-footer p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+  `;
+};
+
+/**
+ * Print current page (hide non-printable elements)
+ */
+export const printCurrentPage = () => {
+  // Add print styles to hide non-printable elements
+  const style = document.createElement('style');
+  style.textContent = `
+    @media print {
+      .no-print,
+      nav,
+      .sidebar,
+      .header,
+      .footer,
+      button:not(.print-button),
+      .print-actions {
+        display: none !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 20px;
+      }
+      
+      .print-break {
+        page-break-before: always;
+      }
+      
+      .print-break-after {
+        page-break-after: always;
+      }
+      
+      .print-break-inside {
+        page-break-inside: avoid;
+      }
+    }
+  `;
+  
+  document.head.appendChild(style);
+  
+  // Print the page
+  window.print();
+  
+  // Remove the style after printing
+  setTimeout(() => {
+    document.head.removeChild(style);
+  }, 1000);
+};
+
+/**
+ * Print specific section with custom styling
+ */
+export const printSection = (elementId: string, options: PrintOptions = {}) => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error(`Element with id "${elementId}" not found`);
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    console.error('Could not open print window');
+    return;
+  }
+
+  const elementHTML = element.outerHTML;
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${options.title || 'Print Document'}</title>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 20px;
+            color: #000;
+            line-height: 1.6;
+          }
+          @media print {
+            body { margin: 0; padding: 15px; }
+            .no-print { display: none !important; }
+            .print-break { page-break-before: always; }
+            .print-break-after { page-break-after: always; }
+            .print-break-inside { page-break-inside: avoid; }
+          }
+          ${options.customStyles || ''}
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1 class="print-title">${options.title || 'Document'}</h1>
+          <div class="print-date">${new Date().toLocaleDateString()}</div>
+        </div>
+        ${elementHTML}
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+};

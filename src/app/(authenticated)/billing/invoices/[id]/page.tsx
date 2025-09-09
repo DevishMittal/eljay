@@ -11,6 +11,7 @@ import InvoiceService from '@/services/invoiceService';
 import { Invoice } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { printInvoice, downloadInvoiceAsPDF, printCurrentPage } from '@/utils/printUtils';
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -59,12 +60,27 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const handleDownload = () => {
-    // TODO: Download PDF
-    console.log('Download PDF');
+    if (!invoice) return;
+    
+    downloadInvoiceAsPDF(invoice, {
+      title: `Invoice ${invoice.invoiceNumber}`,
+      filename: `invoice-${invoice.invoiceNumber}.pdf`
+    });
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!invoice) return;
+    
+    if (viewMode === 'pdf') {
+      // Print the PDF view
+      printInvoice(invoice, {
+        title: `Invoice ${invoice.invoiceNumber}`,
+        filename: `invoice-${invoice.invoiceNumber}.pdf`
+      });
+    } else {
+      // Print the current invoice view
+      printCurrentPage();
+    }
   };
 
 
@@ -190,7 +206,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <path d="m7 10 5 5 5-5"></path>
                 </svg>
-                Download
+                Download PDF
               </button>
               <button
                 onClick={handlePrint}
@@ -217,7 +233,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Tablet Dropdown */}
             <div className="hidden md:flex lg:hidden">
-              <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 border bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-8 rounded-md gap-1.5 has-[>svg]:px-2.5 p-2">
+              <button 
+                className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 border bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-8 rounded-md gap-1.5 has-[>svg]:px-2.5 p-2"
+                aria-label="More options"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ellipsis-vertical w-4 h-4">
                   <circle cx="12" cy="12" r="1"></circle>
                   <circle cx="12" cy="5" r="1"></circle>
@@ -231,6 +250,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={handleDownload}
                 className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 border bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 has-[>svg]:px-2.5 gap-1"
+                aria-label="Download invoice"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-download w-4 h-4">
                   <path d="M12 15V3"></path>
@@ -241,6 +261,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={handlePrint}
                 className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 border bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 has-[>svg]:px-2.5 gap-1"
+                aria-label="Print invoice"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-printer w-4 h-4">
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -251,6 +272,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={handleEdit}
                 className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 h-8 rounded-md px-3 has-[>svg]:px-2.5 gap-1 bg-orange-600 hover:bg-orange-700 text-white"
+                aria-label="Edit invoice"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-square-pen w-4 h-4">
                   <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -266,14 +288,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Invoice View */}
         {viewMode === 'invoice' && (
-          <div className="w-full p-3 md:p-6">
+          <div className="w-full p-3 md:p-6" id="invoice-content">
             <div className="w-full space-y-4 md:space-y-6">
               <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border w-full">
                 <div className="p-4 md:p-8">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-0 mb-6 md:mb-8">
                     <div>
                       <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Eljay Hearing Care</h2>
-                      <p className="text-sm md:text-base text-gray-600 mb-1">Professional Audiology Services</p>
+                      <p className="text-sm md:text-base text-gray-600 mb-1">
+                        {invoice.invoiceType === 'B2C' ? 'Professional Audiology Services' : 'Corporate Hearing Screening Services'}
+                      </p>
                       <p className="text-sm md:text-base text-gray-600 mb-1">123 Healthcare Avenue, Medical District</p>
                       <p className="text-sm md:text-base text-gray-600 mb-1">Chennai, Tamil Nadu 600001</p>
                       <p className="text-sm md:text-base text-gray-600">GST: 33ABCDE1234F1Z5</p>
@@ -284,6 +308,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                           "inline-flex items-center justify-center rounded-md border font-medium w-fit whitespace-nowrap shrink-0 px-4 py-2 text-sm",
                           invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800 border-green-200' :
                           invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                          invoice.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                           'bg-blue-100 text-blue-800 border-blue-200'
                         )}>
                           {invoice.paymentStatus}
@@ -291,7 +316,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                       </div>
                       <div className="text-sm md:text-base text-gray-600 space-y-1">
                         <p>Phone: +91 44 1234 5678</p>
-                        <p>Email: info@eljayhearing.com</p>
+                        <p>Email: {invoice.invoiceType === 'B2C' ? 'info@eljayhearing.com' : 'corporate@eljayhearing.com'}</p>
                         <p>Website: www.eljayhearing.com</p>
                       </div>
                     </div>
@@ -313,11 +338,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                           {invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}
                         </p>
                         <p className="text-sm md:text-base text-gray-600">
-                          {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Organization'}
+                          {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Corporate Account'}
                         </p>
                         {invoice.invoiceType === 'B2C' && (
                           <p className="text-sm md:text-base text-gray-600">
                             Patient ID: PAT001
+                          </p>
+                        )}
+                        {invoice.invoiceType === 'B2B' && (
+                          <p className="text-sm md:text-base text-gray-600">
+                            Primary Contact: {invoice.patientName}
                           </p>
                         )}
                       </div>
@@ -358,7 +388,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border w-full">
                 <div className="px-6 pt-6">
-                  <h4 className="text-base md:text-lg">Services & Items</h4>
+                  <h4 className="text-base md:text-lg">
+                    {invoice.invoiceType === 'B2C' ? 'Services & Items' : 'Screening Details'}
+                  </h4>
                 </div>
                 <div className="px-6">
                   <div className="w-full overflow-x-auto">
@@ -366,33 +398,69 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                       <table className="caption-bottom text-sm w-full min-w-[600px]">
                         <thead className="bg-gray-50">
                           <tr className="border-b transition-colors">
-                            <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-2/5 text-xs md:text-sm">Service/Item</th>
-                            <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-center w-[80px] md:w-[100px] text-xs md:text-sm">Qty</th>
-                            <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[120px] md:w-[140px] text-xs md:text-sm">Unit Cost</th>
-                            <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[100px] md:w-[120px] text-xs md:text-sm">Discount</th>
-                            <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[120px] md:w-[140px] text-xs md:text-sm">Total</th>
+                            {invoice.invoiceType === 'B2C' ? (
+                              <>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-2/5 text-xs md:text-sm">Service/Item</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-center w-[80px] md:w-[100px] text-xs md:text-sm">Qty</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[120px] md:w-[140px] text-xs md:text-sm">Unit Cost</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[100px] md:w-[120px] text-xs md:text-sm">Discount</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[120px] md:w-[140px] text-xs md:text-sm">Total</th>
+                              </>
+                            ) : (
+                              <>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-[60px] text-xs md:text-sm">S.No</th>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-[100px] text-xs md:text-sm">Date</th>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-[100px] text-xs md:text-sm">OP/IP No</th>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-[120px] text-xs md:text-sm">Bio Name</th>
+                                <th className="h-10 px-2 text-left align-middle whitespace-nowrap font-semibold text-gray-900 w-[150px] text-xs md:text-sm">Diagnostic</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[100px] text-xs md:text-sm">Amount</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[100px] text-xs md:text-sm">Discount</th>
+                                <th className="h-10 px-2 align-middle whitespace-nowrap font-semibold text-gray-900 text-right w-[100px] text-xs md:text-sm">Total</th>
+                              </>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
-                          {invoice.screenings.map((screening, index) => (
-                            <tr key={screening.id || index} className="hover:bg-muted/50 border-b transition-colors">
-                              <td className="p-2 align-middle whitespace-nowrap">
-                                <div className="space-y-1">
-                                  <p className="font-medium text-gray-900 text-xs md:text-sm">{screening.diagnosticName}</p>
-                                  <p className="text-xs text-gray-600">{screening.bioName}</p>
-                                  <p className="text-xs text-blue-600">Date: {formatDate(screening.screeningDate)}</p>
-                                </div>
-                              </td>
-                              <td className="p-2 align-middle whitespace-nowrap text-center text-xs md:text-sm">1</td>
-                              <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">₹{screening.amount.toLocaleString()}</td>
-                              <td className="p-2 align-middle whitespace-nowrap text-right text-red-600 text-xs md:text-sm">
-                                {screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}
-                              </td>
-                              <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">
-                                ₹{(screening.amount - (screening.discount || 0)).toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
+                          {invoice.invoiceType === 'B2C' ? (
+                            invoice.services?.map((service, index) => (
+                              <tr key={service.id || index} className="hover:bg-muted/50 border-b transition-colors">
+                                <td className="p-2 align-middle whitespace-nowrap">
+                                  <div className="space-y-1">
+                                    <p className="font-medium text-gray-900 text-xs md:text-sm">{service.serviceName}</p>
+                                    <p className="text-xs text-gray-600">{service.description}</p>
+                                    {service.description && (
+                                      <p className="text-xs text-blue-600">Warranty: 3 years warranty + health tracking</p>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-2 align-middle whitespace-nowrap text-center text-xs md:text-sm">{service.quantity}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">₹{service.unitCost.toLocaleString()}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right text-red-600 text-xs md:text-sm">
+                                  {service.discount > 0 ? `-₹${service.discount.toLocaleString()}` : '-'}
+                                </td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">
+                                  ₹{(service.total || ((service.quantity * service.unitCost) - service.discount)).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            invoice.screenings?.map((screening, index) => (
+                              <tr key={screening.id || index} className="hover:bg-muted/50 border-b transition-colors">
+                                <td className="p-2 align-middle whitespace-nowrap text-xs md:text-sm">{screening.serialNumber || index + 1}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-xs md:text-sm">{formatDate(screening.screeningDate)}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-xs md:text-sm">{screening.opNumber}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-xs md:text-sm">{screening.bioName}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-xs md:text-sm">{screening.diagnosticName}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">₹{screening.amount.toLocaleString()}</td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right text-red-600 text-xs md:text-sm">
+                                  {screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}
+                                </td>
+                                <td className="p-2 align-middle whitespace-nowrap text-right font-medium text-xs md:text-sm">
+                                  ₹{(screening.amount - (screening.discount || 0)).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -413,16 +481,35 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                       </div>
                     )}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2 text-sm md:text-base">Terms & Conditions</h4>
+                      <h4 className="font-medium text-gray-900 mb-2 text-sm md:text-base">
+                        {invoice.invoiceType === 'B2C' ? 'Terms & Conditions' : 'Corporate Terms & Conditions'}
+                      </h4>
                       <div className="text-xs text-gray-600 space-y-1">
-                        <p>• Payment is due within 30 days of invoice date</p>
-                        <p>• All services provided are subject to professional terms</p>
-                        <p>• Warranty terms apply as per individual service agreements</p>
-                        <p>• For any queries, please contact us at the above details</p>
+                        {invoice.invoiceType === 'B2C' ? (
+                          <>
+                            <p>• Payment is due within 30 days of invoice date</p>
+                            <p>• All services provided are subject to professional terms</p>
+                            <p>• Warranty terms apply as per individual service agreements</p>
+                            <p>• For any queries, please contact us at the above details</p>
+                          </>
+                        ) : (
+                          <>
+                            <p>• Payment terms: Net 30 days from invoice date</p>
+                            <p>• All screenings conducted as per corporate agreement</p>
+                            <p>• Reports will be provided within 48 hours of screening</p>
+                            <p>• Follow-up consultations available on request</p>
+                            <p>• For billing queries, contact: accounts@eljayhearing.com</p>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-xs text-blue-700">* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.</p>
+                      <p className="text-xs text-blue-700">
+                        {invoice.invoiceType === 'B2C' 
+                          ? '* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.'
+                          : '* This invoice covers corporate hearing screening services as per the signed agreement dated 15 Jun 2025.'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -434,7 +521,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   <div className="px-6">
                     <div className="space-y-3">
                       <div className="flex justify-between py-1">
-                        <span className="text-xs md:text-sm text-gray-600">Subtotal:</span>
+                        <span className="text-xs md:text-sm text-gray-600">
+                          {invoice.invoiceType === 'B2C' ? 'Subtotal:' : 'Screening Subtotal:'}
+                        </span>
                         <span className="text-xs md:text-sm font-medium text-gray-900">₹{invoice.subtotal.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between py-1">
@@ -463,22 +552,41 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <span className="text-sm md:text-base font-semibold text-gray-900">Total Amount:</span>
                         <span className="text-base md:text-lg font-bold text-gray-900">₹{invoice.totalAmount.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between py-1 mt-3">
-                        <span className="text-xs md:text-sm text-gray-600">Amount Paid:</span>
-                        <span className="text-xs md:text-sm font-medium text-gray-900">
-                          ₹{(
-                            invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 0
-                          ).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-xs md:text-sm text-gray-600">Balance Due:</span>
-                        <span className="text-xs md:text-sm font-medium text-red-600">
-                          ₹{(
-                            invoice.paymentStatus === 'Paid' ? 0 : invoice.totalAmount
-                          ).toLocaleString()}
-                        </span>
-                      </div>
+                      {invoice.invoiceType === 'B2C' && (
+                        <>
+                          <div className="flex justify-between py-1 mt-3">
+                            <span className="text-xs md:text-sm text-gray-600">Amount Paid:</span>
+                            <span className="text-xs md:text-sm font-medium text-gray-900">
+                              ₹{(
+                                invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 
+                                invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.45) : 0
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-xs md:text-sm text-gray-600">Balance Due:</span>
+                            <span className="text-xs md:text-sm font-medium text-red-600">
+                              ₹{(
+                                invoice.paymentStatus === 'Paid' ? 0 : 
+                                invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.55) :
+                                invoice.totalAmount
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                      {invoice.invoiceType === 'B2B' && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <h5 className="font-medium text-gray-900 mb-2 text-xs md:text-sm">Payment Instructions</h5>
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <p>Bank: HDFC Bank Ltd.</p>
+                            <p>Account: Eljay Hearing Care Pvt Ltd</p>
+                            <p>A/C No: 50200012345678</p>
+                            <p>IFSC: HDFC0001234</p>
+                            <p className="mt-2 font-medium">Please mention invoice number in transfer details</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -487,8 +595,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border w-full">
                 <div className="p-4 md:p-6">
                   <div className="text-center text-gray-600 space-y-2">
-                    <p className="text-xs md:text-sm">Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
+                    <p className="text-xs md:text-sm">
+                      {invoice.invoiceType === 'B2C' 
+                        ? 'Thank you for choosing Eljay Hearing Care for your audiology needs.'
+                        : 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.'
+                      }
+                    </p>
                     <p className="text-xs">This is a computer-generated invoice and does not require a signature.</p>
+                    {invoice.invoiceType === 'B2B' && (
+                      <p className="text-xs">For corporate services inquiries: corporate@eljayhearing.com | +91 44 1234 5679</p>
+                    )}
                     <p className="text-xs">Generated on {formatDate(invoice.createdAt)}</p>
                   </div>
                 </div>
@@ -508,7 +624,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   Eljay Hearing Care
                 </h2>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Professional Audiology Services
+                  {invoice.invoiceType === 'B2C' ? 'Professional Audiology Services' : 'Corporate Hearing Screening Services'}
                 </p>
                 <p className="text-[#4A5565] text-sm mt-1" style={{ fontFamily: 'Segoe UI' }}>
                   123 Healthcare Avenue, Medical District, Chennai, Tamil Nadu 600001
@@ -522,6 +638,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   "inline-block px-3 py-1 rounded-full text-sm font-medium mb-2",
                   invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
                   invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                  invoice.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-blue-100 text-blue-800'
                 )}>
                   {invoice.paymentStatus}
@@ -530,7 +647,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   Phone: +91 44 1234 5678
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Email: info@eljayhearing.com
+                  Email: {invoice.invoiceType === 'B2C' ? 'info@eljayhearing.com' : 'corporate@eljayhearing.com'}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
                   Website: www.eljayhearing.com
@@ -551,11 +668,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   {invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}
                 </p>
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Organization'}
+                  {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Corporate Account'}
                 </p>
                 {invoice.invoiceType === 'B2C' && (
                   <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    Organization: {invoice.organizationName}
+                    Patient ID: PAT001
+                  </p>
+                )}
+                {invoice.invoiceType === 'B2B' && (
+                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                    Primary Contact: {invoice.patientName}
                   </p>
                 )}
               </div>
@@ -584,34 +706,73 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Services & Items Table */}
             <div className="mb-8">
+              <h3 className="text-lg font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                {invoice.invoiceType === 'B2C' ? 'Services & Items' : 'Screening Details'}
+              </h3>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date of Screening</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Total</th>
+                    {invoice.invoiceType === 'B2C' ? (
+                      <>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Service/Item</th>
+                        <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Qty</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Unit Cost</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Total</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">S.No</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">OP/IP No</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Bio Name</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Diagnostic</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Amount</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Discount</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Total</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {invoice.screenings.map((screening, index) => (
-                    <tr key={screening.id || index} className="border-b border-gray-100">
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.serialNumber || index + 1}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{formatDate(screening.screeningDate)}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.opNumber}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.bioName}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.diagnosticName}</td>
-                      <td className="py-4 px-4 text-sm text-[#4A5565]">₹{screening.amount.toLocaleString()}</td>
-                      <td className="py-4 px-4 text-sm text-red-600">
-                        {screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}
-                      </td>
-                      <td className="py-4 px-4 text-sm font-medium text-[#101828]">₹{(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
-                    </tr>
-                  ))}
+                  {invoice.invoiceType === 'B2C' ? (
+                    invoice.services?.map((service, index) => (
+                      <tr key={service.id || index} className="border-b border-gray-100">
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">
+                          <div>
+                            <p className="font-medium text-[#101828]">{service.serviceName}</p>
+                            <p className="text-xs text-gray-600">{service.description}</p>
+                            {service.description && (
+                              <p className="text-xs text-blue-600">Warranty: 3 years warranty + health tracking</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565] text-center">{service.quantity}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565] text-right">₹{service.unitCost.toLocaleString()}</td>
+                        <td className="py-4 px-4 text-sm text-red-600 text-right">
+                          {service.discount > 0 ? `-₹${service.discount.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-[#101828] text-right">
+                          ₹{(service.total || ((service.quantity * service.unitCost) - service.discount)).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    invoice.screenings?.map((screening, index) => (
+                      <tr key={screening.id || index} className="border-b border-gray-100">
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.serialNumber || index + 1}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">{formatDate(screening.screeningDate)}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.opNumber}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.bioName}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565]">{screening.diagnosticName}</td>
+                        <td className="py-4 px-4 text-sm text-[#4A5565] text-right">₹{screening.amount.toLocaleString()}</td>
+                        <td className="py-4 px-4 text-sm text-red-600 text-right">
+                          {screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-[#101828] text-right">₹{(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -633,33 +794,61 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                 <div>
                   <h3 className="font-semibold text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                    Terms & Conditions
+                    {invoice.invoiceType === 'B2C' ? 'Terms & Conditions' : 'Corporate Terms & Conditions'}
                   </h3>
                   <ul className="text-sm text-[#4A5565] space-y-1" style={{ fontFamily: 'Segoe UI' }}>
-                    <li className="flex items-start">
-                      <span className="mr-2">•</span>
-                      Payment is due within 30 days of invoice date.
-                    </li>
-                    <li className="flex items-start">
-                      <span className="mr-2">•</span>
-                      All services provided are subject to professional terms.
-                    </li>
-                    {invoice.warranty && (
-                      <li className="flex items-start">
-                        <span className="mr-2">•</span>
-                        Warranty terms apply as per individual service agreements.
-                      </li>
+                    {invoice.invoiceType === 'B2C' ? (
+                      <>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          Payment is due within 30 days of invoice date.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          All services provided are subject to professional terms.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          Warranty terms apply as per individual service agreements.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          For any queries, please contact us at the above details.
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          Payment terms: Net 30 days from invoice date.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          All screenings conducted as per corporate agreement.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          Reports will be provided within 48 hours of screening.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          Follow-up consultations available on request.
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          For billing queries, contact: accounts@eljayhearing.com.
+                        </li>
+                      </>
                     )}
-                    <li className="flex items-start">
-                      <span className="mr-2">•</span>
-                      For any queries, please contact us at the above details.
-                    </li>
                   </ul>
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-xs text-blue-700" style={{ fontFamily: 'Segoe UI' }}>
-                    * Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.
+                    {invoice.invoiceType === 'B2C' 
+                      ? '* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.'
+                      : '* This invoice covers corporate hearing screening services as per the signed agreement dated 15 Jun 2025.'
+                    }
                   </p>
                 </div>
               </div>
@@ -673,7 +862,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-[#4A5565]">Subtotal:</span>
+                      <span className="text-sm text-[#4A5565]">
+                        {invoice.invoiceType === 'B2C' ? 'Subtotal:' : 'Screening Subtotal:'}
+                      </span>
                       <span className="text-sm font-medium">₹{invoice.subtotal.toLocaleString()}</span>
                     </div>
 
@@ -708,6 +899,43 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <span className="font-semibold text-[#101828]">₹{invoice.totalAmount.toLocaleString()}</span>
                       </div>
                     </div>
+
+                    {invoice.invoiceType === 'B2C' && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-[#4A5565]">Amount Paid:</span>
+                          <span className="text-sm font-medium">
+                            ₹{(
+                              invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 
+                              invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.45) : 0
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-[#4A5565]">Balance Due:</span>
+                          <span className="text-sm font-medium text-red-600">
+                            ₹{(
+                              invoice.paymentStatus === 'Paid' ? 0 : 
+                              invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.55) :
+                              invoice.totalAmount
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {invoice.invoiceType === 'B2B' && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <h5 className="font-medium text-gray-900 mb-2 text-sm">Payment Instructions</h5>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <p>Bank: HDFC Bank Ltd.</p>
+                          <p>Account: Eljay Hearing Care Pvt Ltd</p>
+                          <p>A/C No: 50200012345678</p>
+                          <p>IFSC: HDFC0001234</p>
+                          <p className="mt-2 font-medium">Please mention invoice number in transfer details</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -719,8 +947,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         {/* Footer */}
         {(viewMode === 'invoice' || viewMode === 'pdf') && (
           <div className="text-center text-sm text-[#4A5565] max-w-4xl mx-auto" style={{ fontFamily: 'Segoe UI' }}>
-            <p>Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
+            <p>
+              {invoice.invoiceType === 'B2C' 
+                ? 'Thank you for choosing Eljay Hearing Care for your audiology needs.'
+                : 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.'
+              }
+            </p>
             <p className="mt-1">This is a computer-generated invoice and does not require a signature.</p>
+            {invoice.invoiceType === 'B2B' && (
+              <p className="mt-1">For corporate services inquiries: corporate@eljayhearing.com | +91 44 1234 5679</p>
+            )}
             <p className="mt-1">Generated on {formatDate(invoice.createdAt)}</p>
           </div>
         )}

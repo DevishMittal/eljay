@@ -3,7 +3,8 @@ import {
   PaymentResponse, 
   Payment, 
   CreatePaymentData, 
-  UpdatePaymentData 
+  UpdatePaymentData,
+  OutstandingPaymentsResponse
 } from '@/types';
 
 const API_BASE_URL = 'https://eljay-api.vizdale.com/api/v1';
@@ -172,6 +173,37 @@ class PaymentService {
       }
     } catch (error) {
       console.error('Error deleting payment:', error);
+      throw error;
+    }
+  }
+
+  static async getOutstandingPayments(patientId: string): Promise<OutstandingPaymentsResponse> {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/payments/outstanding/${patientId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.message === 'Invalid token') {
+          throw new Error('Authentication token is invalid or expired. Please login again.');
+        }
+        throw new Error(`HTTP error! status: ${response.status} - ${errorData.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching outstanding payments:', error);
       throw error;
     }
   }

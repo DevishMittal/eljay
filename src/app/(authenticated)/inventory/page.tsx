@@ -9,7 +9,7 @@ import ConsumeStockModal from "@/components/modals/consume-stock-modal";
 import { InventoryService } from "@/services/inventoryService";
 import { InventoryItem as InventoryItemType } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
-import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical } from "lucide-react";
+import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical, Building2, Network } from "lucide-react";
 
 // Helper function to get status based on stock levels
 const getStockStatus = (currentStock: number, minimumStock: number): string => {
@@ -76,6 +76,12 @@ export default function InventoryPage() {
     null
   );
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  
+  // New state for view functionality
+  const [currentView, setCurrentView] = useState<'branch' | 'network'>('branch');
+  const [availableBranches, setAvailableBranches] = useState<string[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('All Branches');
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   // API state
   const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
@@ -93,9 +99,10 @@ export default function InventoryPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await InventoryService.getInventoryItems(page, limit);
+      const response = await InventoryService.getInventoryItemsWithView(currentView, page, limit);
       setInventoryItems(response.items);
       setPagination(response.pagination);
+      setAvailableBranches(response.availableBranches);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch inventory items";
@@ -115,10 +122,10 @@ export default function InventoryPage() {
     }
   };
 
-  // Load inventory on component mount
+  // Load inventory on component mount and when view changes
   useEffect(() => {
     fetchInventoryItems();
-  }, []);
+  }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -155,6 +162,27 @@ export default function InventoryPage() {
   // Toggle dropdown
   const toggleDropdown = (itemId: string) => {
     setOpenDropdownId(openDropdownId === itemId ? null : itemId);
+  };
+
+  // Handle view change
+  const handleViewChange = (view: 'branch' | 'network') => {
+    setCurrentView(view);
+    setExpandedItemId(null); // Close any expanded items
+    if (view === 'branch') {
+      setSelectedBranch('All Branches');
+    }
+  };
+
+  // Handle branch selection
+  const handleBranchChange = (branch: string) => {
+    setSelectedBranch(branch);
+  };
+
+  // Toggle item expansion in network view
+  const toggleItemExpansion = (itemId: string) => {
+    if (currentView === 'network') {
+      setExpandedItemId(expandedItemId === itemId ? null : itemId);
+    }
   };
 
 
@@ -259,7 +287,7 @@ export default function InventoryPage() {
               <TrendingUp className="w-4 h-4" />
               Add Stock
             </button>
-            <button
+            {/* <button
               onClick={() => window.print()}
               className="flex items-center gap-2 px-6 py-1 border border-[#E5E7EB] bg-white font-semibold rounded-lg hover:bg-[#F9FAFB] transition-colors text-sm cursor-pointer"
               style={{ fontFamily: "Segoe UI" }}
@@ -278,7 +306,7 @@ export default function InventoryPage() {
                 />
               </svg>
               Print
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -311,8 +339,53 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* Filter and Sort on the right */}
+          {/* View Toggle, Filter and Sort on the right */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            {/* View Toggle Buttons */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => handleViewChange('branch')}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  currentView === 'branch'
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                style={{ fontFamily: "Segoe UI" }}
+              >
+                <Building2 className="w-4 h-4" />
+                Branch View
+              </button>
+              <button
+                onClick={() => handleViewChange('network')}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  currentView === 'network'
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                )}
+                style={{ fontFamily: "Segoe UI" }}
+              >
+                <Network className="w-4 h-4" />
+                Network View
+              </button>
+            </div>
+
+            {/* Branch Dropdown (only visible in Network View) */}
+            {currentView === 'network' && (
+              <CustomDropdown
+                value={selectedBranch}
+                onChange={handleBranchChange}
+                options={[
+                  { value: "All Branches", label: "All Branches" },
+                  ...availableBranches.map(branch => ({ value: branch, label: branch }))
+                ]}
+                placeholder="Select branch..."
+                className="w-40"
+                aria-label="Select branch"
+              />
+            )}
+
             {/* Filter Button */}
             <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm cursor-pointer">
               <Filter className="w-4 h-4 mr-2"/>
@@ -388,7 +461,7 @@ export default function InventoryPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
                     style={{ fontFamily: "Segoe UI" }}
                   >
-                    Stock
+                    {currentView === 'branch' ? 'Stock' : 'Branch Stock'}
                   </th>
                   <th
                     className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
@@ -442,17 +515,28 @@ export default function InventoryPage() {
                   </tr>
                 ) : (
                   sortedItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-[#F9FAFB] transition-colors"
-                    >
+                    <React.Fragment key={item.id}>
+                      <tr
+                        className={cn(
+                          "hover:bg-[#F9FAFB] transition-colors",
+                          currentView === 'network' && "cursor-pointer"
+                        )}
+                        onClick={() => currentView === 'network' && toggleItemExpansion(item.id)}
+                      >
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          <div
-                            className="text-xs font-medium text-[#101828]"
-                            style={{ fontFamily: "Segoe UI" }}
-                          >
-                            {item.itemName}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="text-xs font-medium text-[#101828]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              {item.itemName}
+                            </div>
+                            {currentView === 'network' && (
+                              <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            )}
                           </div>
                           <div
                             className="text-xs text-[#4A5565]"
@@ -517,21 +601,39 @@ export default function InventoryPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div
-                            className="text-xs font-medium text-[#101828]"
-                            style={{ fontFamily: "Segoe UI" }}
-                          >
-                            {item.currentStock}{" "}
-                            {item.currentStock === 1 ? "piece" : "pieces"}
+                        {currentView === 'branch' ? (
+                          <div className="space-y-1">
+                            <div
+                              className="text-xs font-medium text-[#101828]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              {item.currentStock}{" "}
+                              {item.currentStock === 1 ? "piece" : "pieces"}
+                            </div>
+                            <div
+                              className="text-xs text-[#4A5565]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              Min: {item.minimumStock}
+                            </div>
                           </div>
-                          <div
-                            className="text-xs text-[#4A5565]"
-                            style={{ fontFamily: "Segoe UI" }}
-                          >
-                            Min: {item.minimumStock}
+                        ) : (
+                          <div className="space-y-1">
+                            <div
+                              className="text-xs font-medium text-[#101828]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              {item.branchStatistics?.totalBranchStock || 0}{" "}
+                              pieces
+                            </div>
+                            <div
+                              className="text-xs text-[#4A5565]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              {item.branchStatistics?.branchesWithStock || 0}/{item.branchStatistics?.totalBranches || 0} branches
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
@@ -642,6 +744,73 @@ export default function InventoryPage() {
                         </div>
                       </td>
                     </tr>
+                    
+                    {/* Branch Stock Distribution Row (Network View) */}
+                    {currentView === 'network' && expandedItemId === item.id && (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                              <h3 className="text-sm font-medium text-[#101828]" style={{ fontFamily: "Segoe UI" }}>
+                                Branch Stock Distribution
+                              </h3>
+                            </div>
+                            
+                            {item.branchStockDistribution && item.branchStockDistribution.length > 0 ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {item.branchStockDistribution.map((branch, index) => (
+                                  <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h4 className="text-sm font-medium text-[#101828]" style={{ fontFamily: "Segoe UI" }}>
+                                        {branch.branchName}
+                                      </h4>
+                                      <span className={cn(
+                                        "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                                        branch.status === 'In Stock' ? 'bg-green-100 text-green-800' :
+                                        branch.status === 'Low Stock' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'
+                                      )} style={{ fontFamily: "Segoe UI" }}>
+                                        {branch.status}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-sm text-[#101828]" style={{ fontFamily: "Segoe UI" }}>
+                                        Stock: {branch.branchStock} pieces
+                                      </div>
+                                      <div className="text-xs text-[#4A5565]" style={{ fontFamily: "Segoe UI" }}>
+                                        Min: {branch.minimumStock} | Max: {branch.maximumStock}
+                                      </div>
+                                      <div className="text-xs text-[#4A5565]" style={{ fontFamily: "Segoe UI" }}>
+                                        Last updated: {new Date(branch.lastUpdated).toLocaleDateString('en-GB', {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric'
+                                        })}
+                                      </div>
+                                      {branch.notes && (
+                                        <div className="text-xs text-[#4A5565] mt-2" style={{ fontFamily: "Segoe UI" }}>
+                                          <strong>Notes:</strong> {branch.notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4">
+                                <p className="text-sm text-[#4A5565]" style={{ fontFamily: "Segoe UI" }}>
+                                  No branch stock distribution data available
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   ))
                 )}
               </tbody>

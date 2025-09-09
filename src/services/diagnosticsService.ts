@@ -1,14 +1,9 @@
-import { 
-  DiagnosticsResponse,
-  DiagnosticResponse,
-  CreateDiagnosticData,
-  UpdateDiagnosticData
-} from '@/types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { DiagnosticsResponse, DiagnosticResponse, CreateDiagnosticData, UpdateDiagnosticData } from '@/types';
 
 const BASE_URL = 'https://eljay-api.vizdale.com';
 
 class DiagnosticsService {
-  // Get all diagnostics
   async getDiagnostics(token?: string): Promise<DiagnosticsResponse> {
     try {
       const headers: Record<string, string> = {
@@ -36,8 +31,7 @@ class DiagnosticsService {
     }
   }
 
-  // Create new diagnostic
-  async createDiagnostic(diagnosticData: CreateDiagnosticData, token?: string): Promise<DiagnosticResponse> {
+  async createDiagnostic(data: CreateDiagnosticData, token?: string): Promise<DiagnosticResponse> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -51,7 +45,7 @@ class DiagnosticsService {
       const response = await fetch(`${BASE_URL}/api/v1/organizations/diagnostics`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(diagnosticData),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -65,8 +59,7 @@ class DiagnosticsService {
     }
   }
 
-  // Update diagnostic
-  async updateDiagnostic(id: string, diagnosticData: UpdateDiagnosticData, token?: string): Promise<DiagnosticResponse> {
+  async updateDiagnostic(id: string, data: UpdateDiagnosticData, token?: string): Promise<DiagnosticResponse> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -80,7 +73,7 @@ class DiagnosticsService {
       const response = await fetch(`${BASE_URL}/api/v1/organizations/diagnostics/${id}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify(diagnosticData),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -94,7 +87,6 @@ class DiagnosticsService {
     }
   }
 
-  // Delete diagnostic
   async deleteDiagnostic(id: string, token?: string): Promise<void> {
     try {
       const headers: Record<string, string> = {
@@ -121,4 +113,4 @@ class DiagnosticsService {
   }
 }
 
-export const diagnosticsService = new DiagnosticsService();
+export default new DiagnosticsService();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DatePicker from '@/components/ui/date-picker';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import RupeeIcon from '@/components/ui/rupee-icon';
 import PaymentService from '@/services/paymentService';
+import { patientService } from '@/services/patientService';
 import { useAuth } from '@/contexts/AuthContext';
+import { User } from '@/types';
 
 export default function RecordPaymentPage() {
   const router = useRouter();
@@ -17,15 +20,39 @@ export default function RecordPaymentPage() {
   
   const [paymentDate, setPaymentDate] = useState('');
   const [patientName, setPatientName] = useState('');
+  const [patientId, setPatientId] = useState('');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
   const [status, setStatus] = useState('Completed');
   const [transactionId, setTransactionId] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [paymentType, setPaymentType] = useState('Full');
+  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    if (!token) return;
+    
+    try {
+      setLoadingUsers(true);
+      const response = await patientService.getUsers(1, 100, token);
+      setUsers(response.data.users || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token && isAuthenticated) {
+      fetchUsers();
+    }
+  }, [token, isAuthenticated, fetchUsers]);
 
   const handleSavePayment = useCallback(async () => {
     if (!token) {
@@ -34,7 +61,7 @@ export default function RecordPaymentPage() {
     }
 
     // Validation
-    if (!paymentDate || !patientName || !amount || !method || !receivedBy) {
+    if (!paymentDate || !patientId || !amount || !method || !receivedBy) {
       setError('Please fill in all required fields');
       return;
     }
@@ -46,12 +73,14 @@ export default function RecordPaymentPage() {
       const paymentData = {
         paymentDate: PaymentService.formatDateForAPI(paymentDate),
         patientName,
+        patientId,
         amount: parseFloat(amount),
         method: method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
         status: status as 'Pending' | 'Completed' | 'Failed' | 'Cancelled',
-        transactionId,
-        receivedBy,
-        paymentType: paymentType as 'Full' | 'Partial',
+        transactionId: transactionId || undefined,
+        receivedBy: receivedBy || undefined,
+        paymentType: paymentType as 'Full' | 'Advance',
+        description: description || undefined,
         notes: notes || undefined
       };
 
@@ -65,7 +94,15 @@ export default function RecordPaymentPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, paymentDate, patientName, amount, method, status, transactionId, receivedBy, paymentType, notes, router]);
+  }, [token, paymentDate, patientName, patientId, amount, method, status, transactionId, receivedBy, paymentType, description, notes, router]);
+
+  const handleUserChange = (selectedUserId: string) => {
+    setPatientId(selectedUserId);
+    const selectedUser = users.find(u => u.id === selectedUserId);
+    if (selectedUser) {
+      setPatientName(selectedUser.fullname || '');
+    }
+  };
 
   const handleCancel = () => {
     router.push('/billing/payments');
@@ -157,9 +194,7 @@ export default function RecordPaymentPage() {
             <CardContent className="p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                  <RupeeIcon className="w-4 h-4 text-orange-600" />
                 </div>
                 <h2 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                   Payment Details
@@ -183,14 +218,22 @@ export default function RecordPaymentPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Patient Name *
+                    Select Patient *
                   </label>
-                  <Input
-                    value={patientName}
-                    onChange={(e) => setPatientName(e.target.value)}
-                    placeholder="Enter patient name"
-                    className="bg-white border-gray-300"
-                    required
+                  <CustomDropdown
+                    options={[
+                      { value: '', label: 'Select a patient' },
+                      ...users.map(user => ({
+                        value: user.id,
+                        label: `${user.fullname} (${user.phoneNumber})`
+                      }))
+                    ]}
+                    value={patientId}
+                    onChange={handleUserChange}
+                    placeholder="Select a patient"
+                    className="w-full"
+                    aria-label="Select patient"
+                    disabled={loadingUsers}
                   />
                 </div>
 
@@ -202,7 +245,7 @@ export default function RecordPaymentPage() {
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
                     <Input
                       type="number"
-                      value={amount}
+                      value={amount || ''}
                       onChange={(e) => setAmount(e.target.value)}
                       className="pl-8 bg-white border-gray-300"
                       placeholder="0.00"
@@ -258,7 +301,7 @@ export default function RecordPaymentPage() {
                     Transaction ID
                   </label>
                   <Input
-                    value={transactionId}
+                    value={transactionId || ''}
                     onChange={(e) => setTransactionId(e.target.value)}
                     placeholder="Enter transaction ID (optional)"
                     className="bg-white border-gray-300"
@@ -270,7 +313,7 @@ export default function RecordPaymentPage() {
                     Received By *
                   </label>
                   <Input
-                    value={receivedBy}
+                    value={receivedBy || ''}
                     onChange={(e) => setReceivedBy(e.target.value)}
                     placeholder="Enter staff name"
                     className="bg-white border-gray-300"
@@ -292,21 +335,33 @@ export default function RecordPaymentPage() {
                         onChange={(e) => setPaymentType(e.target.value)}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Full</span>
+                      <span className="text-sm text-gray-700">Full Payment</span>
                     </label>
                     <label className="flex items-center">
                       <input
                         type="radio"
                         name="paymentType"
-                        value="Partial"
-                        checked={paymentType === 'Partial'}
+                        value="Advance"
+                        checked={paymentType === 'Advance'}
                         onChange={(e) => setPaymentType(e.target.value)}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
-                      <span className="text-sm text-gray-700">Partial</span>
+                      <span className="text-sm text-gray-700">Advance Payment</span>
                     </label>
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <Input
+                  value={description || ''}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter payment description"
+                  className="bg-white border-gray-300 mb-4"
+                />
               </div>
 
               <div className="mt-6">
@@ -370,7 +425,11 @@ export default function RecordPaymentPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Type:</span>
-                      <span className="text-gray-900">{paymentType}</span>
+                      <span className="text-gray-900">{paymentType === 'Full' ? 'Full Payment' : 'Advance Payment'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Description:</span>
+                      <span className="text-gray-900">{description || 'Not specified'}</span>
                     </div>
                   </div>
                 </div>

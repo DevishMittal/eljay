@@ -6,7 +6,8 @@ import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/utils';
 import ExpenseService from '@/services/expenseService';
 import { Expense, ExpensesResponse } from '@/types';
-import { DollarSign, Receipt, Calculator, TrendingDown, PlusIcon } from 'lucide-react';
+import { Receipt, Calculator, TrendingDown, PlusIcon } from 'lucide-react';
+import RupeeIcon from '@/components/ui/rupee-icon';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 
 export default function ExpensesPage() {
@@ -219,7 +220,7 @@ export default function ExpensesPage() {
     {
       title: "Total Expenses",
       value: `₹${summary.totalAmount.toLocaleString()}`,
-      icon: DollarSign,
+      icon: RupeeIcon,
       bgColor: "bg-red-100",
       iconColor: "text-red-700",
     },

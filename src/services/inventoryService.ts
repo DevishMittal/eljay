@@ -1,4 +1,4 @@
-import { InventoryItem, InventoryTransaction, ApiResponse, PaginatedResponse } from '@/types';
+import { InventoryItem, InventoryTransaction, ApiResponse, PaginatedResponse, InventoryViewResponse } from '@/types';
 
 const API_BASE_URL = 'https://eljay-api.vizdale.com/api/v1';
 
@@ -27,6 +27,30 @@ export class InventoryService {
       return data.data;
     } catch (error) {
       console.error('Error fetching inventory items:', error);
+      throw error;
+    }
+  }
+
+  // Get inventory items with branch/network view
+  static async getInventoryItemsWithView(
+    view: 'branch' | 'network' = 'branch',
+    page: number = 1,
+    limit: number = 10
+  ): Promise<InventoryViewResponse['data']> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/inventory/v2?view=${view}&page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch inventory with view: ${response.status} ${response.statusText}`);
+      }
+
+      const data: InventoryViewResponse = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Error fetching inventory items with view:', error);
       throw error;
     }
   }

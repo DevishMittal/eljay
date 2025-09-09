@@ -7,12 +7,13 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Area, AreaChart
 } from 'recharts';
-import { DashboardService, DashboardAppointmentsData } from '@/services/dashboardService';
+import { DashboardService, DashboardAppointmentsData, DashboardDoctorReferralData } from '@/services/dashboardService';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('appointments');
   const [timeFilter, setTimeFilter] = useState('Last 30 Days');
   const [appointmentsData, setAppointmentsData] = useState<DashboardAppointmentsData | null>(null);
+  const [doctorReferralData, setDoctorReferralData] = useState<DashboardDoctorReferralData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,9 +63,31 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch doctor referral data
+  const fetchDoctorReferralData = async () => {
+    if (activeTab !== 'doctor-referrals') return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getDateRange();
+      const data = await DashboardService.getDoctorReferralData(startDate, endDate);
+      setDoctorReferralData(data);
+    } catch (error) {
+      console.error('Error fetching doctor referral data:', error);
+      setError('Failed to fetch doctor referral data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch data when tab changes or time filter changes
   useEffect(() => {
-    fetchAppointmentsData();
+    if (activeTab === 'appointments') {
+      fetchAppointmentsData();
+    } else if (activeTab === 'doctor-referrals') {
+      fetchDoctorReferralData();
+    }
   }, [activeTab, timeFilter]);
 
   // Debug logging
@@ -137,94 +160,128 @@ export default function DashboardPage() {
 
   const chartData = transformAppointmentsData();
 
-  // Mock data for other sections (to be replaced when APIs are ready)
-  const appointmentStatusData = [
-    { name: 'Completed', value: 149, color: '#10B981' },
-    { name: 'Pending', value: 12, color: '#F59E0B' },
-    { name: 'Cancelled', value: 6, color: '#EF4444' }
-  ];
+  // Use real data from API or fallback to empty data
+  const getAppointmentStatusData = () => {
+    if (chartData?.appointmentStatusData && chartData.appointmentStatusData.length > 0) {
+      return chartData.appointmentStatusData;
+    }
+    return [
+      { name: 'Completed', value: 0, color: '#10B981' },
+      { name: 'Pending', value: 0, color: '#F59E0B' },
+      { name: 'Cancelled', value: 0, color: '#EF4444' }
+    ];
+  };
 
-  const appointmentTrendsData = [
-    { month: 'Jul', total: 180, completed: 160, cancelled: 20 },
-    { month: 'Aug', total: 190, completed: 170, cancelled: 20 },
-    { month: 'Sep', total: 210, completed: 185, cancelled: 25 },
-    { month: 'Oct', total: 200, completed: 175, cancelled: 25 },
-    { month: 'Nov', total: 195, completed: 175, cancelled: 20 },
-    { month: 'Dec', total: 167, completed: 149, cancelled: 18 }
-  ];
+  const getAppointmentTrendsData = () => {
+    if (chartData?.appointmentTrendsData && chartData.appointmentTrendsData.length > 0) {
+      return chartData.appointmentTrendsData;
+    }
+    return [
+      { month: 'No Data', total: 0, completed: 0, cancelled: 0 }
+    ];
+  };
 
-  const audiologistPerformanceData = [
-    { name: 'Dr. Sarah Johnson', appointments: 70 },
-    { name: 'Dr. Michael Brown', appointments: 60 },
-    { name: 'Dr. Jennifer Lee', appointments: 55 },
-    { name: 'Dr. David Chen', appointments: 50 },
-    { name: 'Dr. Emily Davis', appointments: 48 }
-  ];
+  const getAudiologistPerformanceData = () => {
+    if (chartData?.audiologistPerformanceData && chartData.audiologistPerformanceData.length > 0) {
+      return chartData.audiologistPerformanceData;
+    }
+    return [
+      { name: 'No Data', appointments: 0 }
+    ];
+  };
 
-  const channelDistributionData = [
-    { name: 'Direct', value: 45, color: '#3B82F6' },
-    { name: 'Referral', value: 35, color: '#10B981' },
-    { name: 'Online', value: 20, color: '#F59E0B' }
-  ];
+  const getChannelDistributionData = () => {
+    if (chartData?.channelDistributionData && chartData.channelDistributionData.length > 0) {
+      return chartData.channelDistributionData;
+    }
+    return [
+      { name: 'No Data', value: 0, color: '#E5E7EB' }
+    ];
+  };
 
-  const attendanceRateData = [
-    { month: 'Jul', rate: 82, target: 85 },
-    { month: 'Aug', rate: 84, target: 85 },
-    { month: 'Sep', rate: 83, target: 85 },
-    { month: 'Oct', rate: 82, target: 85 },
-    { month: 'Nov', rate: 87, target: 85 },
-    { month: 'Dec', rate: 89, target: 85 }
-  ];
+  const getAttendanceRateData = () => {
+    if (chartData?.attendanceRateData && chartData.attendanceRateData.length > 0) {
+      return chartData.attendanceRateData;
+    }
+    return [
+      { month: 'No Data', rate: 0, target: 85 }
+    ];
+  };
 
-  const bookingLeadTimeData = [
-    { range: '0-1', count: 28 },
-    { range: '2-3', count: 33 },
-    { range: '4-7', count: 42 },
-    { range: '8-14', count: 22 },
-    { range: '15+', count: 14 }
-  ];
+  const getBookingLeadTimeData = () => {
+    if (chartData?.bookingLeadTimeData && chartData.bookingLeadTimeData.length > 0) {
+      return chartData.bookingLeadTimeData;
+    }
+    return [
+      { range: 'No Data', count: 0 }
+    ];
+  };
 
-  // Doctor Referral Data
-  const referralSourceData = [
-    { name: 'ENT Specialists', value: 45, color: '#3B82F6' },
-    { name: 'General Physicians', value: 30, color: '#10B981' },
-    { name: 'Pediatricians', value: 15, color: '#F59E0B' },
-    { name: 'Neurologists', value: 10, color: '#EF4444' }
-  ];
+  // Doctor Referral Data - Use real data from API
+  const getReferralSourceData = () => {
+    if (doctorReferralData?.doctorPerformance && doctorReferralData.doctorPerformance.length > 0) {
+      // Group by specialization
+      const specializationCounts: { [key: string]: number } = {};
+      doctorReferralData.doctorPerformance.forEach(doctor => {
+        specializationCounts[doctor.specialization] = (specializationCounts[doctor.specialization] || 0) + doctor.totalReferrals;
+      });
+      
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+      return Object.entries(specializationCounts).map(([name, value], index) => ({
+        name,
+        value,
+        color: colors[index % colors.length]
+      }));
+    }
+    return [{ name: 'No Data', value: 0, color: '#E5E7EB' }];
+  };
 
-  const referralTrendsData = [
-    { month: 'Jul', referrals: 28, conversions: 22, revenue: 45000 },
-    { month: 'Aug', referrals: 32, conversions: 26, revenue: 52000 },
-    { month: 'Sep', referrals: 35, conversions: 29, revenue: 58000 },
-    { month: 'Oct', referrals: 30, conversions: 25, revenue: 50000 },
-    { month: 'Nov', referrals: 38, conversions: 32, revenue: 64000 },
-    { month: 'Dec', referrals: 42, conversions: 35, revenue: 70000 }
-  ];
+  const getReferralTrendsData = () => {
+    // Since we don't have historical data in the API response, we'll show current data
+    if (doctorReferralData?.overview) {
+      return [
+        { month: 'Current', referrals: doctorReferralData.overview.referrals, conversions: doctorReferralData.overview.converted, revenue: doctorReferralData.financialImpact.revenueGenerated }
+      ];
+    }
+    return [{ month: 'No Data', referrals: 0, conversions: 0, revenue: 0 }];
+  };
 
-  const topReferringDoctorsData = [
-    { name: 'Dr. Rajesh Kumar', referrals: 15, conversions: 12, revenue: 24000 },
-    { name: 'Dr. Priya Sharma', referrals: 12, conversions: 10, revenue: 20000 },
-    { name: 'Dr. Amit Patel', referrals: 10, conversions: 8, revenue: 16000 },
-    { name: 'Dr. Sneha Reddy', referrals: 8, conversions: 7, revenue: 14000 },
-    { name: 'Dr. Karthik Rao', referrals: 6, conversions: 5, revenue: 10000 }
-  ];
+  const getTopReferringDoctorsData = () => {
+    if (doctorReferralData?.doctorPerformance && doctorReferralData.doctorPerformance.length > 0) {
+      return doctorReferralData.doctorPerformance
+        .sort((a, b) => b.totalReferrals - a.totalReferrals)
+        .slice(0, 5)
+        .map(doctor => ({
+          name: doctor.doctorName,
+          referrals: doctor.totalReferrals,
+          conversions: Math.round(doctor.totalReferrals * (doctor.conversionRate / 100)),
+          revenue: Math.round(doctor.totalReferrals * (doctor.conversionRate / 100) * 2000) // Assuming average revenue per conversion
+        }));
+    }
+    return [{ name: 'No Data', referrals: 0, conversions: 0, revenue: 0 }];
+  };
 
-  const referralConversionData = [
-    { status: 'Referred', count: 42, color: '#3B82F6' },
-    { status: 'Scheduled', count: 35, color: '#10B981' },
-    { status: 'Completed', count: 32, color: '#22C55E' },
-    { status: 'No Show', count: 3, color: '#F59E0B' },
-    { status: 'Cancelled', count: 7, color: '#EF4444' }
-  ];
+  const getReferralConversionData = () => {
+    if (doctorReferralData?.referralFlow) {
+      const flow = doctorReferralData.referralFlow;
+      return [
+        { status: 'Referred', count: flow.referred, color: '#3B82F6' },
+        { status: 'Scheduled', count: flow.appointed, color: '#10B981' },
+        { status: 'Completed', count: flow.completed, color: '#22C55E' },
+        { status: 'Converted', count: flow.converted, color: '#8B5CF6' }
+      ].filter(item => item.count > 0);
+    }
+    return [{ status: 'No Data', count: 0, color: '#E5E7EB' }];
+  };
 
-  const referralRevenueData = [
-    { month: 'Jul', revenue: 45000, target: 40000 },
-    { month: 'Aug', revenue: 52000, target: 40000 },
-    { month: 'Sep', revenue: 58000, target: 40000 },
-    { month: 'Oct', revenue: 50000, target: 40000 },
-    { month: 'Nov', revenue: 64000, target: 40000 },
-    { month: 'Dec', revenue: 70000, target: 40000 }
-  ];
+  const getReferralRevenueData = () => {
+    if (doctorReferralData?.financialImpact) {
+      return [
+        { month: 'Current', revenue: doctorReferralData.financialImpact.revenueGenerated, target: 50000 }
+      ];
+    }
+    return [{ month: 'No Data', revenue: 0, target: 0 }];
+  };
 
   // Diagnostics Data
   const testTypesData = [
@@ -667,11 +724,11 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Appointment Status Distribution</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>{timeFilter} breakdown</p>
-                {chartData?.appointmentStatusData && chartData.appointmentStatusData.length > 0 ? (
+                {getAppointmentStatusData().some(item => item.value > 0) ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={chartData.appointmentStatusData}
+                        data={getAppointmentStatusData()}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -679,7 +736,7 @@ export default function DashboardPage() {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {chartData.appointmentStatusData.map((entry, index) => (
+                        {getAppointmentStatusData().map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -703,9 +760,9 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg border border-border p-6">
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Appointment Trends (6 Months)</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly performance tracking</p>
-                {chartData?.appointmentTrendsData && chartData.appointmentTrendsData.length > 0 ? (
+                {getAppointmentTrendsData().some(item => item.total > 0) ? (
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData.appointmentTrendsData}>
+                    <LineChart data={getAppointmentTrendsData()}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -736,7 +793,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Audiologist Performance</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>{timeFilter} appointments handled</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartData?.audiologistPerformanceData || []}>
+                  <BarChart data={getAudiologistPerformanceData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                     <YAxis />
@@ -753,7 +810,7 @@ export default function DashboardPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={chartData?.channelDistributionData || []}
+                      data={getChannelDistributionData()}
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
@@ -761,7 +818,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {(chartData?.channelDistributionData || []).map((entry, index) => (
+                      {getChannelDistributionData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -776,7 +833,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Booking Lead Time Distribution</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Days between booking and appointment</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartData?.bookingLeadTimeData || []}>
+                  <BarChart data={getBookingLeadTimeData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="range" />
                     <YAxis />
@@ -792,7 +849,7 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Attendance Rate Trend</h3>
               <p className="text-sm mb-4" style={{ color: '#717182' }}>Performance vs target (85%)</p>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData?.attendanceRateData || []}>
+                <LineChart data={getAttendanceRateData()}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis domain={[75, 95]} />
@@ -958,7 +1015,7 @@ export default function DashboardPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={referralSourceData}
+                      data={getReferralSourceData()}
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
@@ -966,7 +1023,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {referralSourceData.map((entry, index) => (
+                      {getReferralSourceData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -981,7 +1038,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Trends</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly performance tracking</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={referralTrendsData}>
+                  <LineChart data={getReferralTrendsData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -999,7 +1056,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Top Referring Doctors</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>This month&apos;s top performers</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={topReferringDoctorsData}>
+                  <BarChart data={getTopReferringDoctorsData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                     <YAxis />
@@ -1021,7 +1078,7 @@ export default function DashboardPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={referralConversionData}
+                      data={getReferralConversionData()}
                       cx="50%"
                       cy="50%"
                       innerRadius={40}
@@ -1029,7 +1086,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="count"
                     >
-                      {referralConversionData.map((entry, index) => (
+                      {getReferralConversionData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -1044,7 +1101,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Referral Revenue</h3>
                 <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly revenue from referrals</p>
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={referralRevenueData}>
+                  <LineChart data={getReferralRevenueData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />

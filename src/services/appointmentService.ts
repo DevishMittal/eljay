@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   AppointmentsResponse,
   AppointmentResponse,
@@ -192,6 +193,82 @@ class AppointmentService {
     const period = hours >= 12 ? 'PM' : 'AM';
     const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  // Update appointment visit status
+  async updateAppointmentStatus(appointmentId: string, visitStatus: 'check_in' | 'no_show' | 'absent', token?: string): Promise<AppointmentResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ visitStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update appointment status: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      throw error;
+    }
+  }
+
+  // Get appointments by user ID
+  async getAppointmentsByUserId(userId: string, token?: string): Promise<AppointmentsResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Fetch all appointments and filter by userId
+      const response = await fetch(`${BASE_URL}/api/v1/appointments?page=1&limit=1000`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch appointments: ${response.statusText}`);
+      }
+
+      const appointmentsData = await response.json();
+      
+      // Filter appointments by userId
+      const userAppointments = appointmentsData.data.appointments.filter(
+        (appointment: any) => appointment.userId === userId
+      );
+
+      return {
+        status: 'success',
+        data: {
+          appointments: userAppointments,
+          pagination: {
+            total: userAppointments.length,
+            page: 1,
+            limit: 1000,
+            pages: 1
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching appointments by user ID:', error);
+      throw error;
+    }
   }
 }
 

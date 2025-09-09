@@ -137,7 +137,7 @@ export default function InvoicesPage() {
       const matchesSearch = 
         invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.organizationName.toLowerCase().includes(searchTerm.toLowerCase());
+        (invoice.organizationName && invoice.organizationName.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Type filter
       const matchesType = typeFilter === "All Types" || invoice.invoiceType === typeFilter;

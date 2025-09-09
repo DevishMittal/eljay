@@ -62,8 +62,8 @@ class PatientPaymentHistoryService {
         details: {
           amount: payment.amount,
           method: payment.method,
-          transactionId: payment.transactionId,
-          processedBy: payment.receivedBy
+          transactionId: payment.transactionId || undefined,
+          processedBy: payment.receivedBy || undefined
         },
         originalData: payment
       });

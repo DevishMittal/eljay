@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
-import { Audiologist, Procedure, CreateAppointmentData, User, Doctor } from '@/types';
+import { Audiologist, Procedure, CreateAppointmentData, User, Doctor, Hospital } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { doctorService } from '@/services/doctorService';
+import HospitalService from '@/services/hospitalService';
 
 interface NewAppointment {
   id: string;
@@ -43,6 +44,7 @@ interface FormData {
   alternateNumber: string;
   occupation: string;
   customerType: string;
+  hospitalName: string; // For B2B patients
   selectedAudiologist: string;
   appointmentType: string;
   appointmentDate: string;
@@ -80,6 +82,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     alternateNumber: '',
     occupation: '',
     customerType: 'B2C',
+    hospitalName: '',
     selectedAudiologist: '',
     appointmentType: '',
     appointmentDate: '',
@@ -107,6 +110,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([]);
   const [totalProcedureDuration, setTotalProcedureDuration] = useState(0);
   const [referralDoctors, setReferralDoctors] = useState<Doctor[]>([]); // State for referral doctors
+  const [hospitals, setHospitals] = useState<Hospital[]>([]); // State for hospitals
+  const [customHospitalName, setCustomHospitalName] = useState(''); // State for custom hospital name
+  const [isOtherHospitalSelected, setIsOtherHospitalSelected] = useState(false); // State to track if "Other" is selected
+  const [errorMessage, setErrorMessage] = useState(''); // State for error messages
 
   // Load audiologists from API
   const loadAudiologists = useCallback(async () => {
@@ -142,6 +149,16 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     }
   }, [token]);
 
+  // Load hospitals from API
+  const loadHospitals = useCallback(async () => {
+    try {
+      const response = await HospitalService.getHospitals();
+      setHospitals(response.data.hospitals);
+    } catch (error) {
+      console.error('Error loading hospitals:', error);
+    }
+  }, []);
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -156,6 +173,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         alternateNumber: '',
         occupation: '',
         customerType: 'B2C',
+        hospitalName: '',
         selectedAudiologist: '',
         appointmentType: '',
         appointmentDate: '',
@@ -176,13 +194,17 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       setExistingUser(null);
       setSelectedProcedureIds([]);
       setTotalProcedureDuration(0);
+      setCustomHospitalName('');
+      setIsOtherHospitalSelected(false);
+      setErrorMessage(''); // Reset error message
       
       // Load audiologists and procedures
       loadAudiologists();
       loadProcedures();
       loadReferralDoctors(); // Load referral doctors when modal opens
+      loadHospitals(); // Load hospitals when modal opens
     }
-  }, [isOpen, loadAudiologists, loadProcedures, loadReferralDoctors]);
+  }, [isOpen, loadAudiologists, loadProcedures, loadReferralDoctors, loadHospitals]);
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
@@ -227,12 +249,25 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           alternateNumber: response.data.alternateNumber || '',
           occupation: response.data.occupation,
           customerType: response.data.customerType,
+          hospitalName: response.data.hospitalName || '',
+        }));
+      } else {
+        // User not found, populate mobile number with the phone number from stage 1
+        setExistingUser(null);
+        setFormData(prev => ({
+          ...prev,
+          mobileNumber: cleanPhone,
         }));
       }
     } catch (error) {
       console.error('User lookup failed:', error);
-      // User not found, continue with new user flow
+      // User not found, populate mobile number with the phone number from stage 1
       setExistingUser(null);
+      const cleanPhone = formData.phoneNumber.replace(/[^\d]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        mobileNumber: cleanPhone,
+      }));
     } finally {
       setUserLookupLoading(false);
     }
@@ -251,6 +286,72 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       ...prev,
       [field]: value
     }));
+    // Clear error message when user starts making changes
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+  };
+
+  // Helper function to handle phone number input with 10-digit limit
+  const handlePhoneInputChange = (field: keyof FormData, value: string) => {
+    // Remove any non-digit characters
+    const cleanValue = value.replace(/[^\d]/g, '');
+    // Limit to 10 digits
+    const limitedValue = cleanValue.slice(0, 10);
+    handleInputChange(field, limitedValue);
+    // Clear error message when user starts making changes
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+  };
+
+  // Helper function to parse error messages from API responses
+  const parseErrorMessage = (error: unknown): string => {
+    // Check if it's an axios error with response data
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      if (axiosError.response?.data?.message) {
+        const message = axiosError.response.data.message.toLowerCase();
+      
+      // Check for specific error patterns
+      if (message.includes('email') && message.includes('already') && message.includes('registered')) {
+        return 'This email address is already registered. Please use a different email or check if the patient already exists.';
+      }
+      if (message.includes('phone') && message.includes('already') && message.includes('registered')) {
+        return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
+      }
+      if (message.includes('phone number') && message.includes('already exists')) {
+        return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
+      }
+      if (message.includes('email') && message.includes('already exists')) {
+        return 'This email address is already registered. Please use a different email or check if the patient already exists.';
+      }
+      if (message.includes('audiologist') && message.includes('not available')) {
+        return 'The selected audiologist is not available at the chosen time. Please select a different time or audiologist.';
+      }
+      if (message.includes('appointment') && message.includes('conflict')) {
+        return 'There is a scheduling conflict. Please choose a different date or time.';
+      }
+      if (message.includes('invalid') && message.includes('date')) {
+        return 'Invalid appointment date. Please select a valid future date.';
+      }
+      if (message.includes('invalid') && message.includes('time')) {
+        return 'Invalid appointment time. Please select a valid time slot.';
+      }
+      
+        // Return the original message if no specific pattern matches
+        return axiosError.response.data.message;
+      }
+    }
+    
+    // Check for other error formats
+    if (error && typeof error === 'object' && 'message' in error) {
+      const errorWithMessage = error as { message: string };
+      return errorWithMessage.message;
+    }
+    
+    // Default error message
+    return 'An unexpected error occurred. Please try again.';
   };
 
 
@@ -276,6 +377,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setErrorMessage(''); // Clear any previous error messages
     try {
       let userId = existingUser?.id;
 
@@ -290,7 +392,8 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           gender: formData.gender,
           occupation: formData.occupation,
           customerType: formData.customerType,
-          alternateNumber: formData.alternateNumber || undefined
+          alternateNumber: formData.alternateNumber || undefined,
+          hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined
         };
 
         const userResponse = await patientService.createUser(userData, token || undefined);
@@ -361,6 +464,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.duration),
         procedures: formData.selectedProcedures || 'General Consultation',
+        hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined,
         referralSource: referralSourceData
       };
       
@@ -392,7 +496,8 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error creating appointment:', error);
-      alert('Failed to create appointment. Please try again.');
+      const errorMsg = parseErrorMessage(error);
+      setErrorMessage(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -428,6 +533,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       }
       if (!formData.gender) {
         alert('Please select patient gender.');
+        return false;
+      }
+      if (formData.customerType === 'B2B' && !formData.hospitalName) {
+        alert('Please select a hospital for B2B patients.');
         return false;
       }
     }
@@ -519,11 +628,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             type="tel"
             id="phoneNumber"
             value={formData.phoneNumber}
-            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+            onChange={(e) => handlePhoneInputChange('phoneNumber', e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
             placeholder="Enter phone number (e.g., 8025550104)"
             aria-label="Patient phone number"
+            maxLength={10}
           />
         </div>
 
@@ -605,13 +715,14 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              type="tel"
              id="mobileNumber"
              value={formData.mobileNumber}
-             onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
+             onChange={(e) => handlePhoneInputChange('mobileNumber', e.target.value)}
              className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
                existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
              }`}
              style={{ color: '#717182' }}
-             placeholder="8000948601"
+             placeholder="Enter your phone no."
              aria-label="Mobile number"
+             maxLength={10}
            />
          </div>
 
@@ -655,13 +766,14 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              type="tel"
              id="alternateNumber"
              value={formData.alternateNumber}
-             onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
+             onChange={(e) => handlePhoneInputChange('alternateNumber', e.target.value)}
              className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
                existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
              }`}
              style={{ color: '#717182' }}
              placeholder="Optional alternate contact"
              aria-label="Alternate number"
+             maxLength={10}
            />
          </div>
 
@@ -687,18 +799,23 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
              Customer Type {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
-           <input
-             type="text"
-             id="customerType"
+           <CustomDropdown
+             options={[
+               { value: 'B2C', label: 'B2C' },
+               { value: 'B2B', label: 'B2B' }
+             ]}
              value={formData.customerType}
-             onChange={(e) => handleInputChange('customerType', e.target.value)}
-             className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
-               existingUser ? 'border-green-200 bg-green-50' : 'border-gray-200'
-             }`}
-             style={{ color: '#717182' }}
-             placeholder="Customer type (e.g., B2C, B2B, New)"
+             onChange={(value) => {
+               handleInputChange('customerType', value);
+               // Reset hospital name when changing customer type
+               if (value === 'B2C') {
+                 handleInputChange('hospitalName', '');
+               }
+             }}
+             placeholder="Select customer type"
+             className={existingUser ? 'border-green-200 bg-green-50' : ''}
              aria-label="Customer type"
-             readOnly={!!existingUser}
+             disabled={!!existingUser}
            />
            {existingUser && (
              <p className="text-xs text-green-500 mt-1">
@@ -706,6 +823,63 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              </p>
            )}
          </div>
+
+         {/* Hospital field - only show for B2B patients */}
+         {formData.customerType === 'B2B' && (
+           <div>
+             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+               Hospital Name {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>} *
+             </label>
+             <div className="space-y-2">
+               <CustomDropdown
+                 options={[
+                   ...hospitals.map(hospital => ({ value: hospital.name, label: hospital.name })),
+                   { value: 'Other', label: 'Other' }
+                 ]}
+                 value={isOtherHospitalSelected ? 'Other' : formData.hospitalName}
+                 onChange={(value) => {
+                   if (value === 'Other') {
+                     setIsOtherHospitalSelected(true);
+                     setCustomHospitalName('');
+                     handleInputChange('hospitalName', '');
+                   } else {
+                     setIsOtherHospitalSelected(false);
+                     setCustomHospitalName('');
+                     handleInputChange('hospitalName', value);
+                   }
+                 }}
+                 placeholder="Select hospital"
+                 className={existingUser ? 'border-green-200 bg-green-50' : ''}
+                 aria-label="Hospital name"
+                 disabled={!!existingUser}
+               />
+               
+               {/* Custom hospital input - only show when "Other" is selected */}
+               {isOtherHospitalSelected && (
+                 <div>
+                   <input
+                     type="text"
+                     value={customHospitalName}
+                     onChange={(e) => {
+                       setCustomHospitalName(e.target.value);
+                       // Update the hospital name directly in form data
+                       handleInputChange('hospitalName', e.target.value);
+                     }}
+                     className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                     style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+                     placeholder="Enter hospital name"
+                     aria-label="Custom hospital name"
+                   />
+                 </div>
+               )}
+             </div>
+             {existingUser && (
+               <p className="text-xs text-green-500 mt-1">
+                 ✓ This field is populated from existing user data
+               </p>
+             )}
+           </div>
+         )}
        </div>
     </div>
   );
@@ -1058,13 +1232,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                 key={procedure.id}
                 onClick={() => {
                   const updatedIds = isSelected 
-                    ? selectedProcedureIds.filter(id => id !== procedure.id)
+                    ? selectedProcedureIds.filter(procId => procId !== procedure.id)
                     : [...selectedProcedureIds, procedure.id];
                   setSelectedProcedureIds(updatedIds);
                   
 
                   // Calculate total duration (30 minutes per procedure as default)
-                  const totalDuration = updatedIds.reduce((sum, id) => {
+                  const totalDuration = updatedIds.reduce((sum, procId) => {
                     return sum + 30; // Default 30 minutes per procedure
                   }, 0);
                   setTotalProcedureDuration(totalDuration);
@@ -1144,6 +1318,9 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
               <p><strong>Phone:</strong> {formData.phoneNumber || 'Not provided'}</p>
               <p><strong>Email:</strong> {formData.email || 'Not provided'}</p>
               <p><strong>Classification:</strong> {formData.customerType}</p>
+              {formData.customerType === 'B2B' && formData.hospitalName && (
+                <p><strong>Hospital:</strong> {formData.hospitalName}</p>
+              )}
             </div>
           </div>
           
@@ -1254,6 +1431,18 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
           {/* Progress Bar */}
           {renderProgressBar()}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-red-700">{errorMessage}</p>
+              </div>
+            </div>
+          )}
 
           {/* Form Content */}
           <div className="mb-6">

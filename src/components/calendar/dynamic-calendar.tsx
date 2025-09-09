@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/utils';
 import Image from 'next/image'; // Import for using SVG as <Image>
+import { appointmentService } from '@/services/appointmentService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import {
   CalendarView,
   CalendarDate,
@@ -39,15 +43,19 @@ export default function DynamicCalendar({
   onViewChange,
   className
 }: DynamicCalendarProps) {
+  const { token } = useAuth();
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(getToday());
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [hoveredAppointment, setHoveredAppointment] = useState<Appointment | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [appointmentSummary, setAppointmentSummary] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Generate time slots
   const timeSlots = useMemo(() => generateTimeSlots(8, 17, 30), []);
@@ -101,12 +109,22 @@ export default function DynamicCalendar({
   };
 
   // Handle appointment click
-  const handleAppointmentClick = (appointment: Appointment) => {
+  const handleAppointmentClick = async (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsDetailsModalOpen(true);
     setIsDropdownOpen(false); // Close dropdown when opening modal
     setIsEditingNotes(false); // Reset notes editing state
     setNotesText(appointment.notes || ''); // Initialize notes text
+    
+    // Fetch appointment summary for dynamic data
+    try {
+      const summary = await appointmentService.getAppointmentSummary(appointment.id, token || undefined);
+      setAppointmentSummary(summary.data);
+    } catch (error) {
+      console.error('Error fetching appointment summary:', error);
+      setAppointmentSummary(null);
+    }
+    
     // Don't call onAppointmentClick here as we want to show our own modal
   };
 
@@ -114,6 +132,109 @@ export default function DynamicCalendar({
   const handleClickOutside = (event: React.MouseEvent) => {
     if (isDropdownOpen) {
       setIsDropdownOpen(false);
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async (status: 'check_in' | 'no_show') => {
+    if (!selectedAppointment || !token) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      await appointmentService.updateAppointmentStatus(selectedAppointment.id, status, token);
+      
+      // Update the appointment summary with new status
+      if (appointmentSummary) {
+        setAppointmentSummary({
+          ...appointmentSummary,
+          visitStatus: status
+        });
+      }
+      
+      setIsDropdownOpen(false);
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle collect payment navigation
+  const handleCollectPayment = () => {
+    if (!selectedAppointment || !appointmentSummary) return;
+    
+    // Close the modal first
+    setIsDetailsModalOpen(false);
+    setSelectedAppointment(null);
+    
+    // Navigate to B2C invoice creation page with patient data
+    const patientData = appointmentSummary.patient;
+    if (patientData) {
+      const params = new URLSearchParams({
+        patientId: patientData.id,
+        patientName: patientData.fullname,
+        patientPhone: patientData.phoneNumber || ''
+      });
+      
+      router.push(`/billing/invoices/create/b2c?${params.toString()}`);
+    } else {
+      // Fallback to appointment data if summary patient data is not available
+      const params = new URLSearchParams({
+        patientName: selectedAppointment.patient,
+        patientPhone: selectedAppointment.phoneNumber || ''
+      });
+      
+      router.push(`/billing/invoices/create/b2c?${params.toString()}`);
+    }
+  };
+
+  // Get status color based on visit status
+  const getStatusColor = (status?: string | null, appointmentDate?: string) => {
+    // Check if appointment date has passed and no status is set
+    if (!status && appointmentDate) {
+      const appointmentDateTime = new Date(appointmentDate);
+      const now = new Date();
+      if (appointmentDateTime < now) {
+        return 'bg-orange-100 text-orange-800'; // Absent for past appointments
+      }
+    }
+    
+    if (!status) return 'bg-gray-100 text-gray-800';
+    
+    switch (status) {
+      case 'check_in':
+        return 'bg-green-100 text-green-800';
+      case 'no_show':
+        return 'bg-red-100 text-red-800';
+      case 'absent':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get status text
+  const getStatusText = (status?: string | null, appointmentDate?: string) => {
+    // Check if appointment date has passed and no status is set
+    if (!status && appointmentDate) {
+      const appointmentDateTime = new Date(appointmentDate);
+      const now = new Date();
+      if (appointmentDateTime < now) {
+        return 'Absent'; // Absent for past appointments
+      }
+    }
+    
+    if (!status) return 'Pending';
+    
+    switch (status) {
+      case 'check_in':
+        return 'Checked In';
+      case 'no_show':
+        return 'No Show';
+      case 'absent':
+        return 'Absent';
+      default:
+        return 'Pending';
     }
   };
 
@@ -242,7 +363,9 @@ export default function DynamicCalendar({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Appointment Details</h2>
-                <p className="text-xs text-gray-500 mt-1">Patient appointment information and management options for {appointment.patient}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Patient appointment information and management options for {appointmentSummary?.patient?.fullname || appointment.patient}
+                </p>
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -290,14 +413,23 @@ export default function DynamicCalendar({
                     />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-gray-900 text-base">{appointment.patient}</h3>
+                    <h3 className="font-semibold text-gray-900 text-base">
+                      {appointmentSummary?.patient?.fullname || appointment.patient}
+                    </h3>
                     <p className="text-xs text-gray-500">Patient ID: PAT999</p>
-                    <p className="text-xs text-gray-600">{appointment.phoneNumber || 'No contact number'}</p>
+                    <p className="text-xs text-gray-600">
+                      {appointmentSummary?.patient?.phoneNumber || appointment.phoneNumber || 'No contact number'}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {appointmentSummary?.patient?.email || 'No email'}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right space-y-1">
                   <div className="flex justify-end">
-                    <div className="bg-yellow-100 text-yellow-800 w-16 rounded-full text-xs text-center border-amber-300 border">Pending</div>
+                    <div className={`w-20 rounded-full text-xs text-center ${getStatusColor(appointmentSummary?.visitStatus, appointmentSummary?.date)}`}>
+                      {getStatusText(appointmentSummary?.visitStatus, appointmentSummary?.date)}
+                    </div>
                   </div>
                   <div className="flex items-center justify-end space-x-1 text-orange-600 text-xs">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -305,7 +437,6 @@ export default function DynamicCalendar({
                     </svg>
                     <span>Incomplete profile</span>
                   </div>
-                  <div className="text-xs text-gray-500 text-right mt-2">No email</div>
                 </div>
               </div>
             </div>
@@ -318,12 +449,15 @@ export default function DynamicCalendar({
                   <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-semibold text-gray-900 text-xs">In-Clinic Appointment</span>
+                  <span className="font-semibold text-gray-900 text-xs">
+                    {appointmentSummary?.procedures || appointment.type || 'In-Clinic Appointment'}
+                  </span>
                 </div>
                 <div className="relative">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="px-5  py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2"
+                    disabled={isUpdatingStatus}
+                    className="px-5 py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50"
                   >
                     <span className='pr-8'>Mark as...</span>
                     <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -336,10 +470,7 @@ export default function DynamicCalendar({
                       <div className="py-1">
                         <div 
                           className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            // Handle check in logic here
-                          }}
+                          onClick={() => handleStatusUpdate('check_in')}
                         >
                           <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -348,13 +479,10 @@ export default function DynamicCalendar({
                         </div>
                         <div 
                           className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            // Handle no-show logic here
-                          }}
+                          onClick={() => handleStatusUpdate('no_show')}
                         >
                           <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                           <span>No-Show</span>
                         </div>
@@ -366,10 +494,17 @@ export default function DynamicCalendar({
               <hr className="my-3 border-gray-200" />
               <div className="flex items-center justify-between text-xs">
                 <p className="text-gray-700">
-                  <span className="font-medium text-gray-400 ">Doctor:</span> <span className="font-semibold">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
+                  <span className="font-medium text-gray-400 ">Doctor:</span> <span className="font-semibold">
+                    {appointmentSummary?.audiologist?.name || appointment.audiologist || 'Dr. Alex Kumar'}
+                  </span>
                 </p>
                 <p className="text-gray-700">
-                  <span className="font-medium">Time:</span> <span className="font-semibold">{appointment.time} - {appointment.duration} minutes</span>
+                  <span className="font-medium">Time:</span> <span className="font-semibold">
+                    {appointmentSummary ? 
+                      `${appointmentService.formatAppointmentTime(appointmentSummary.time)} - ${appointmentSummary.duration} minutes` :
+                      `${appointment.time} - ${appointment.duration} minutes`
+                    }
+                  </span>
                 </p>
               </div>
             </div>
@@ -382,7 +517,9 @@ export default function DynamicCalendar({
                   <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-xs text-gray-900">Follow-up Consultation</span>
+                  <span className="text-xs text-gray-900">
+                    {appointmentSummary?.procedures || appointment.type || 'Follow-up Consultation'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -437,10 +574,7 @@ export default function DynamicCalendar({
             {/* Action Buttons */}
             <div className="flex justify-between space-x-3 pt-4 ">
               <button
-                onClick={() => {
-                  setIsDetailsModalOpen(false);
-                  setSelectedAppointment(null);
-                }}
+                onClick={handleCollectPayment}
                 className="px-10 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer flex items-center space-x-2 text-sm font-medium"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
