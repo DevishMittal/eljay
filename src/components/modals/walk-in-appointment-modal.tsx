@@ -309,36 +309,76 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   const parseErrorMessage = (error: unknown): string => {
     // Check if it's an axios error with response data
     if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response?: { data?: { message?: string } } };
+      const axiosError = error as { 
+        response?: { 
+          data?: { 
+            message?: string;
+            errors?: Array<{ field: string; message: string; value?: string }>;
+            status?: string;
+          } 
+        } 
+      };
+      
+      // Handle validation errors with specific field information
+      if (axiosError.response?.data?.errors && Array.isArray(axiosError.response.data.errors)) {
+        const errors = axiosError.response.data.errors;
+        
+        // Check for phone number already registered
+        const phoneError = errors.find(err => 
+          err.field === 'phoneNumber' && 
+          (err.message.toLowerCase().includes('already registered') || 
+           err.message.toLowerCase().includes('already exists'))
+        );
+        if (phoneError) {
+          return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
+        }
+        
+        // Check for email already registered
+        const emailError = errors.find(err => 
+          err.field === 'email' && 
+          (err.message.toLowerCase().includes('already registered') || 
+           err.message.toLowerCase().includes('already exists'))
+        );
+        if (emailError) {
+          return 'This email address is already registered. Please use a different email or check if the patient already exists.';
+        }
+        
+        // Return the first error message if no specific pattern matches
+        if (errors.length > 0) {
+          return errors[0].message;
+        }
+      }
+      
+      // Handle general error messages
       if (axiosError.response?.data?.message) {
         const message = axiosError.response.data.message.toLowerCase();
-      
-      // Check for specific error patterns
-      if (message.includes('email') && message.includes('already') && message.includes('registered')) {
-        return 'This email address is already registered. Please use a different email or check if the patient already exists.';
-      }
-      if (message.includes('phone') && message.includes('already') && message.includes('registered')) {
-        return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
-      }
-      if (message.includes('phone number') && message.includes('already exists')) {
-        return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
-      }
-      if (message.includes('email') && message.includes('already exists')) {
-        return 'This email address is already registered. Please use a different email or check if the patient already exists.';
-      }
-      if (message.includes('audiologist') && message.includes('not available')) {
-        return 'The selected audiologist is not available at the chosen time. Please select a different time or audiologist.';
-      }
-      if (message.includes('appointment') && message.includes('conflict')) {
-        return 'There is a scheduling conflict. Please choose a different date or time.';
-      }
-      if (message.includes('invalid') && message.includes('date')) {
-        return 'Invalid appointment date. Please select a valid future date.';
-      }
-      if (message.includes('invalid') && message.includes('time')) {
-        return 'Invalid appointment time. Please select a valid time slot.';
-      }
-      
+        
+        // Check for specific error patterns in the main message
+        if (message.includes('duplicate user information')) {
+          return 'User information already exists. Please check if the patient is already registered.';
+        }
+        if (message.includes('validation failed')) {
+          return 'Please check the information you entered and try again.';
+        }
+        if (message.includes('email') && message.includes('already') && message.includes('registered')) {
+          return 'This email address is already registered. Please use a different email or check if the patient already exists.';
+        }
+        if (message.includes('phone') && message.includes('already') && message.includes('registered')) {
+          return 'This phone number is already registered. Please use a different phone number or check if the patient already exists.';
+        }
+        if (message.includes('audiologist') && message.includes('not available')) {
+          return 'The selected audiologist is not available at the chosen time. Please select a different time or audiologist.';
+        }
+        if (message.includes('appointment') && message.includes('conflict')) {
+          return 'There is a scheduling conflict. Please choose a different date or time.';
+        }
+        if (message.includes('invalid') && message.includes('date')) {
+          return 'Invalid appointment date. Please select a valid future date.';
+        }
+        if (message.includes('invalid') && message.includes('time')) {
+          return 'Invalid appointment time. Please select a valid time slot.';
+        }
+        
         // Return the original message if no specific pattern matches
         return axiosError.response.data.message;
       }

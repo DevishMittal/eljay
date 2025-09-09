@@ -25,6 +25,7 @@ import { checkPatientProcedures, PatientProcedureInfo } from '@/utils/procedureU
 import FileUploadModal from '@/components/modals/file-upload-modal';
 import FileList from '@/components/ui/file-list';
 import { fileService, UploadedFile } from '@/services/fileService';
+import MedicalHistoryTimeline from '@/components/medical-history-timeline';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -1651,15 +1652,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 {/* Medical History Section */}
                 <div id="medical-history" className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-sm font-semibold mb-6 text-gray-900">Medical History Timeline</h2>
-                  <div className="text-center py-16">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xs font-medium mb-2 text-gray-900">Medical History Coming Soon</h3>
-                    <p className="text-gray-500 text-xs">Medical history functionality will be available soon.</p>
-                  </div>
+                  <MedicalHistoryTimeline patientId={resolvedParams.id} />
                 </div>
               </div>
             )}

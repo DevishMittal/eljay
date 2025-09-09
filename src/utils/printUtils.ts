@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Invoice } from '@/types';
+import { Invoice, Payment, Expense } from '@/types';
 
 /**
  * Print utility functions for invoices and other documents
@@ -159,7 +158,7 @@ export const printInvoice = (invoice: Invoice, options: PrintOptions = {}) => {
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice, options);
+  const invoiceHTML = generateInvoiceHTML(invoice);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -193,7 +192,7 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice, options);
+  const invoiceHTML = generateInvoiceHTML(invoice);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -228,7 +227,7 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
 /**
  * Generate HTML for invoice printing
  */
-const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
+const generateInvoiceHTML = (invoice: Invoice) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -243,18 +242,18 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
       <div class="invoice-header">
         <div class="company-info">
           <h1 class="company-name">Eljay Hearing Care</h1>
-          <p class="company-details">Professional Audiology Services</p>
+          <p class="company-details">${invoice.invoiceType === 'B2C' ? 'Professional Audiology Services' : 'Corporate Hearing Screening Services'}</p>
           <p class="company-address">123 Healthcare Avenue, Medical District</p>
           <p class="company-address">Chennai, Tamil Nadu 600001</p>
           <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
         </div>
         <div class="invoice-status">
-          <div class="status-badge status-${invoice.paymentStatus.toLowerCase()}">
+          <div class="status-badge status-${invoice.paymentStatus.toLowerCase().replace(' ', '-')}">
             ${invoice.paymentStatus}
           </div>
           <div class="contact-info">
             <p>Phone: +91 44 1234 5678</p>
-            <p>Email: info@eljayhearing.com</p>
+            <p>Email: ${invoice.invoiceType === 'B2C' ? 'info@eljayhearing.com' : 'corporate@eljayhearing.com'}</p>
             <p>Website: www.eljayhearing.com</p>
           </div>
         </div>
@@ -265,7 +264,7 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
         <div class="bill-to">
           <h3>Bill To</h3>
           <p class="customer-name">${invoice.invoiceType === 'B2C' ? invoice.patientName : invoice.organizationName}</p>
-          <p class="customer-type">${invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Hospital/Organization'}</p>
+          <p class="customer-type">${invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Corporate Account'}</p>
           ${invoice.invoiceType === 'B2C' ? '<p class="customer-id">Patient ID: PAT001</p>' : ''}
           ${invoice.invoiceType === 'B2B' ? `<p class="customer-contact">Primary Contact: ${invoice.patientName}</p>` : ''}
         </div>
@@ -292,33 +291,58 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
 
       <!-- Services Table -->
       <div class="services-section">
-        <h3>Services & Items</h3>
+        <h3>${invoice.invoiceType === 'B2C' ? 'Services & Items' : 'Screening Details'}</h3>
         <table class="services-table">
           <thead>
             <tr>
-              <th>Service/Item</th>
-              <th class="text-center">Qty</th>
-              <th class="text-right">Unit Cost</th>
-              <th class="text-right">Discount</th>
-              <th class="text-right">Total</th>
+              ${invoice.invoiceType === 'B2C' ? `
+                <th>Service/Item</th>
+                <th class="text-center">Qty</th>
+                <th class="text-right">Unit Cost</th>
+                <th class="text-right">Discount</th>
+                <th class="text-right">Total</th>
+              ` : `
+                <th>S.No</th>
+                <th>Date</th>
+                <th>OP/IP No</th>
+                <th>Bio Name</th>
+                <th>Diagnostic</th>
+                <th class="text-right">Amount</th>
+                <th class="text-right">Discount</th>
+                <th class="text-right">Total</th>
+              `}
             </tr>
           </thead>
           <tbody>
-            ${invoice.screenings.map((screening, index) => `
-              <tr>
-                <td>
-                  <div class="service-details">
-                    <p class="service-name">${screening.diagnosticName}</p>
-                    <p class="service-patient">${screening.bioName}</p>
-                    <p class="service-date">Date: ${formatDate(screening.screeningDate)}</p>
-                  </div>
-                </td>
-                <td class="text-center">1</td>
-                <td class="text-right">₹${screening.amount.toLocaleString()}</td>
-                <td class="text-right text-red">${screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}</td>
-                <td class="text-right font-bold">₹${(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
-              </tr>
-            `).join('')}
+            ${invoice.invoiceType === 'B2C' ? 
+              (invoice.services?.map((service) => `
+                <tr>
+                  <td>
+                    <div class="service-details">
+                      <p class="service-name">${service.serviceName}</p>
+                      <p class="service-patient">${service.description}</p>
+                      ${service.description ? '<p class="service-date">Warranty: 3 years warranty + health tracking</p>' : ''}
+                    </div>
+                  </td>
+                  <td class="text-center">${service.quantity}</td>
+                  <td class="text-right">₹${service.unitCost.toLocaleString()}</td>
+                  <td class="text-right text-red">${service.discount > 0 ? `-₹${service.discount.toLocaleString()}` : '-'}</td>
+                  <td class="text-right font-bold">₹${(service.total || ((service.quantity * service.unitCost) - service.discount)).toLocaleString()}</td>
+                </tr>
+              `).join('') || '') :
+              (invoice.screenings?.map((screening, index) => `
+                <tr>
+                  <td>${screening.serialNumber || index + 1}</td>
+                  <td>${formatDate(screening.screeningDate)}</td>
+                  <td>${screening.opNumber}</td>
+                  <td>${screening.bioName}</td>
+                  <td>${screening.diagnosticName}</td>
+                  <td class="text-right">₹${screening.amount.toLocaleString()}</td>
+                  <td class="text-right text-red">${screening.discount > 0 ? `-₹${screening.discount.toLocaleString()}` : '-'}</td>
+                  <td class="text-right font-bold">₹${(screening.amount - (screening.discount || 0)).toLocaleString()}</td>
+                </tr>
+              `).join('') || '')
+            }
           </tbody>
         </table>
       </div>
@@ -334,16 +358,27 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
             </div>
           ` : ''}
           <div class="terms-section">
-            <h4>Terms & Conditions</h4>
+            <h4>${invoice.invoiceType === 'B2C' ? 'Terms & Conditions' : 'Corporate Terms & Conditions'}</h4>
             <ul>
-              <li>Payment is due within 30 days of invoice date</li>
-              <li>All services provided are subject to professional terms</li>
-              <li>Warranty terms apply as per individual service agreements</li>
-              <li>For any queries, please contact us at the above details</li>
+              ${invoice.invoiceType === 'B2C' ? `
+                <li>Payment is due within 30 days of invoice date</li>
+                <li>All services provided are subject to professional terms</li>
+                <li>Warranty terms apply as per individual service agreements</li>
+                <li>For any queries, please contact us at the above details</li>
+              ` : `
+                <li>Payment terms: Net 30 days from invoice date</li>
+                <li>All screenings conducted as per corporate agreement</li>
+                <li>Reports will be provided within 48 hours of screening</li>
+                <li>Follow-up consultations available on request</li>
+                <li>For billing queries, contact: accounts@eljayhearing.com</li>
+              `}
             </ul>
           </div>
           <div class="tax-info">
-            <p>* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt.</p>
+            <p>${invoice.invoiceType === 'B2C' 
+              ? '* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.'
+              : '* This invoice covers corporate hearing screening services as per the signed agreement dated 15 Jun 2025.'
+            }</p>
           </div>
         </div>
 
@@ -351,7 +386,7 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
           <h3>Invoice Summary</h3>
           <div class="summary-table">
             <div class="summary-row">
-              <span>Subtotal:</span>
+              <span>${invoice.invoiceType === 'B2C' ? 'Subtotal:' : 'Screening Subtotal:'}</span>
               <span class="text-right">₹${invoice.subtotal.toLocaleString()}</span>
             </div>
             <div class="summary-row">
@@ -378,22 +413,45 @@ const generateInvoiceHTML = (invoice: Invoice, options: PrintOptions = {}) => {
               <span class="font-bold">Total Amount:</span>
               <span class="text-right font-bold">₹${invoice.totalAmount.toLocaleString()}</span>
             </div>
-            <div class="summary-row">
-              <span>Amount Paid:</span>
-              <span class="text-right">₹${(invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 0).toLocaleString()}</span>
-            </div>
-            <div class="summary-row">
-              <span>Balance Due:</span>
-              <span class="text-right text-red">₹${(invoice.paymentStatus === 'Paid' ? 0 : invoice.totalAmount).toLocaleString()}</span>
-            </div>
+            ${invoice.invoiceType === 'B2C' ? `
+              <div class="summary-row">
+                <span>Amount Paid:</span>
+                <span class="text-right">₹${(
+                  invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 
+                  invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.45) : 0
+                ).toLocaleString()}</span>
+              </div>
+              <div class="summary-row">
+                <span>Balance Due:</span>
+                <span class="text-right text-red">₹${(
+                  invoice.paymentStatus === 'Paid' ? 0 : 
+                  invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.55) :
+                  invoice.totalAmount
+                ).toLocaleString()}</span>
+              </div>
+            ` : ''}
+            ${invoice.invoiceType === 'B2B' ? `
+              <div class="payment-instructions">
+                <h5>Payment Instructions</h5>
+                <p>Bank: HDFC Bank Ltd.</p>
+                <p>Account: Eljay Hearing Care Pvt Ltd</p>
+                <p>A/C No: 50200012345678</p>
+                <p>IFSC: HDFC0001234</p>
+                <p><strong>Please mention invoice number in transfer details</strong></p>
+              </div>
+            ` : ''}
           </div>
         </div>
       </div>
 
       <!-- Footer -->
       <div class="invoice-footer">
-        <p>Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
+        <p>${invoice.invoiceType === 'B2C' 
+          ? 'Thank you for choosing Eljay Hearing Care for your audiology needs.'
+          : 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.'
+        }</p>
         <p>This is a computer-generated invoice and does not require a signature.</p>
+        ${invoice.invoiceType === 'B2B' ? '<p>For corporate services inquiries: corporate@eljayhearing.com | +91 44 1234 5679</p>' : ''}
         <p>Generated on ${formatDate(invoice.createdAt)}</p>
       </div>
     </div>
@@ -694,6 +752,31 @@ const getInvoicePrintStyles = () => {
     .invoice-footer p {
       margin: 5px 0;
       font-size: 14px;
+    }
+
+    .payment-instructions {
+      background-color: #f9fafb;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+
+    .payment-instructions h5 {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+
+    .payment-instructions p {
+      margin: 3px 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .status-partially-paid {
+      background-color: #fef3c7;
+      color: #92400e;
     }
   `;
 };

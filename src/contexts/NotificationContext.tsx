@@ -37,6 +37,16 @@ export const getNotificationIcon = (type: Notification['type']): string => {
       return '⏰';
     case 'system_alert':
       return '🚨';
+    case 'low_stock':
+      return '📦';
+    case 'pending_tasks':
+      return '⏱️';
+    case 'overdue_payment':
+      return '💸';
+    case 'todays_appointments':
+      return '📋';
+    case 'expired_items':
+      return '⚠️';
     default:
       return '🔔';
   }
@@ -84,110 +94,108 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Sample notifications based on the images shown
     {
       id: '1',
-      type: 'equipment_maintenance',
-      priority: 'medium',
-      title: 'Equipment Maintenance',
-      message: 'Calibrate equipment for newborn hearing screening at Sunrise Hospital',
+      type: 'pending_tasks',
+      priority: 'high',
+      title: 'Pending Tasks',
+      message: 'You have 3 pending tasks requiring attention',
       isRead: false,
       isActionRequired: true,
-      createdAt: new Date(Date.now() - 60000), // 1 minute ago
-      actionUrl: '/settings/equipment',
-      relatedEntityType: 'equipment',
-      metadata: { location: 'Sunrise Hospital', equipmentType: 'newborn_screening' }
+      createdAt: new Date(Date.now() - 300000), // 5 minutes ago
+      actionUrl: '/dashboard',
+      relatedEntityType: 'task',
+      metadata: { taskCount: 3 }
     },
     {
       id: '2',
-      type: 'schedule_appointment',
+      type: 'low_stock',
       priority: 'medium',
-      title: 'Schedule Appointment',
-      message: 'Confirm Baby Miller appointment and testing protocols',
+      title: 'Low Stock Alert',
+      message: '2 inventory items are running low on stock',
       isRead: false,
       isActionRequired: true,
-      createdAt: new Date(Date.now() - 60000), // 1 minute ago
-      actionUrl: '/appointments',
-      relatedEntityType: 'appointment',
-      relatedEntityId: 'baby-miller-001',
-      metadata: { patientName: 'Baby Miller', appointmentType: 'testing_protocols' }
+      createdAt: new Date(Date.now() - 900000), // 15 minutes ago
+      actionUrl: '/inventory',
+      relatedEntityType: 'inventory',
+      metadata: { itemCount: 2 }
     },
     {
       id: '3',
-      type: 'payment_overdue',
+      type: 'overdue_payment',
       priority: 'high',
-      title: 'Payment Overdue',
-      message: 'Invoice #INV-2024-001 for John Smith is 7 days overdue (₹2,500)',
+      title: 'Overdue Payment',
+      message: 'Invoice INV-001 is overdue for payment',
       isRead: false,
       isActionRequired: true,
-      createdAt: new Date(Date.now() - 14400000), // 4 hours ago
-      actionUrl: '/billing/invoices/INV-2024-001',
+      createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+      actionUrl: '/billing/invoices/INV-001',
       relatedEntityType: 'invoice',
-      relatedEntityId: 'INV-2024-001',
-      metadata: { patientName: 'John Smith', amount: 2500, daysOverdue: 7 }
+      relatedEntityId: 'INV-001',
+      metadata: { invoiceNumber: 'INV-001' }
     },
     {
       id: '4',
-      type: 'lab_results_ready',
+      type: 'todays_appointments',
       priority: 'medium',
-      title: 'Lab Results Ready',
-      message: 'Audiogram results for Maria Garcia are ready for review',
+      title: 'Today\'s Appointments',
+      message: 'You have 6 appointments scheduled for today',
       isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 14400000), // 4 hours ago
-      actionUrl: '/patients/maria-garcia-001/emr',
-      relatedEntityType: 'patient',
-      relatedEntityId: 'maria-garcia-001',
-      metadata: { patientName: 'Maria Garcia', testType: 'audiogram' }
+      isActionRequired: false,
+      createdAt: new Date(Date.now() - 7200000), // 2 hours ago
+      actionUrl: '/appointments',
+      relatedEntityType: 'appointment',
+      metadata: { appointmentCount: 6 }
     },
     {
       id: '5',
-      type: 'new_patient_registration',
-      priority: 'low',
-      title: 'New Patient Registration',
-      message: 'Baby Miller has been registered for newborn hearing screening',
+      type: 'expired_items',
+      priority: 'high',
+      title: 'Expired Items',
+      message: '1 inventory item has expired warranty',
       isRead: false,
-      isActionRequired: false,
-      createdAt: new Date(Date.now() - 21600000), // 6 hours ago
-      actionUrl: '/patients/baby-miller-001',
-      relatedEntityType: 'patient',
-      relatedEntityId: 'baby-miller-001',
-      metadata: { patientName: 'Baby Miller', registrationType: 'newborn_screening' }
+      isActionRequired: true,
+      createdAt: new Date(Date.now() - 10800000), // 3 hours ago
+      actionUrl: '/inventory',
+      relatedEntityType: 'inventory',
+      metadata: { expiredCount: 1 }
     },
     {
       id: '6',
-      type: 'equipment_maintenance',
-      priority: 'medium',
-      title: 'Equipment Maintenance',
-      message: 'OAE equipment calibration scheduled for tomorrow',
+      type: 'new_patient_registration',
+      priority: 'low',
+      title: 'New Patient Registration',
+      message: 'Emily Davis has registered as a new patient',
       isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 28800000), // 8 hours ago
-      actionUrl: '/settings/equipment',
-      relatedEntityType: 'equipment',
-      metadata: { equipmentType: 'OAE', scheduledDate: 'tomorrow' }
+      isActionRequired: false,
+      createdAt: new Date(Date.now() - 86400000), // Yesterday
+      actionUrl: '/patients',
+      relatedEntityType: 'patient',
+      metadata: { patientName: 'Emily Davis' }
     },
     {
       id: '7',
-      type: 'payment_overdue',
+      type: 'schedule_appointment',
       priority: 'low',
-      title: 'Payment Reminder',
-      message: 'Invoice #INV-2024-002 payment due in 2 days (₹1,200)',
+      title: 'Appointment Completed',
+      message: 'Hearing test completed for Robert Wilson',
       isRead: false,
       isActionRequired: false,
-      createdAt: new Date(Date.now() - 86400000), // 1 day ago
-      actionUrl: '/billing/invoices/INV-2024-002',
-      relatedEntityType: 'invoice',
-      relatedEntityId: 'INV-2024-002',
-      metadata: { patientName: 'Sarah Wilson', amount: 1200, dueInDays: 2 }
+      createdAt: new Date(Date.now() - 86400000), // Yesterday
+      actionUrl: '/patients',
+      relatedEntityType: 'appointment',
+      metadata: { patientName: 'Robert Wilson', testType: 'hearing test' }
     },
     {
       id: '8',
-      type: 'system_alert',
+      type: 'payment_overdue',
       priority: 'low',
-      title: 'System Update',
-      message: 'System maintenance scheduled for tonight at 11 PM',
+      title: 'Payment Received',
+      message: 'Payment of ₹2,000 received from Sarah Johnson',
       isRead: false,
       isActionRequired: false,
-      createdAt: new Date(Date.now() - 86400000), // 1 day ago
-      metadata: { maintenanceTime: '11 PM', estimatedDuration: '2 hours' }
+      createdAt: new Date(Date.now() - 172800000), // 2 days ago
+      actionUrl: '/billing/payments',
+      relatedEntityType: 'payment',
+      metadata: { patientName: 'Sarah Johnson', amount: 2000 }
     }
   ]);
 
@@ -294,6 +302,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       lab_results_ready: notifications.filter(n => n.type === 'lab_results_ready').length,
       task_reminder: notifications.filter(n => n.type === 'task_reminder').length,
       system_alert: notifications.filter(n => n.type === 'system_alert').length,
+      low_stock: notifications.filter(n => n.type === 'low_stock').length,
+      pending_tasks: notifications.filter(n => n.type === 'pending_tasks').length,
+      overdue_payment: notifications.filter(n => n.type === 'overdue_payment').length,
+      todays_appointments: notifications.filter(n => n.type === 'todays_appointments').length,
+      expired_items: notifications.filter(n => n.type === 'expired_items').length,
     };
 
     return {

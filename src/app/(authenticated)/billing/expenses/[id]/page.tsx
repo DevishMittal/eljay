@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
 import ExpenseService from '@/services/expenseService';
 import { Expense } from '@/types';
-import { printCurrentPage, printElement } from '@/utils/printUtils';
+import { printExpenseReport, downloadExpenseReportAsPDF } from '@/utils/expensePrintUtils';
 
 export default function ExpenseDetailsPage() {
   const params = useParams();
@@ -45,339 +45,26 @@ export default function ExpenseDetailsPage() {
   const handleDownloadReport = () => {
     if (!expense) return;
     
-    // Create a print window for PDF download
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      console.error('Could not open print window');
-      return;
-    }
-
-    const expenseHTML = generateExpenseHTML(expense);
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Expense Report ${expense.expenseNumber}</title>
-          <style>
-            ${getExpensePrintStyles()}
-          </style>
-        </head>
-        <body>
-          ${expenseHTML}
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    
-    // Wait for content to load, then trigger print dialog
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-      
-      // Close window after a delay to allow user to save PDF
-      setTimeout(() => {
-        printWindow.close();
-      }, 1000);
-    };
+    downloadExpenseReportAsPDF(expense, {
+      title: `Expense Report ${expense.expenseNumber}`,
+      filename: `expense-report-${expense.expenseNumber}.pdf`
+    });
   };
 
   const handlePrint = () => {
     if (!expense) return;
     
-    // Print the expense content
-    printElement('expense-content', `Expense Report ${expense.expenseNumber}`);
+    printExpenseReport(expense, {
+      title: `Expense Report ${expense.expenseNumber}`,
+      filename: `expense-report-${expense.expenseNumber}.pdf`
+    });
   };
 
   const handleEdit = () => {
     window.location.href = `/billing/expenses/${expenseId}/edit`;
   };
 
-  // Helper function to generate expense HTML for printing
-  const generateExpenseHTML = (expense: Expense) => {
-    const formatDate = (dateString: string) => {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    };
 
-    return `
-      <div class="expense-container">
-        <!-- Header -->
-        <div class="expense-header">
-          <div class="company-info">
-            <h1 class="company-name">Eljay Hearing Care</h1>
-            <p class="company-details">Professional Audiology Services</p>
-            <p class="company-address">123 Healthcare Avenue, Medical District</p>
-            <p class="company-address">Chennai, Tamil Nadu 600001</p>
-            <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
-          </div>
-          <div class="expense-status">
-            <div class="contact-info">
-              <p>Phone: +91 44 1234 5678</p>
-              <p>Email: info@eljayhearing.com</p>
-              <p>Website: www.eljayhearing.com</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Expense Details -->
-        <div class="expense-details">
-          <div class="expense-info">
-            <h3>Expense Details</h3>
-            <div class="info-row">
-              <span>Expense Number:</span>
-              <span class="info-value">${expense.expenseNumber}</span>
-            </div>
-            <div class="info-row">
-              <span>Expense Date:</span>
-              <span class="info-value">${formatDate(expense.date)}</span>
-            </div>
-            <div class="info-row">
-              <span>Category:</span>
-              <span class="info-value">${expense.category}</span>
-            </div>
-            <div class="info-row">
-              <span>Payment Method:</span>
-              <span class="info-value">${expense.paymentMethod}</span>
-            </div>
-            <div class="info-row">
-              <span>Vendor:</span>
-              <span class="info-value">${expense.vendor}</span>
-            </div>
-            ${expense.approvedBy ? `
-              <div class="info-row">
-                <span>Approved By:</span>
-                <span class="info-value">${expense.approvedBy}</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-
-        <!-- Description -->
-        <div class="description-section">
-          <h3>Description</h3>
-          <p class="description-text">${expense.description}</p>
-          ${expense.remarks ? `
-            <h4>Remarks</h4>
-            <p class="remarks-text">${expense.remarks}</p>
-          ` : ''}
-        </div>
-
-        <!-- Financial Summary -->
-        <div class="financial-summary">
-          <h3>Financial Summary</h3>
-          <div class="summary-table">
-            <div class="summary-row">
-              <span>Expense Amount:</span>
-              <span class="text-right">₹${expense.amount.toLocaleString()}</span>
-            </div>
-            <div class="summary-row">
-              <span>Tax Amount:</span>
-              <span class="text-right">₹${expense.taxAmount.toLocaleString()}</span>
-            </div>
-            <div class="summary-row total-row">
-              <span class="font-bold">Total Amount:</span>
-              <span class="text-right font-bold">₹${expense.totalAmount.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="expense-footer">
-          <p>Generated on ${formatDate(expense.createdAt)}</p>
-        </div>
-      </div>
-    `;
-  };
-
-  // Helper function to get expense print styles
-  const getExpensePrintStyles = () => {
-    return `
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        margin: 0;
-        padding: 20px;
-        color: #000;
-        line-height: 1.6;
-        font-size: 14px;
-      }
-
-      @media print {
-        body {
-          margin: 0;
-          padding: 15px;
-        }
-        
-        .no-print {
-          display: none !important;
-        }
-        
-        .print-break {
-          page-break-before: always;
-        }
-        
-        .print-break-after {
-          page-break-after: always;
-        }
-        
-        .print-break-inside {
-          page-break-inside: avoid;
-        }
-      }
-
-      .expense-container {
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      .expense-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #333;
-      }
-
-      .company-name {
-        font-size: 28px;
-        font-weight: bold;
-        margin: 0 0 10px 0;
-        color: #1f2937;
-      }
-
-      .company-details,
-      .company-address,
-      .company-gst {
-        margin: 5px 0;
-        color: #6b7280;
-        font-size: 14px;
-      }
-
-      .expense-status {
-        text-align: right;
-      }
-
-      .contact-info p {
-        margin: 3px 0;
-        font-size: 14px;
-        color: #6b7280;
-      }
-
-      .expense-details {
-        margin-bottom: 30px;
-      }
-
-      .expense-info h3 {
-        font-size: 18px;
-        font-weight: bold;
-        margin: 0 0 15px 0;
-        color: #1f2937;
-      }
-
-      .info-row {
-        display: flex;
-        justify-content: space-between;
-        margin: 8px 0;
-        font-size: 14px;
-      }
-
-      .info-value {
-        font-weight: bold;
-        color: #1f2937;
-      }
-
-      .description-section {
-        margin-bottom: 30px;
-      }
-
-      .description-section h3 {
-        font-size: 18px;
-        font-weight: bold;
-        margin: 0 0 15px 0;
-        color: #1f2937;
-      }
-
-      .description-text {
-        margin: 10px 0;
-        font-size: 14px;
-        color: #374151;
-      }
-
-      .description-section h4 {
-        font-size: 16px;
-        font-weight: bold;
-        margin: 15px 0 10px 0;
-        color: #374151;
-      }
-
-      .remarks-text {
-        margin: 10px 0;
-        font-size: 14px;
-        color: #6b7280;
-      }
-
-      .financial-summary {
-        margin-bottom: 30px;
-      }
-
-      .financial-summary h3 {
-        font-size: 18px;
-        font-weight: bold;
-        margin: 0 0 15px 0;
-        color: #1f2937;
-      }
-
-      .summary-table {
-        background-color: #f9fafb;
-        padding: 20px;
-        border-radius: 8px;
-      }
-
-      .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin: 8px 0;
-        font-size: 14px;
-      }
-
-      .total-row {
-        border-top: 2px solid #d1d5db;
-        padding-top: 12px;
-        margin-top: 15px;
-        font-size: 16px;
-      }
-
-      .text-right {
-        text-align: right;
-      }
-
-      .font-bold {
-        font-weight: bold;
-      }
-
-      .expense-footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 1px solid #d1d5db;
-        color: #6b7280;
-      }
-
-      .expense-footer p {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-    `;
-  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -493,9 +180,9 @@ export default function ExpenseDetailsPage() {
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Download Report
+              Download PDF
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               onClick={handlePrint}
               className="border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -504,7 +191,7 @@ export default function ExpenseDetailsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Print
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={handleEdit}
@@ -713,9 +400,9 @@ export default function ExpenseDetailsPage() {
                     <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Download Report
+                    Download PDF
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     onClick={handlePrint}
                     className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -724,7 +411,7 @@ export default function ExpenseDetailsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     Print Expense
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outline"
                     onClick={handleEdit}

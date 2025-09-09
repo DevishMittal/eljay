@@ -61,11 +61,11 @@ export default function RootLayout({
         className="antialiased min-h-screen bg-background text-foreground"
       >
         <AuthProvider>
-          <TaskProvider>
-            <NotificationProvider>
+          <NotificationProvider>
+            <TaskProvider>
               {children}
-            </NotificationProvider>
-          </TaskProvider>
+            </TaskProvider>
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

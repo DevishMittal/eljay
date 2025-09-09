@@ -641,7 +641,7 @@ export interface UpdateDoctorData {
 // Notification types
 export interface Notification {
   id: string;
-  type: 'equipment_maintenance' | 'schedule_appointment' | 'payment_overdue' | 'new_patient_registration' | 'lab_results_ready' | 'task_reminder' | 'system_alert';
+  type: 'equipment_maintenance' | 'schedule_appointment' | 'payment_overdue' | 'new_patient_registration' | 'lab_results_ready' | 'task_reminder' | 'system_alert' | 'low_stock' | 'pending_tasks' | 'overdue_payment' | 'todays_appointments' | 'expired_items';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   title: string;
   message: string;
@@ -650,7 +650,7 @@ export interface Notification {
   createdAt: Date;
   readAt?: Date;
   relatedEntityId?: string; // ID of related patient, appointment, etc.
-  relatedEntityType?: 'patient' | 'appointment' | 'invoice' | 'task' | 'equipment';
+  relatedEntityType?: 'patient' | 'appointment' | 'invoice' | 'task' | 'equipment' | 'inventory' | 'payment';
   actionUrl?: string; // URL to navigate when clicked
   metadata?: Record<string, any>; // Additional data specific to notification type
 }

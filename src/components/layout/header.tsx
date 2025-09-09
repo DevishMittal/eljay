@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
         <div className="flex items-center space-x-4">
           {/* Bell Icon with Notification Badge */}
           <div className="relative">
-            {/* <button 
+            <button 
               onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
               className="p-1 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -96,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                   {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
                 </span>
               )}
-            </button> */}
+            </button>
             
             {/* Notification Dropdown */}
             <NotificationDropdown

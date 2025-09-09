@@ -208,7 +208,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </svg>
                 Download PDF
               </button>
-              <button
+              {/* <button
                 onClick={handlePrint}
                 className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 border bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-8 rounded-md px-3 has-[>svg]:px-2.5 gap-2"
               >
@@ -218,7 +218,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   <rect x="6" y="14" width="12" height="8" rx="1"></rect>
                 </svg>
                 Print
-              </button>
+              </button> */}
               <button
                 onClick={handleEdit}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 px-4 py-1.5 has-[>svg]:px-3 gap-2 bg-orange-600 hover:bg-orange-700 text-white"
@@ -945,21 +945,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         )}
 
         {/* Footer */}
-        {(viewMode === 'invoice' || viewMode === 'pdf') && (
-          <div className="text-center text-sm text-[#4A5565] max-w-4xl mx-auto" style={{ fontFamily: 'Segoe UI' }}>
-            <p>
-              {invoice.invoiceType === 'B2C' 
-                ? 'Thank you for choosing Eljay Hearing Care for your audiology needs.'
-                : 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.'
-              }
-            </p>
-            <p className="mt-1">This is a computer-generated invoice and does not require a signature.</p>
-            {invoice.invoiceType === 'B2B' && (
-              <p className="mt-1">For corporate services inquiries: corporate@eljayhearing.com | +91 44 1234 5679</p>
-            )}
-            <p className="mt-1">Generated on {formatDate(invoice.createdAt)}</p>
-          </div>
-        )}
+  
       </div>
     </MainLayout>
   );

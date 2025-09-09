@@ -34,7 +34,16 @@ class PatientService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to lookup user: ${response.statusText}`);
+        // Parse the error response to preserve the original error details
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(`Failed to lookup user: ${response.statusText}`);
+        // Attach the original response data to the error object
+        (error as any).response = {
+          data: errorData,
+          status: response.status,
+          statusText: response.statusText
+        };
+        throw error;
       }
 
       return await response.json();
@@ -63,7 +72,16 @@ class PatientService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to create user: ${response.statusText}`);
+        // Parse the error response to preserve the original error details
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(`Failed to create user: ${response.statusText}`);
+        // Attach the original response data to the error object
+        (error as any).response = {
+          data: errorData,
+          status: response.status,
+          statusText: response.statusText
+        };
+        throw error;
       }
 
       return await response.json();

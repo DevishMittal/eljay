@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNotification } from './NotificationContext';
 
 export interface Task {
   id: string;
@@ -11,7 +12,8 @@ export interface Task {
   taskType: 'General' | 'Patient Care' | 'Administrative' | 'Equipment' | 'Training';
   completed: boolean;
   setReminder: boolean;
-  reminderTime?: '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before';
+  reminderTime?: '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before' | 'custom';
+  customReminderTime?: string;
   createdAt: Date;
   completedAt?: Date;
 }
@@ -70,7 +72,42 @@ const isUpcoming = (date: Date): boolean => {
   return date > tomorrow && date <= nextWeek;
 };
 
+// Helper function to calculate reminder time
+const calculateReminderTime = (dueDate: Date, reminderTime: string, customTime?: string): Date => {
+  if (reminderTime === 'custom' && customTime) {
+    return new Date(customTime);
+  }
+  
+  const reminderDate = new Date(dueDate);
+  
+  switch (reminderTime) {
+    case '5 minutes before':
+      reminderDate.setMinutes(reminderDate.getMinutes() - 5);
+      break;
+    case '15 minutes before':
+      reminderDate.setMinutes(reminderDate.getMinutes() - 15);
+      break;
+    case '30 minutes before':
+      reminderDate.setMinutes(reminderDate.getMinutes() - 30);
+      break;
+    case '1 hour before':
+      reminderDate.setHours(reminderDate.getHours() - 1);
+      break;
+    case '2 hours before':
+      reminderDate.setHours(reminderDate.getHours() - 2);
+      break;
+    case '1 day before':
+      reminderDate.setDate(reminderDate.getDate() - 1);
+      break;
+    default:
+      reminderDate.setMinutes(reminderDate.getMinutes() - 15); // Default to 15 minutes
+  }
+  
+  return reminderDate;
+};
+
 export function TaskProvider({ children }: { children: React.ReactNode }) {
+  const { addNotification } = useNotification();
   const [tasks, setTasks] = useState<Task[]>([
     // Sample tasks
     {
@@ -159,6 +196,47 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('eljay-tasks', JSON.stringify(tasks));
   }, [tasks]);
+
+  // Check for task reminders and create notifications
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = new Date();
+      
+      tasks.forEach(task => {
+        if (task.setReminder && task.reminderTime && !task.completed) {
+          const reminderTime = calculateReminderTime(task.dueDate, task.reminderTime, task.customReminderTime);
+          
+          // Check if reminder time has passed and we haven't created a notification yet
+          if (now >= reminderTime && now <= new Date(reminderTime.getTime() + 60000)) { // Within 1 minute window
+            addNotification({
+              type: 'task_reminder',
+              priority: task.priority.toLowerCase() as 'low' | 'medium' | 'high',
+              title: 'Task Reminder',
+              message: `Task "${task.title}" is due ${task.reminderTime === 'custom' ? 'at the scheduled time' : task.reminderTime}`,
+              isActionRequired: true,
+              relatedEntityId: task.id,
+              relatedEntityType: 'task',
+              actionUrl: '/dashboard',
+              metadata: {
+                taskTitle: task.title,
+                taskDescription: task.description,
+                dueDate: task.dueDate,
+                reminderTime: task.reminderTime
+              }
+            });
+          }
+        }
+      });
+    };
+
+    // Check reminders every minute
+    const interval = setInterval(checkReminders, 60000);
+    
+    // Initial check
+    checkReminders();
+
+    return () => clearInterval(interval);
+  }, [tasks, addNotification]);
 
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     const newTask: Task = {

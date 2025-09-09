@@ -9,6 +9,7 @@ import PaymentService from '@/services/paymentService';
 import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { printPaymentReceipt, downloadPaymentReceiptAsPDF } from '@/utils/paymentPrintUtils';
 
 export default function PaymentReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -57,12 +58,21 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDownloadPDF = () => {
-    console.log('Downloading PDF for payment:', resolvedParams.id);
+    if (!payment) return;
+    
+    downloadPaymentReceiptAsPDF(payment, {
+      title: `Payment Receipt ${payment.receiptNumber}`,
+      filename: `payment-receipt-${payment.receiptNumber}.pdf`
+    });
   };
 
   const handlePrint = () => {
-    console.log('Printing payment receipt:', resolvedParams.id);
-    window.print();
+    if (!payment) return;
+    
+    printPaymentReceipt(payment, {
+      title: `Payment Receipt ${payment.receiptNumber}`,
+      filename: `payment-receipt-${payment.receiptNumber}.pdf`
+    });
   };
 
   const handleEdit = () => {
@@ -70,12 +80,21 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDownloadReceipt = () => {
-    console.log('Downloading receipt for payment:', resolvedParams.id);
+    if (!payment) return;
+    
+    downloadPaymentReceiptAsPDF(payment, {
+      title: `Payment Receipt ${payment.receiptNumber}`,
+      filename: `payment-receipt-${payment.receiptNumber}.pdf`
+    });
   };
 
   const handlePrintReceipt = () => {
-    console.log('Printing receipt for payment:', resolvedParams.id);
-    window.print();
+    if (!payment) return;
+    
+    printPaymentReceipt(payment, {
+      title: `Payment Receipt ${payment.receiptNumber}`,
+      filename: `payment-receipt-${payment.receiptNumber}.pdf`
+    });
   };
 
   const handleEditPayment = () => {
@@ -184,7 +203,7 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
               </svg>
               Download PDF
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               onClick={handlePrint}
               className="border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -193,7 +212,7 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Print
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={handleEdit}
@@ -217,7 +236,7 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="payment-content">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Payment Information */}
@@ -406,7 +425,7 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
                     </svg>
                     Download Receipt
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     onClick={handlePrintReceipt}
                     className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -415,7 +434,7 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     Print Receipt
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outline"
                     onClick={handleEditPayment}

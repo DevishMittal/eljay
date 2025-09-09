@@ -21,7 +21,8 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
     dueDate: new Date().toISOString().split('T')[0],
     taskType: 'General' as 'General' | 'Patient Care' | 'Administrative' | 'Equipment' | 'Training',
     setReminder: false,
-    reminderTime: '15 minutes before' as '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before',
+    reminderTime: '15 minutes before' as '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before' | 'custom',
+    customReminderTime: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,6 +63,7 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
       completed: false,
       setReminder: formData.setReminder,
       reminderTime: formData.reminderTime,
+      customReminderTime: formData.customReminderTime,
     });
 
     // Reset form
@@ -73,6 +75,7 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
       taskType: 'General',
       setReminder: false,
       reminderTime: '15 minutes before',
+      customReminderTime: '',
     });
     setErrors({});
     onClose();
@@ -88,6 +91,7 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
       taskType: 'General',
       setReminder: false,
       reminderTime: '15 minutes before',
+      customReminderTime: '',
     });
     setErrors({});
     onClose();
@@ -262,13 +266,34 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
                     { value: '30 minutes before', label: '30 minutes before' },
                     { value: '1 hour before', label: '1 hour before' },
                     { value: '2 hours before', label: '2 hours before' },
-                    { value: '1 day before', label: '1 day before' }
+                    { value: '1 day before', label: '1 day before' },
+                    { value: 'custom', label: 'Custom time' }
                   ]}
                   value={formData.reminderTime}
                   onChange={(value) => handleInputChange('reminderTime', value)}
                   placeholder="Select reminder time"
                   aria-label="Select reminder time"
                 />
+                
+                {/* Custom Time Picker - Only show when custom is selected */}
+                {formData.reminderTime === 'custom' && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Custom reminder time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.customReminderTime}
+                      onChange={(e) => handleInputChange('customReminderTime', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min={new Date().toISOString().slice(0, 16)}
+                      aria-label="Custom reminder date and time"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Set a specific date and time for the reminder
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
