@@ -6,8 +6,9 @@ import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
 import { referralAnalyticsService } from '@/services/referralAnalyticsService';
 import { DashboardService, DashboardDoctorReferralData } from '@/services/dashboardService';
+import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
-import { ReferralSource } from '@/types';
+import { ReferralSource, CreateDoctorData } from '@/types';
 import { formatCurrency } from '@/utils/commissionUtils';
 import {
   LineChart, Line, PieChart, Pie, Cell,
@@ -71,6 +72,7 @@ export default function DoctorReferralsPage() {
     status: 'draft' | 'sent' | 'paid';
     dueDate: string;
   }>>([]);
+  const [isAddingDoctor, setIsAddingDoctor] = useState(false);
   const { token } = useAuth();
 
   // Fetch referrals and analytics from API
@@ -124,6 +126,73 @@ export default function DoctorReferralsPage() {
       fetchData();
     }
   }, [token]);
+
+  // Handle adding new doctor
+  const handleAddDoctor = async (doctorData: CreateDoctorData) => {
+    try {
+      setIsAddingDoctor(true);
+      
+      // Transform the form data to match the API structure
+      const apiData = {
+        name: doctorData.name,
+        email: doctorData.email,
+        phoneNumber: doctorData.phoneNumber,
+        countrycode: doctorData.countrycode || '+91', // Fixed to India
+        specialization: doctorData.specialization,
+        bdmName: doctorData.bdmName,
+        bdmContact: doctorData.bdmContact || undefined, // Optional field
+        commissionRate: doctorData.commissionRate,
+        facilityName: doctorData.facilityName
+      };
+
+      // Call the API to create the doctor
+      const response = await doctorService.createDoctor(apiData, token || undefined);
+      
+      if (response.status === 'success') {
+        console.log('Doctor created successfully:', response.data);
+        
+        // Refresh the data to show the new doctor
+        const fetchData = async () => {
+          try {
+            // Get date range for last 30 days
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 30);
+            
+            const dateRange = {
+              startDate: startDate.toISOString().split('T')[0],
+              endDate: endDate.toISOString().split('T')[0]
+            };
+
+            // Refresh doctor referral data
+            const doctorReferralResponse = await DashboardService.getDoctorReferralData(dateRange.startDate, dateRange.endDate);
+            setDoctorReferralData(doctorReferralResponse);
+            
+            // Refresh referrals
+            const referralsResponse = await referralService.getReferrals(token || undefined);
+            if (referralsResponse.status === 'success') {
+              setReferrals(referralsResponse.data);
+            }
+          } catch (error) {
+            console.error('Error refreshing data:', error);
+          }
+        };
+        
+        await fetchData();
+        
+        // Close the modal
+        setIsAddDoctorModalOpen(false);
+        
+        // You could add a success notification here
+        alert('Doctor added successfully!');
+      }
+    } catch (error) {
+      console.error('Error creating doctor:', error);
+      alert('Failed to add doctor. Please try again.');
+    } finally {
+      setIsAddingDoctor(false);
+    }
+  };
 
   // Filter referrals by type
   const doctorReferrals = referrals.filter(ref => ref.type === 'doctor');
@@ -878,12 +947,7 @@ export default function DoctorReferralsPage() {
       <AddDoctorModal
         isOpen={isAddDoctorModalOpen}
         onClose={() => setIsAddDoctorModalOpen(false)}
-        onSubmit={(doctorData) => {
-          console.log('New doctor data:', doctorData);
-          // Here you would typically send the data to your API
-          // For now, we'll just log it and close the modal
-          setIsAddDoctorModalOpen(false);
-        }}
+        onSubmit={handleAddDoctor}
       />
     </MainLayout>
   );

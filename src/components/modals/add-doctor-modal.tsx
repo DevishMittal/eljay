@@ -3,54 +3,38 @@
 import React, { useState } from 'react';
 import { cn } from '@/utils';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import { CreateDoctorData } from '@/types';
 
 interface AddDoctorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (doctorData: DoctorData) => void;
-}
-
-interface DoctorData {
-  fullName: string;
-  email: string;
-  hospitalClinic: string;
-  specialization: string;
-  phone: string;
-  bdmContact: string;
-  location: string;
-  bdmName: string;
-  commissionRate: string;
+  onSubmit: (doctorData: CreateDoctorData) => void;
 }
 
 const specializations = [
-  { value: 'ENT (Otolaryngology)', label: 'ENT (Otolaryngology)' },
+  { value: 'ENT', label: 'ENT' },
   { value: 'Neurology', label: 'Neurology' },
-  { value: 'Family Medicine', label: 'Family Medicine' },
-  { value: 'Pediatrics', label: 'Pediatrics' },
-  { value: 'Internal Medicine', label: 'Internal Medicine' },
-  { value: 'Cardiology', label: 'Cardiology' },
-  { value: 'Orthopedics', label: 'Orthopedics' },
-  { value: 'Dermatology', label: 'Dermatology' },
-  { value: 'Ophthalmology', label: 'Ophthalmology' },
-  { value: 'General Practice', label: 'General Practice' }
+  { value: 'Pediatrician', label: 'Pediatrician' },
+  { value: 'General Medicine', label: 'General Medicine' },
+  { value: 'Others', label: 'Others' }
 ];
 
 export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorModalProps) {
-  const [formData, setFormData] = useState<DoctorData>({
-    fullName: '',
+  const [formData, setFormData] = useState<CreateDoctorData>({
+    name: '',
     email: '',
-    hospitalClinic: '',
+    phoneNumber: '',
+    countrycode: '+91',
     specialization: '',
-    phone: '',
     bdmContact: '',
-    location: '',
     bdmName: '',
-    commissionRate: ''
+    commissionRate: 0,
+    facilityName: ''
   });
 
-  const [errors, setErrors] = useState<Partial<DoctorData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof DoctorData, value: string) => {
+  const handleInputChange = (field: keyof CreateDoctorData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -59,38 +43,34 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<DoctorData> = {};
+    const newErrors: Record<string, string> = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (!formData.hospitalClinic.trim()) {
-      newErrors.hospitalClinic = 'Hospital/Clinic is required';
+    if (!formData.facilityName?.trim()) {
+      newErrors.facilityName = 'Hospital/Clinic is required';
     }
     if (!formData.specialization) {
       newErrors.specialization = 'Specialization is required';
     }
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone is required';
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone is required';
     }
-    if (!formData.bdmContact.trim()) {
-      newErrors.bdmContact = 'BDM Contact is required';
-    }
-    if (!formData.location.trim()) {
-      newErrors.location = 'Location is required';
-    }
-    if (!formData.bdmName.trim()) {
+    // BDM Contact is now optional
+    // Location field removed - not in API
+    if (!formData.bdmName?.trim()) {
       newErrors.bdmName = 'BDM Name is required';
     }
-    if (!formData.commissionRate.trim()) {
+    if (formData.commissionRate === undefined || formData.commissionRate === null) {
       newErrors.commissionRate = 'Commission rate is required';
     } else {
-      const rate = parseFloat(formData.commissionRate);
+      const rate = Number(formData.commissionRate);
       if (isNaN(rate) || rate < 0 || rate > 100) {
         newErrors.commissionRate = 'Commission rate must be between 0 and 100';
       }
@@ -103,18 +83,23 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      // Convert empty strings to undefined for optional fields (omit from API call)
+      const submitData = {
+        ...formData,
+        bdmContact: formData.bdmContact?.trim() || undefined
+      };
+      onSubmit(submitData);
       // Reset form
       setFormData({
-        fullName: '',
+        name: '',
         email: '',
-        hospitalClinic: '',
+        phoneNumber: '',
+        countrycode: '+91',
         specialization: '',
-        phone: '',
         bdmContact: '',
-        location: '',
         bdmName: '',
-        commissionRate: ''
+        commissionRate: 0,
+        facilityName: ''
       });
       setErrors({});
       onClose();
@@ -160,17 +145,17 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 <input
                   type="text"
                   placeholder="e.g., Dr. John Smith"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.fullName ? "border-red-300" : "border-gray-300",
+                    errors.name ? "border-red-300" : "border-gray-300",
                     "bg-gray-50"
                   )}
                   style={{ color: '#101828' }}
                 />
-                {errors.fullName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
 
@@ -182,17 +167,17 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 <input
                   type="text"
                   placeholder="e.g., City General Hospital"
-                  value={formData.hospitalClinic}
-                  onChange={(e) => handleInputChange('hospitalClinic', e.target.value)}
+                  value={formData.facilityName || ''}
+                  onChange={(e) => handleInputChange('facilityName', e.target.value)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.hospitalClinic ? "border-red-300" : "border-gray-300",
+                    errors.facilityName ? "border-red-300" : "border-gray-300",
                     "bg-gray-50"
                   )}
                   style={{ color: '#101828' }}
                 />
-                {errors.hospitalClinic && (
-                  <p className="text-red-500 text-xs mt-1">{errors.hospitalClinic}</p>
+                {errors.facilityName && (
+                  <p className="text-red-500 text-xs mt-1">{errors.facilityName}</p>
                 )}
               </div>
 
@@ -204,41 +189,20 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 <input
                   type="tel"
                   placeholder="e.g., +91 98765 43210"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.phone ? "border-red-300" : "border-gray-300",
+                    errors.phoneNumber ? "border-red-300" : "border-gray-300",
                     "bg-gray-50"
                   )}
                   style={{ color: '#101828' }}
                 />
-                {errors.phone && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                {errors.phoneNumber && (
+                  <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
                 )}
               </div>
 
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Location *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Mumbai, Maharashtra"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className={cn(
-                    "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.location ? "border-red-300" : "border-gray-300",
-                    "bg-gray-50"
-                  )}
-                  style={{ color: '#101828' }}
-                />
-                {errors.location && (
-                  <p className="text-red-500 text-xs mt-1">{errors.location}</p>
-                )}
-              </div>
 
               {/* BDM Name */}
               <div>
@@ -248,7 +212,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 <input
                   type="text"
                   placeholder="e.g., Sarah Johnson"
-                  value={formData.bdmName}
+                  value={formData.bdmName || ''}
                   onChange={(e) => handleInputChange('bdmName', e.target.value)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
@@ -276,8 +240,8 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                   min="0"
                   max="100"
                   placeholder="e.g., 10.5"
-                  value={formData.commissionRate}
-                  onChange={(e) => handleInputChange('commissionRate', e.target.value)}
+                  value={formData.commissionRate || ''}
+                  onChange={(e) => handleInputChange('commissionRate', parseFloat(e.target.value) || 0)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
                     errors.commissionRate ? "border-red-300" : "border-gray-300",
@@ -341,12 +305,12 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* BDM Contact */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  BDM Contact *
+                  BDM Contact
                 </label>
                 <input
                   type="tel"
                   placeholder="e.g., +91 87654 32109"
-                  value={formData.bdmContact}
+                  value={formData.bdmContact || ''}
                   onChange={(e) => handleInputChange('bdmContact', e.target.value)}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
@@ -363,7 +327,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+          <div className="flex justify-end space-x-3 mt-8 pt-6 !border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
@@ -374,7 +338,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="px-3 py-1 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
             >
               Add Doctor
             </button>

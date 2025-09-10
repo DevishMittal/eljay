@@ -9,6 +9,7 @@ import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Doctor, CreateDoctorData } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import AddDoctorModal from '@/components/modals/add-doctor-modal';
 
 const DoctorsPage = () => {
   const pathname = usePathname();
@@ -20,17 +21,16 @@ const DoctorsPage = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreateDoctorData>({
+  const [editFormData, setEditFormData] = useState<CreateDoctorData>({
     name: '',
     email: '',
     phoneNumber: '',
-    countrycode: '+1',
+    countrycode: '+91',
     specialization: '',
     bdmName: '',
     bdmContact: '',
     commissionRate: 15,
-    facilityName: '',
-    location: ''
+    facilityName: ''
   });
 
   const tabs = [
@@ -110,16 +110,11 @@ const DoctorsPage = () => {
   ];
 
   const specializations = [
-    'ENT (Otolaryngology)',
+    'ENT',
     'Neurology',
-    'Cardiology',
-    'Orthopedics',
-    'Dermatology',
-    'Ophthalmology',
-    'Internal Medicine',
-    'Family Medicine',
-    'Pediatrics',
-    'Psychiatry'
+    'Pediatrician',
+    'General Medicine',
+    'Others'
   ];
 
   const specializationOptions = specializations.map(spec => ({
@@ -128,11 +123,7 @@ const DoctorsPage = () => {
   }));
 
   const countryCodeOptions = [
-    { value: '+1', label: '+1 (USA/Canada)' },
-    { value: '+44', label: '+44 (UK)' },
-    { value: '+61', label: '+61 (Australia)' },
-    { value: '+91', label: '+91 (India)' },
-    { value: '+86', label: '+86 (China)' }
+    { value: '+91', label: '+91 (India)' }
   ];
 
   // Fetch doctors data
@@ -154,59 +145,33 @@ const DoctorsPage = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setEditFormData(prev => ({
       ...prev,
       [name]: name === 'commissionRate' ? parseFloat(value) || 0 : value
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await doctorService.createDoctor(formData, token || undefined);
-      await fetchDoctors(); // Refresh the list
-      setShowAddModal(false);
-      setFormData({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        countrycode: '+1',
-        specialization: '',
-        bdmName: '',
-        bdmContact: '',
-        commissionRate: 15,
-        facilityName: '',
-        location: ''
-      });
-    } catch (err) {
-      console.error('Error creating doctor:', err);
-      // You might want to show an error message to the user here
-    }
-  };
-
-  const handleCancel = () => {
-    setShowAddModal(false);
+  const handleCancelEdit = () => {
     setShowEditModal(false);
     setEditingDoctor(null);
-    setFormData({
+    setEditFormData({
       name: '',
       email: '',
       phoneNumber: '',
-      countrycode: '+1',
+      countrycode: '+91',
       specialization: '',
       bdmName: '',
       bdmContact: '',
       commissionRate: 15,
-      facilityName: '',
-      location: ''
+      facilityName: ''
     });
   };
 
   const handleEdit = (doctor: Doctor) => {
     setEditingDoctor(doctor);
-    setFormData({
+    setEditFormData({
       name: doctor.name,
       email: doctor.email,
       phoneNumber: doctor.phoneNumber,
@@ -215,8 +180,7 @@ const DoctorsPage = () => {
       bdmName: doctor.bdmName || '',
       bdmContact: doctor.bdmContact || '',
       commissionRate: doctor.commissionRate || 15,
-      facilityName: doctor.facilityName || '',
-      location: doctor.location || ''
+      facilityName: doctor.facilityName || ''
     });
     setShowEditModal(true);
   };
@@ -227,29 +191,27 @@ const DoctorsPage = () => {
     
     try {
       const updateData = {
-        specialization: formData.specialization,
-        phoneNumber: formData.phoneNumber,
-        bdmName: formData.bdmName,
-        bdmContact: formData.bdmContact,
-        commissionRate: formData.commissionRate,
-        facilityName: formData.facilityName,
-        location: formData.location
+        specialization: editFormData.specialization,
+        phoneNumber: editFormData.phoneNumber,
+        bdmName: editFormData.bdmName,
+        bdmContact: editFormData.bdmContact,
+        commissionRate: editFormData.commissionRate,
+        facilityName: editFormData.facilityName
       };
       await doctorService.updateDoctor(editingDoctor.id, updateData, token || undefined);
       await fetchDoctors(); // Refresh the list
       setShowEditModal(false);
       setEditingDoctor(null);
-      setFormData({
+      setEditFormData({
         name: '',
         email: '',
         phoneNumber: '',
-        countrycode: '+1',
+        countrycode: '+91',
         specialization: '',
         bdmName: '',
         bdmContact: '',
         commissionRate: 15,
-        facilityName: '',
-        location: ''
+        facilityName: ''
       });
     } catch (err) {
       console.error('Error updating doctor:', err);
@@ -266,6 +228,23 @@ const DoctorsPage = () => {
         console.error('Error deleting doctor:', err);
         // You might want to show an error message to the user here
       }
+    }
+  };
+
+  // Handle adding new doctor using the shared modal
+  const handleAddDoctor = async (doctorData: CreateDoctorData) => {
+    try {
+      // Convert empty strings to undefined for optional fields (omit from API call)
+      const submitData = {
+        ...doctorData,
+        bdmContact: doctorData.bdmContact?.trim() || undefined
+      };
+      await doctorService.createDoctor(submitData, token || undefined);
+      await fetchDoctors(); // Refresh the list
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Error creating doctor:', err);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -463,194 +442,11 @@ const DoctorsPage = () => {
         </div>
 
         {/* Add Doctor Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 backdrop-blur-xs bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Add New Doctor Referral</h2>
-                <button
-                  onClick={handleCancel}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Close modal"
-                >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Form */}
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Dr John Smith"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="e.g., doctor@hospital.com"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Hospital/Clinic <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="facilityName"
-                      value={formData.facilityName}
-                      onChange={handleInputChange}
-                      placeholder="e.g., City General Hospital"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Specialization <span className="text-red-500">*</span>
-                    </label>
-                    <CustomDropdown
-                      options={specializationOptions}
-                      value={formData.specialization}
-                      onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
-                      placeholder="Select specialization"
-                      aria-label="Select specialization"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Phone <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex space-x-2">
-                      <div className="w-20">
-                        <CustomDropdown
-                          options={countryCodeOptions}
-                          value={formData.countrycode}
-                          onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
-                          placeholder="Code"
-                          aria-label="Select country code"
-                        />
-                      </div>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 98765 43210"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Location <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Mumbai, Maharashtra"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      BDM Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="bdmName"
-                      value={formData.bdmName}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Sarah Johnson"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Business Development Manager assigned to this doctor</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      BDM Contact <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="bdmContact"
-                      value={formData.bdmContact}
-                      onChange={handleInputChange}
-                      placeholder="e.g., +91 87654 32109"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Commission Rate (%) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="commissionRate"
-                      value={formData.commissionRate}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 10.5"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs transition-colors"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Percentage commission rate for referrals (0-100%)</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 p-3 border-t border-gray-200">
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  Add Doctor
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <AddDoctorModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddDoctor}
+        />
 
         {/* Edit Doctor Modal */}
         {showEditModal && editingDoctor && (
@@ -660,7 +456,7 @@ const DoctorsPage = () => {
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h2 className="text-sm font-semibold text-gray-900">Edit Doctor</h2>
                 <button
-                  onClick={handleCancel}
+                  onClick={handleCancelEdit}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                   aria-label="Close modal"
                 >
@@ -682,7 +478,7 @@ const DoctorsPage = () => {
                       <input
                         type="text"
                         name="name"
-                        value={formData.name}
+                        value={editFormData.name}
                         disabled
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
                       />
@@ -695,8 +491,8 @@ const DoctorsPage = () => {
                       <input
                         type="text"
                         name="facilityName"
-                        value={formData.facilityName}
-                        onChange={handleInputChange}
+                        value={editFormData.facilityName}
+                        onChange={handleEditInputChange}
                         placeholder="Enter hospital/clinic name..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
@@ -709,8 +505,8 @@ const DoctorsPage = () => {
                       <input
                         type="tel"
                         name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
+                        value={editFormData.phoneNumber}
+                        onChange={handleEditInputChange}
                         placeholder="Enter phone number..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                         required
@@ -724,8 +520,8 @@ const DoctorsPage = () => {
                       <input
                         type="text"
                         name="bdmName"
-                        value={formData.bdmName}
-                        onChange={handleInputChange}
+                        value={editFormData.bdmName}
+                        onChange={handleEditInputChange}
                         placeholder="Enter BDM name..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
@@ -740,8 +536,8 @@ const DoctorsPage = () => {
                       </label>
                       <CustomDropdown
                         options={specializationOptions}
-                        value={formData.specialization}
-                        onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
+                        value={editFormData.specialization}
+                        onChange={(value) => setEditFormData(prev => ({ ...prev, specialization: value }))}
                         placeholder="Select specialization"
                         aria-label="Select specialization"
                       />
@@ -753,8 +549,8 @@ const DoctorsPage = () => {
                       </label>
                       <CustomDropdown
                         options={countryCodeOptions}
-                        value={formData.countrycode}
-                        onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                        value={editFormData.countrycode}
+                        onChange={(value) => setEditFormData(prev => ({ ...prev, countrycode: value }))}
                         placeholder="Select country code"
                         aria-label="Select country code"
                       />
@@ -767,7 +563,7 @@ const DoctorsPage = () => {
                       <input
                         type="email"
                         name="email"
-                        value={formData.email}
+                        value={editFormData.email}
                         disabled
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm bg-gray-100"
                       />
@@ -780,8 +576,8 @@ const DoctorsPage = () => {
                       <input
                         type="tel"
                         name="bdmContact"
-                        value={formData.bdmContact}
-                        onChange={handleInputChange}
+                        value={editFormData.bdmContact}
+                        onChange={handleEditInputChange}
                         placeholder="Enter BDM contact..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
@@ -794,8 +590,8 @@ const DoctorsPage = () => {
                       <input
                         type="number"
                         name="commissionRate"
-                        value={formData.commissionRate}
-                        onChange={handleInputChange}
+                        value={editFormData.commissionRate}
+                        onChange={handleEditInputChange}
                         placeholder="e.g., 10.5"
                         step="0.1"
                         min="0"
@@ -811,7 +607,7 @@ const DoctorsPage = () => {
               {/* Footer */}
               <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
                 <button
-                  onClick={handleCancel}
+                  onClick={handleCancelEdit}
                   className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel

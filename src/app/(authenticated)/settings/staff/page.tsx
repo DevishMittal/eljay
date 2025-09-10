@@ -121,11 +121,7 @@ const StaffPage = () => {
   }));
 
   const countryCodeOptions = [
-    { value: '+1', label: '+1 (USA/Canada)' },
-    { value: '+44', label: '+44 (UK)' },
-    { value: '+61', label: '+61 (Australia)' },
-    { value: '+91', label: '+91 (India)' },
-    { value: '+86', label: '+86 (China)' }
+    { value: '+91', label: '+91 (India)' }
   ];
 
   // Available permissions

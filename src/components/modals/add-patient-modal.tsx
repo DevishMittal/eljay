@@ -19,7 +19,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const [formData, setFormData] = useState<CreateUserData>({
     fullname: '',
     email: '',
-    countrycode: '+82',
+    countrycode: '+91',
     phoneNumber: '',
     dob: '',
     gender: 'Male',
@@ -74,7 +74,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
       setFormData({
         fullname: '',
         email: '',
-        countrycode: '+82',
+        countrycode: '+91',
         phoneNumber: '',
         dob: '',
         gender: 'Male',
@@ -221,12 +221,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                           </label>
                           <CustomDropdown
                             options={[
-                              { value: '+91', label: '+91 (India)' },
-                              { value: '+34', label: '+34 (Spain)' },
-                              { value: '+1', label: '+1 (USA/Canada)' },
-                              { value: '+44', label: '+44 (UK)' },
-                              { value: '+33', label: '+33 (France)' },
-                              { value: '+49', label: '+49 (Germany)' }
+                              { value: '+91', label: '+91 (India)' }
                             ]}
                             value={formData.countrycode}
                             onChange={(value) => handleInputChange('countrycode', value)}

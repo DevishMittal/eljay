@@ -301,12 +301,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   const getCountryName = (countrycode: string) => {
     const countryMap: { [key: string]: string } = {
-      '+91': 'India',
-      '+34': 'Spain',
-      '+1': 'USA/Canada',
-      '+44': 'UK',
-      '+33': 'France',
-      '+49': 'Germany'
+      '+91': 'India'
     };
     return countryMap[countrycode] || 'Unknown';
   };
@@ -1151,12 +1146,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {isEditing ? (
                             <CustomDropdown
                               options={[
-                                { value: '+91', label: '+91 (India)' },
-                                { value: '+34', label: '+34 (Spain)' },
-                                { value: '+1', label: '+1 (USA/Canada)' },
-                                { value: '+44', label: '+44 (UK)' },
-                                { value: '+33', label: '+33 (France)' },
-                                { value: '+49', label: '+49 (Germany)' }
+                                { value: '+91', label: '+91 (India)' }
                               ]}
                               value={editFormData.countrycode || patient.countrycode || '+91'}
                               onChange={(value) => handleInputChange('countrycode', value)}
