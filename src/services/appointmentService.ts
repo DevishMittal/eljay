@@ -3,6 +3,7 @@ import {
   AppointmentsResponse,
   AppointmentResponse,
   CreateAppointmentData,
+  UpdateAppointmentData,
   AudiologistsResponse,
   ProceduresResponse
 } from '@/types';
@@ -65,6 +66,7 @@ class AppointmentService {
       throw error;
     }
   }
+
 
   // Create new appointment
   async createAppointment(appointmentData: CreateAppointmentData, token?: string): Promise<AppointmentResponse> {
@@ -220,6 +222,35 @@ class AppointmentService {
       return await response.json();
     } catch (error) {
       console.error('Error updating appointment status:', error);
+      throw error;
+    }
+  }
+
+  // Update appointment details
+  async updateAppointment(appointmentId: string, updateData: UpdateAppointmentData, token?: string): Promise<AppointmentResponse> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update appointment: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating appointment:', error);
       throw error;
     }
   }

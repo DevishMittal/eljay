@@ -352,6 +352,7 @@ export interface Appointment {
   audiologistId: string;
   userId: string;
   visitStatus?: 'check_in' | 'no_show' | 'absent' | null;
+  notes?: string | null;
   referralSourceId?: string;
   referralSource?: ReferralSource;
   appointmentDate: string;
@@ -381,6 +382,7 @@ export interface AppointmentSummary {
   duration: number;
   procedures: string;
   visitStatus?: 'check_in' | 'no_show' | 'absent' | null;
+  notes?: string;
   referralSource?: ReferralSource;
   patient: {
     id: string;
@@ -414,6 +416,16 @@ export interface CreateAppointmentData {
     specialization: string;
   };
   referralSourceId?: string;
+}
+
+export interface UpdateAppointmentData {
+  visitStatus?: 'check_in' | 'no_show' | 'absent';
+  notes?: string;
+  appointmentDuration?: number;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  procedures?: string;
+  audiologistId?: string;
 }
 
 export interface AppointmentsResponse {

@@ -7,6 +7,7 @@ import Image from 'next/image'; // Import for using SVG as <Image>
 import { appointmentService } from '@/services/appointmentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
 import {
   CalendarView,
   CalendarDate,
@@ -43,8 +44,8 @@ export default function DynamicCalendar({
   onViewChange,
   className
 }: DynamicCalendarProps) {
-  const { token } = useAuth();
   const router = useRouter();
+  const { token } = useAuth();
   const [currentDate, setCurrentDate] = useState(getToday());
   const [currentView, setCurrentView] = useState<CalendarView>('week');
   const [hoveredAppointment, setHoveredAppointment] = useState<Appointment | null>(null);
@@ -54,11 +55,15 @@ export default function DynamicCalendar({
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [isUpdatingNotes, setIsUpdatingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [notesUpdateSuccess, setNotesUpdateSuccess] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
 
   // Generate time slots
-  const timeSlots = useMemo(() => generateTimeSlots(8, 17, 30), []);
+  const timeSlots = useMemo(() => generateTimeSlots(8, 20, 30), []);
 
   // Get calendar data based on current view
   const calendarData = useMemo(() => {
@@ -114,14 +119,16 @@ export default function DynamicCalendar({
     setIsDetailsModalOpen(true);
     setIsDropdownOpen(false); // Close dropdown when opening modal
     setIsEditingNotes(false); // Reset notes editing state
-    setNotesText(appointment.notes || ''); // Initialize notes text
+    setNotesUpdateSuccess(false); // Reset success state
     
-    // Fetch appointment summary for dynamic data
+    // Set initial data from the appointment object
+    setNotesText(appointment.notes || '');
+    
+    // Always fetch fresh data from the API to get the latest notes and status
     try {
-      const summary = await appointmentService.getAppointmentSummary(appointment.id, token || undefined);
-      setAppointmentSummary(summary.data);
+      await refreshAppointmentSummary(appointment.id);
     } catch (error) {
-      console.error('Error fetching appointment summary:', error);
+      console.error('Failed to refresh appointment summary, using initial data:', error);
       setAppointmentSummary(null);
     }
     
@@ -185,6 +192,109 @@ export default function DynamicCalendar({
       });
       
       router.push(`/billing/invoices/create/b2c?${params.toString()}`);
+    }
+  };
+
+  // Handle edit appointment
+  const handleEditAppointment = () => {
+    if (!appointmentSummary) return;
+    
+    setEditingAppointment(appointmentSummary);
+    setIsEditModalOpen(true);
+    // Close the details modal
+    setIsDetailsModalOpen(false);
+    setSelectedAppointment(null);
+  };
+
+  // Handle appointment updated from edit modal
+  const handleAppointmentUpdated = (updatedAppointment: any) => {
+    // Update the appointment summary with new data
+    setAppointmentSummary(updatedAppointment);
+    
+    // Close the edit modal
+    setIsEditModalOpen(false);
+    setEditingAppointment(null);
+    
+    // Show success message
+    alert('Appointment updated successfully!');
+    
+    // Refresh the calendar by calling the parent component's refresh function if available
+    // For now, we'll just log the success
+    console.log('Appointment updated:', updatedAppointment);
+  };
+
+  // Check if patient profile is complete
+  const isPatientProfileComplete = (patient: any) => {
+    if (!patient) return false;
+    
+    // Check required fields
+    const requiredFields = ['fullname', 'email', 'phoneNumber', 'dob', 'gender'];
+    return requiredFields.every(field => patient[field] && patient[field].trim() !== '');
+  };
+
+  // Handle redirect to patient edit page
+  const handleEditPatientProfile = (patientId: string) => {
+    router.push(`/patients/${patientId}`);
+  };
+
+  // Refresh appointment summary data - fetch from appointments API and filter by ID
+  const refreshAppointmentSummary = async (appointmentId: string) => {
+    try {
+      // Fetch all appointments and find the specific one
+      const appointmentsResponse = await appointmentService.getAppointments(1, 100, token || undefined);
+      
+      // Find the specific appointment in the list
+      const foundAppointment = appointmentsResponse.data.appointments.find(
+        (apt: any) => apt.id === appointmentId
+      );
+      
+      if (foundAppointment) {
+        setAppointmentSummary(foundAppointment);
+        setNotesText(foundAppointment.notes || '');
+      } else {
+        setAppointmentSummary(null);
+        setNotesText('');
+      }
+    } catch (error) {
+      console.error('Error refreshing appointment data:', error);
+      setAppointmentSummary(null);
+      setNotesText('');
+    }
+  };
+
+  // Handle notes update - only update the specific appointment
+  const handleNotesUpdate = async () => {
+    if (!selectedAppointment) return;
+    
+    setIsUpdatingNotes(true);
+    setNotesUpdateSuccess(false);
+    
+    try {
+      // Update notes via API
+      const response = await appointmentService.updateAppointment(
+        selectedAppointment.id,
+        { notes: notesText },
+        token || undefined
+      );
+      
+      if (response.status === 'success') {
+        // Refresh the appointment data to get the latest from the server
+        await refreshAppointmentSummary(selectedAppointment.id);
+        
+        setIsEditingNotes(false);
+        setNotesUpdateSuccess(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setNotesUpdateSuccess(false);
+        }, 3000);
+      } else {
+        console.error('Failed to update notes:', response);
+      }
+    } catch (error) {
+      console.error('Error updating notes:', error);
+    } finally {
+      setIsUpdatingNotes(false);
     }
   };
 
@@ -368,18 +478,16 @@ export default function DynamicCalendar({
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => {
-                    setIsDetailsModalOpen(false);
-                    setSelectedAppointment(null);
-                  }}
-                  className="p-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer"
-                  aria-label="Edit appointment"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
+                 <button
+                   onClick={handleEditAppointment}
+                   className="p-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                   aria-label="Edit appointment"
+                   title="Edit appointment details"
+                 >
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                   </svg>
+                 </button>
                 <button
                   onClick={() => {
                     setIsDetailsModalOpen(false);
@@ -431,12 +539,24 @@ export default function DynamicCalendar({
                       {getStatusText(appointmentSummary?.visitStatus, appointmentSummary?.date)}
                     </div>
                   </div>
-                  <div className="flex items-center justify-end space-x-1 text-orange-600 text-xs">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <span>Incomplete profile</span>
-                  </div>
+                  {isPatientProfileComplete(appointmentSummary?.patient) ? (
+                    <div className="flex items-center justify-end space-x-1 text-green-600 text-xs">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Complete profile</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleEditPatientProfile(appointmentSummary?.patient?.id || appointmentSummary?.userId)}
+                      className="flex items-center justify-end space-x-1 text-orange-600 text-xs hover:text-orange-700 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <span>Incomplete profile - Click to edit</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -501,7 +621,28 @@ export default function DynamicCalendar({
                 <p className="text-gray-700">
                   <span className="font-medium">Time:</span> <span className="font-semibold">
                     {appointmentSummary ? 
-                      `${appointmentService.formatAppointmentTime(appointmentSummary.time)} - ${appointmentSummary.duration} minutes` :
+                      (() => {
+                        const time = appointmentSummary.appointmentTime;
+                        const duration = appointmentSummary.appointmentDuration || 30;
+                        
+                        if (time) {
+                          try {
+                            const date = new Date(time);
+                            if (!isNaN(date.getTime())) {
+                              const formattedTime = date.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              });
+                              return `${formattedTime} - ${duration} minutes`;
+                            }
+                          } catch (error) {
+                            console.error('Error formatting time:', error);
+                          }
+                        }
+                        
+                        return `N/A - ${duration} minutes`;
+                      })() :
                       `${appointment.time} - ${appointment.duration} minutes`
                     }
                   </span>
@@ -526,7 +667,17 @@ export default function DynamicCalendar({
 
             {/* Notes Section */}
             <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 text-sm mb-3">Notes</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-900 text-sm">Notes</h3>
+                {notesUpdateSuccess && (
+                  <div className="flex items-center space-x-1 text-green-600 text-xs">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Updated successfully</span>
+                  </div>
+                )}
+              </div>
               <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 ">
                 {isEditingNotes ? (
                   <div className="space-y-3">
@@ -542,29 +693,34 @@ export default function DynamicCalendar({
                         onClick={() => {
                           setIsEditingNotes(false);
                           setNotesText(appointment.notes || '');
+                          setNotesUpdateSuccess(false);
                         }}
                         className="px-3 py-1 text-xs border border-red-500 rounded-md text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
-                        onClick={() => {
-                          // Here you would save the notes to the appointment
-                          setIsEditingNotes(false);
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors cursor-pointer"
+                        onClick={handleNotesUpdate}
+                        disabled={isUpdatingNotes}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                       >
-                        Save
+                        {isUpdatingNotes && (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        )}
+                        <span>{isUpdatingNotes ? 'Saving...' : 'Save'}</span>
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div
                     className="cursor-pointer"
-                    onClick={() => setIsEditingNotes(true)}
+                    onClick={() => {
+                      setIsEditingNotes(true);
+                      setNotesUpdateSuccess(false);
+                    }}
                   >
                     <p className="text-xs text-gray-500 italic">
-                      {notesText || "No notes available. Click \"Edit\" to add notes for this patient."}
+                      {appointmentSummary?.notes || notesText || selectedAppointment?.notes || "No notes available. Click to add notes for this patient."}
                     </p>
                   </div>
                 )}
@@ -616,7 +772,7 @@ export default function DynamicCalendar({
           </div>
 
           {/* Time Slots */}
-          <div className="overflow-y-auto scrollbar-hide h-[calc(100vh-250px)]">
+          <div className="overflow-y-auto scrollbar-hide">
             {timeSlots.map((slot) => {
               const slotAppointments = getAppointmentsForTimeSlot(dayAppointments, dayData.date, slot.time);
               
@@ -626,7 +782,7 @@ export default function DynamicCalendar({
                   className="h-16 border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer relative flex group"
                   onClick={() => handleTimeSlotClick(dayData.date, slot.time)}
                 >
-                  <div className="w-20 p-3  border-gray-200 bg-gray-50 flex items-center justify-center">
+                  <div className="w-20 p-3 border-gray-200 bg-gray-50 flex items-center justify-center">
                     <span className="text-xs text-gray-600 text-center group-hover:text-blue-600 transition-colors">{slot.time}</span>
                   </div>
                   <div className="flex-1 relative">
@@ -680,9 +836,9 @@ export default function DynamicCalendar({
           </div>
 
           {/* Week Body */}
-          <div className="grid grid-cols-8 overflow-y-auto scrollbar-hide h-[calc(100vh-250px)]">
+          <div className="grid grid-cols-8 overflow-y-auto scrollbar-hide h-[calc(100vh-200px)]">
             {/* Time Column */}
-            <div className=" border-gray-200 bg-gray-50">
+            <div className="border-gray-200 bg-gray-50">
               {timeSlots.map((slot) => (
                 <div
                   key={slot.time}
@@ -894,6 +1050,19 @@ export default function DynamicCalendar({
 
       {/* Appointment Details Modal */}
       {renderAppointmentDetailsModal()}
+
+      {/* Edit Appointment Modal */}
+      {editingAppointment && (
+        <EditAppointmentModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingAppointment(null);
+          }}
+          appointment={editingAppointment}
+          onAppointmentUpdated={handleAppointmentUpdated}
+        />
+      )}
     </div>
   );
 }
