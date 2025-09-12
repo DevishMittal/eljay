@@ -50,17 +50,17 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   useEffect(() => {
     if (appointment) {
       setAppointmentData({
-        appointmentDuration: appointment.appointmentDuration || appointment.duration,
+        appointmentDuration: appointment.duration, // Use duration from AppointmentSummary
         notes: appointment.notes || '', // Get notes from appointment if available
         visitStatus: appointment.visitStatus || undefined
       });
 
       setPatientData({
-        fullname: appointment.user?.fullname || '',
-        email: appointment.user?.email || '',
-        phoneNumber: appointment.user?.phoneNumber || '',
+        fullname: appointment.patient?.fullname || '',
+        email: appointment.patient?.email || '',
+        phoneNumber: appointment.patient?.phoneNumber || '',
         dob: '', // Not in summary
-        gender: appointment.user?.gender || '',
+        gender: appointment.patient?.gender || '',
         occupation: '', // Not in summary
         alternateNumber: '' // Not in summary
       });
@@ -124,7 +124,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
       );
 
       if (Object.keys(patientUpdateData).length > 0) {
-        await patientService.updateUser(appointment.user?.id || '', patientUpdateData, token || undefined);
+        await patientService.updateUser(appointment.patient?.id || '', patientUpdateData, token || undefined);
       }
 
       setSuccess('Appointment updated successfully!');
@@ -133,8 +133,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
       onAppointmentUpdated({
         ...appointment,
         ...appointmentUpdateData,
-        user: {
-          ...appointment.user,
+        patient: {
+          ...appointment.patient,
           ...patientUpdateData
         }
       } as AppointmentSummary);
@@ -305,11 +305,11 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                   <CustomDropdown
                     options={[
                       { value: 'check_in', label: 'Check In' },
-                      { value: 'no_show', label: 'No Show' },
+                      { value: 'cancelled', label: 'Cancelled' },
                       { value: 'absent', label: 'Absent' }
                     ]}
                     value={appointmentData.visitStatus || ''}
-                    onChange={(value) => handleAppointmentInputChange('visitStatus', value as 'check_in' | 'no_show' | 'absent')}
+                    onChange={(value) => handleAppointmentInputChange('visitStatus', value as 'check_in' | 'cancelled' | 'absent')}
                     placeholder="Select status"
                   />
                 </div>

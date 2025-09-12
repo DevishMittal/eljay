@@ -502,7 +502,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         audiologistId: formData.selectedAudiologist,
         appointmentDate: formData.appointmentDate,
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
-        appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.duration),
+        appointmentDuration: parseInt(formData.duration),
         procedures: formData.selectedProcedures || 'General Consultation',
         hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined,
         referralSource: referralSourceData
@@ -557,10 +557,6 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     if (currentStage === 2) {
       if (!formData.fullName) {
         alert('Please enter patient full name.');
-        return false;
-      }
-      if (!formData.email) {
-        alert('Please enter patient email address.');
         return false;
       }
       if (!formData.mobileNumber) {
@@ -851,6 +847,15 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                if (value === 'B2C') {
                  handleInputChange('hospitalName', '');
                }
+               // Set referral source to Direct for B2B patients
+               if (value === 'B2B') {
+                 handleInputChange('referralSource', 'Direct');
+                 handleInputChange('selectedReferralId', '');
+                 setFormData(prev => ({
+                   ...prev,
+                   referralDetails: { sourceName: '', contactNumber: '', hospital: '', specialization: '' }
+                 }));
+               }
              }}
              placeholder="Select customer type"
              className={existingUser ? 'border-green-200 bg-green-50' : ''}
@@ -995,11 +1000,14 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
       <div className="space-y-3">
         {/* Main referral options */}
-        {[
-          { value: 'Direct', description: 'Patient came directly (Walk-in)' },
-          { value: 'Doctor Referral', description: 'Referred by a medical professional (Self-referral)' },
-          { value: 'Hear.com', description: 'Referred through Hear.com' }
-        ].map((option) => (
+        {(formData.customerType === 'B2B' ? 
+          [{ value: 'Direct', description: 'Patient came directly (Walk-in)' }] :
+          [
+            { value: 'Direct', description: 'Patient came directly (Walk-in)' },
+            { value: 'Doctor Referral', description: 'Referred by a medical professional (Self-referral)' },
+            { value: 'Hear.com', description: 'Referred through Hear.com' }
+          ]
+        ).map((option) => (
           <div
             key={option.value}
             onClick={() => {
@@ -1210,8 +1218,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         </label>
         <div className="grid grid-cols-3 gap-2">
           {[
-            '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-            '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
+            '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', 
+            '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+            '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM',
+            '5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM'
           ].map((timeSlot) => (
             <button
               key={timeSlot}
@@ -1370,7 +1380,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
               <p><strong>Audiologist:</strong> {audiologists.find(a => a.id === formData.selectedAudiologist)?.name || formData.selectedAudiologist}</p>
               <p><strong>Date:</strong> {formData.appointmentDate ? new Date(formData.appointmentDate).toLocaleDateString('en-GB') : 'Not selected'}</p>
               <p><strong>Time:</strong> {formData.appointmentTime || 'Not selected'}</p>
-              <p><strong>Duration:</strong> {totalProcedureDuration > 0 ? totalProcedureDuration : formData.duration} minutes</p>
+              <p><strong>Duration:</strong> {formData.duration} minutes</p>
               <p><strong>Referral Source:</strong> {formData.referralSource || 'Not selected'}{formData.referralSource === 'Direct' && formData.directSource ? ` (${formData.directSource})` : ''}</p>
             </div>
           </div>

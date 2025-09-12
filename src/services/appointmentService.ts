@@ -198,7 +198,7 @@ class AppointmentService {
   }
 
   // Update appointment visit status
-  async updateAppointmentStatus(appointmentId: string, visitStatus: 'check_in' | 'no_show' | 'absent', token?: string): Promise<AppointmentResponse> {
+  async updateAppointmentStatus(appointmentId: string, visitStatus: 'check_in' | 'cancelled' | 'absent', token?: string): Promise<AppointmentResponse> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',

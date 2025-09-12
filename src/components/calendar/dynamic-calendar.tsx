@@ -57,6 +57,10 @@ export default function DynamicCalendar({
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [isUpdatingNotes, setIsUpdatingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<'check_in' | 'absent' | 'cancel' | null>(null);
+  const [statusReason, setStatusReason] = useState('');
+  const [statusNotes, setStatusNotes] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [notesUpdateSuccess, setNotesUpdateSuccess] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -142,19 +146,36 @@ export default function DynamicCalendar({
     }
   };
 
+  // Open status modal
+  const openStatusModal = (status: 'check_in' | 'absent' | 'cancel') => {
+    setSelectedStatus(status);
+    setStatusReason('');
+    setStatusNotes('');
+    setIsStatusModalOpen(true);
+    setIsDropdownOpen(false);
+  };
+
   // Handle status update
-  const handleStatusUpdate = async (status: 'check_in' | 'no_show') => {
+  const handleStatusUpdate = async (status: 'check_in' | 'absent' | 'cancel', reason?: string, notes?: string) => {
     if (!selectedAppointment || !token) return;
     
     setIsUpdatingStatus(true);
     try {
-      await appointmentService.updateAppointmentStatus(selectedAppointment.id, status, token);
+      // Prepare update data based on status
+      const updateData: any = { 
+        visitStatus: status === 'cancel' ? 'cancelled' : status 
+      };
+      if (reason) updateData.reason = reason;
+      if (notes) updateData.notes = notes;
+      
+      await appointmentService.updateAppointment(selectedAppointment.id, updateData, token);
       
       // Update the appointment summary with new status
       if (appointmentSummary) {
         setAppointmentSummary({
           ...appointmentSummary,
-          visitStatus: status
+          visitStatus: status === 'cancel' ? 'cancelled' : status,
+          notes: notes || appointmentSummary.notes
         });
       }
       
@@ -314,7 +335,7 @@ export default function DynamicCalendar({
     switch (status) {
       case 'check_in':
         return 'bg-green-100 text-green-800';
-      case 'no_show':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
       case 'absent':
         return 'bg-orange-100 text-orange-800';
@@ -339,8 +360,8 @@ export default function DynamicCalendar({
     switch (status) {
       case 'check_in':
         return 'Checked In';
-      case 'no_show':
-        return 'No Show';
+      case 'cancelled':
+        return 'Cancelled';
       case 'absent':
         return 'Absent';
       default:
@@ -577,9 +598,9 @@ export default function DynamicCalendar({
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     disabled={isUpdatingStatus}
-                    className="px-5 py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50"
+                    className="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded border hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50"
                   >
-                    <span className='pr-8'>Mark as...</span>
+                    <span>Mark as...</span>
                     <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -599,12 +620,12 @@ export default function DynamicCalendar({
                         </div>
                         <div 
                           className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                          onClick={() => handleStatusUpdate('no_show')}
+                          onClick={() => handleStatusUpdate('absent')}
                         >
-                          <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                           </svg>
-                          <span>No-Show</span>
+                          <span>Absent</span>
                         </div>
                       </div>
                     </div>
@@ -614,7 +635,7 @@ export default function DynamicCalendar({
               <hr className="my-3 border-gray-200" />
               <div className="flex items-center justify-between text-xs">
                 <p className="text-gray-700">
-                  <span className="font-medium text-gray-400 ">Doctor:</span> <span className="font-semibold">
+                  <span className="font-medium text-gray-400 ">Audiologist:</span> <span className="font-semibold">
                     {appointmentSummary?.audiologist?.name || appointment.audiologist || 'Dr. Alex Kumar'}
                   </span>
                 </p>
@@ -728,7 +749,7 @@ export default function DynamicCalendar({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between space-x-3 pt-4 ">
+            <div className="flex justify-center space-x-3 pt-4 ">
               <button
                 onClick={handleCollectPayment}
                 className="px-10 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer flex items-center space-x-2 text-sm font-medium"
@@ -738,14 +759,16 @@ export default function DynamicCalendar({
                 </svg>
                 <span>Collect Payment</span>
               </button>
+              
               <button
-                onClick={() => {
-                  setIsDetailsModalOpen(false);
-                  setSelectedAppointment(null);
-                }}
-                className="px-10 py-1.5 border border-red-600 text-red-700 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-sm font-medium"
+                onClick={() => openStatusModal('cancel')}
+                disabled={isUpdatingStatus}
+                className="px-6 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer flex items-center space-x-2 text-sm font-medium disabled:opacity-50"
               >
-                Cancel Appointment
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Cancel Appointment</span>
               </button>
             </div>
           </div>
@@ -772,14 +795,14 @@ export default function DynamicCalendar({
           </div>
 
           {/* Time Slots */}
-          <div className="overflow-y-auto scrollbar-hide">
+          <div className="overflow-y-auto scrollbar-hide h-[calc(100vh-200px)] ">
             {timeSlots.map((slot) => {
               const slotAppointments = getAppointmentsForTimeSlot(dayAppointments, dayData.date, slot.time);
               
               return (
                 <div
                   key={slot.time}
-                  className="h-16 border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer relative flex group"
+                  className="h-16 border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer relative flex group"
                   onClick={() => handleTimeSlotClick(dayData.date, slot.time)}
                 >
                   <div className="w-20 p-3 border-gray-200 bg-gray-50 flex items-center justify-center">
@@ -842,7 +865,7 @@ export default function DynamicCalendar({
               {timeSlots.map((slot) => (
                 <div
                   key={slot.time}
-                  className="h-16 border-b border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  className="h-16 border-b border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-xs text-gray-600 text-center">{slot.time}</span>
                 </div>
@@ -1062,6 +1085,98 @@ export default function DynamicCalendar({
           appointment={editingAppointment}
           onAppointmentUpdated={handleAppointmentUpdated}
         />
+      )}
+
+      {/* Status Update Modal */}
+      {isStatusModalOpen && selectedStatus && (
+        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4  border-2 border-gray-200 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {selectedStatus === 'absent' && 'Mark as Absent'}
+                {selectedStatus === 'cancel' && 'Cancel Appointment'}
+              </h3>
+              <button
+                onClick={() => setIsStatusModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {selectedStatus === 'cancel' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Reason <span className="text-orange-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={statusReason}
+                      onChange={(e) => setStatusReason(e.target.value)}
+                      className="text-xs w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter reason for cancellation..."
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Notes (Optional)
+                    </label>
+                    <textarea
+                      value={statusNotes}
+                      onChange={(e) => setStatusNotes(e.target.value)}
+                      rows={3}
+                      className="text-xs w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Add any additional notes..."
+                    />
+                  </div>
+                </>
+              )}
+              
+              {selectedStatus === 'absent' && (
+                <div className="text-center py-4">
+                  <p className="text-gray-600">
+                    Are you sure you want to mark this patient as absent?
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setIsStatusModalOpen(false)}
+                className="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // For cancel appointments, require reason
+                  if (selectedStatus === 'cancel' && !statusReason.trim()) {
+                    alert('Please provide a reason for cancellation.');
+                    return;
+                  }
+                  
+                  handleStatusUpdate(selectedStatus, statusReason, statusNotes);
+                  setIsStatusModalOpen(false);
+                }}
+                disabled={isUpdatingStatus}
+                className={`px-4 py-2 text-xs font-medium text-white rounded-md ${
+                  selectedStatus === 'absent' ? 'bg-orange-600 hover:bg-orange-700' :
+                  'bg-orange-600 hover:bg-orange-700'
+                } ${isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isUpdatingStatus ? 'Updating...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

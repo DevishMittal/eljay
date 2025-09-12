@@ -487,7 +487,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     switch (status) {
       case 'check_in':
         return 'bg-green-100 text-green-800';
-      case 'no_show':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
       case 'absent':
         return 'bg-orange-100 text-orange-800';
@@ -512,8 +512,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     switch (status) {
       case 'check_in':
         return 'Checked In';
-      case 'no_show':
-        return 'No Show';
+      case 'cancelled':
+        return 'Cancelled';
       case 'absent':
         return 'Absent';
       default:
