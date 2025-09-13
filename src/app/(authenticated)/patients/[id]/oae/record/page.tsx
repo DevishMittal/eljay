@@ -70,7 +70,7 @@ export default function OAERecordPage({ params }: { params: { id: string } }) {
         id: '2',
         sessionNumber: 2,
         testDate: '23/6/2025',
-        testReason: 'Follow-up (Refer Result)',
+        testReason: 'Follow-up',
         testResults: 'R:Pass/L:Refer (Right pass, Left refer)',
         conductedBy: 'Dr. Emily Rodriguez',
         equipmentUsed: 'OAE Screener - Model XYZ',

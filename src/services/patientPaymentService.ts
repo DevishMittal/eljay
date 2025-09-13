@@ -1,5 +1,4 @@
 import { 
-  Payment, 
   CreatePaymentData, 
   UpdatePaymentData, 
   PaymentsResponse, 
@@ -26,7 +25,8 @@ class PatientPaymentService {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/payments?patientId=${patientId}`, {
+      // Fetch all payments since the API doesn't support patientId filtering
+      const response = await fetch(`${API_BASE_URL}/payments`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -42,6 +42,22 @@ class PatientPaymentService {
       }
 
       const data = await response.json();
+      
+      // Filter payments for the specific patient on the client side
+      if (data.data && data.data.payments) {
+        const filteredPayments = data.data.payments.filter((payment: { patientId: string }) => 
+          payment.patientId === patientId
+        );
+        
+        return {
+          ...data,
+          data: {
+            ...data.data,
+            payments: filteredPayments
+          }
+        };
+      }
+      
       return data;
     } catch (error) {
       console.error('Error fetching patient payments:', error);

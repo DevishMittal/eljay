@@ -7,8 +7,11 @@ import Link from 'next/link';
 import { Volume2, User, Building, Calendar, CheckCircle, AlertCircle, Clock, Phone, FileText, Hospital, UserCheck } from 'lucide-react';
 import { patientService } from '@/services/patientService';
 import { oaeService, OAEForm, CreateOAEFormData } from '@/services/oaeService';
+import { staffService } from '@/services/staffService';
+import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
+import { Staff, Doctor } from '@/types';
 
 interface FormData {
   // Patient Information
@@ -24,14 +27,12 @@ interface FormData {
   // Hospital & Medical Staff
   hospitalName: string;
   audiologistId: string;
-  doctorName: string;
   
   // Test Session
   testDate: string;
   testReason: string;
   testResults: string;
   conductedBy: string;
-  equipmentUsed: string;
   testNotes: string;
   sessionNumber: number;
   failedAttempts: number;
@@ -43,6 +44,8 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
   const { token } = useAuth();
   const [, setPatient] = useState<any>(null);
   const [oaeForms, setOaeForms] = useState<OAEForm[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [audiologists, setAudiologists] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -61,12 +64,10 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
     opNumber: '',
     hospitalName: 'Sunrise Hospital',
     audiologistId: '',
-    doctorName: 'Dr. Emily Rodriguez',
     testDate: new Date().toISOString().split('T')[0],
     testReason: 'Initial Screening',
     testResults: '',
-    conductedBy: 'Dr. Emily Rodriguez',
-    equipmentUsed: 'OAE Screener - Model XYZ',
+    conductedBy: '',
     testNotes: '',
     sessionNumber: 1,
     failedAttempts: 0
@@ -90,16 +91,27 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
           const patientForms = allForms.filter(form => form.patientId === patientId);
           setOaeForms(patientForms);
 
+          // Fetch staff data for Staff dropdown
+          const staffResponse = await staffService.getStaff(token);
+          setStaff(staffResponse.data || []);
+
+          // Fetch audiologists data for "Conducted By" dropdown
+          const audiologistsResponse = await doctorService.getDoctors(token);
+          setAudiologists(audiologistsResponse.data || []);
+
           // Set form data from patient
           setFormData(prev => ({
             ...prev,
             patientName: patientResponse.patient.full_name,
             patientId: patientResponse.patient.id,
             babyMotherName: patientResponse.patient.full_name,
+            babyDateOfBirth: patientResponse.patient.dob || '',
             babyGender: patientResponse.patient.gender || '',
             contactNumber: patientResponse.patient.mobile_number || '',
             classification: patientResponse.patient.type || 'B2B',
-            audiologistId: '451f0c8d-916f-422e-b12d-90fadeb8ebd0', // Default audiologist ID
+            hospitalName: patientResponse.patient.hospital_name || 'Sunrise Hospital',
+            opNumber: patientResponse.patient.patient_id || '',
+            audiologistId: '', // Will be set by user from staff dropdown
             sessionNumber: patientForms.length + 1,
             failedAttempts: patientForms.filter(form => form.testResults === 'Fail').length
           }));
@@ -164,7 +176,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         return dateString; // Return as is if we can't parse it
       };
 
-      const formPayload = {
+      const formPayload: any = {
         patientName: formData.patientName,
         patientId: formData.patientId,
         classification: formData.classification,
@@ -174,17 +186,41 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         opNumber: formData.opNumber,
         contactNumber: formData.contactNumber,
         hospitalName: formData.hospitalName,
-        doctorName: formData.doctorName,
+        doctorName: formData.conductedBy, // Map conductedBy to doctorName for API
         sessionNumber: formData.sessionNumber,
         testDate: formatDateForAPI(formData.testDate),
         conductedBy: formData.conductedBy,
         testReason: formData.testReason,
-        equipmentUsed: formData.equipmentUsed,
+        equipmentUsed: 'OAE Screener - Standard Equipment', // Default value since removed from UI
         testResults: formData.testResults,
         testNotes: formData.testNotes,
-        failedAttempts: formData.failedAttempts,
-        audiologistId: formData.audiologistId
+        failedAttempts: formData.failedAttempts
       };
+
+      // Map staff selection to audiologist ID or use the first available audiologist
+      let audiologistId = '';
+      if (formData.audiologistId && formData.audiologistId.trim() !== '') {
+        // If staff is selected, try to find a matching audiologist by name
+        const selectedStaff = staff.find(s => s.id === formData.audiologistId);
+        if (selectedStaff) {
+          // Try to find an audiologist with matching name
+          const matchingAudiologist = audiologists.find(a => 
+            a.name.toLowerCase().includes(selectedStaff.name.toLowerCase()) ||
+            selectedStaff.name.toLowerCase().includes(a.name.toLowerCase())
+          );
+          audiologistId = matchingAudiologist?.id || (audiologists[0]?.id || '');
+        }
+      }
+      
+      // If no mapping found, use the first available audiologist
+      if (!audiologistId && audiologists.length > 0) {
+        audiologistId = audiologists[0].id;
+      }
+
+      // Always include audiologistId as it's required by the API
+      if (audiologistId) {
+        formPayload.audiologistId = audiologistId;
+      }
 
       // Debug: Log the formatted dates
       console.log('Original babyDateOfBirth:', formData.babyDateOfBirth);
@@ -199,7 +235,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
       } else {
         // Create new form
         const createData: CreateOAEFormData = {
-          userId: '1563a429-7493-47a4-8167-2f3a18c503cc', // Default user ID
+          userId: formData.patientId, // Use patient ID as userId
           ...formPayload
         };
         await oaeService.createOAEForm(createData, token);
@@ -259,13 +295,11 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
       babyMotherName: form.babyMotherName,
       opNumber: form.opNumber,
       hospitalName: form.hospitalName,
-      audiologistId: form.audiologistId,
-      doctorName: form.doctorName,
+      audiologistId: form.audiologistId || '',
       testDate: form.testDate.split('T')[0], // Convert to date input format
       testReason: form.testReason,
       testResults: form.testResults,
       conductedBy: form.conductedBy,
-      equipmentUsed: form.equipmentUsed,
       testNotes: form.testNotes,
       sessionNumber: form.sessionNumber,
       failedAttempts: form.failedAttempts
@@ -385,9 +419,10 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
 
   const testReasonOptions = [
     { value: 'Initial Screening', label: 'Initial Screening' },
-    { value: 'Follow-up (Refer Result)', label: 'Follow-up (Refer Result)' },
-    { value: 'Routine Check', label: 'Routine Check' },
-    { value: 'Parent Request', label: 'Parent Request' }
+    { value: 'Follow-up', label: 'Follow-up' },
+    { value: 'Diagnostic', label: 'Diagnostic' },
+    { value: 'Monitoring', label: 'Monitoring' },
+    { value: 'Other', label: 'Other' }
   ];
 
   const genderOptions = [
@@ -401,17 +436,24 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
     { value: 'Regional Hospital', label: 'Regional Hospital' }
   ];
 
-  const doctorOptions = [
-    { value: 'Dr. Emily Rodriguez', label: 'Dr. Emily Rodriguez' },
-    { value: 'Dr. Michael Chen', label: 'Dr. Michael Chen' },
-    { value: 'Dr. Sarah Johnson', label: 'Dr. Sarah Johnson' }
-  ];
+  // Staff options from staff API (using staff IDs for Staff field)
+  const staffOptions = staff.map(staffMember => ({
+    value: staffMember.id,
+    label: `${staffMember.name} - ${staffMember.role}`
+  }));
 
-  const equipmentOptions = [
-    { value: 'OAE Screener - Model XYZ', label: 'OAE Screener - Model XYZ' },
-    { value: 'OAE Screener - Model ABC', label: 'OAE Screener - Model ABC' },
-    { value: 'OAE Screener - Model DEF', label: 'OAE Screener - Model DEF' }
-  ];
+  // Audiologist options for Conducted By field (using names)
+  const conductedByOptions = audiologists.map(audiologist => ({
+    value: audiologist.name,
+    label: `${audiologist.name} - ${audiologist.specialization}`
+  }));
+
+  // Helper function to get staff name by ID
+  const getStaffName = (staffId?: string) => {
+    if (!staffId) return 'Not assigned';
+    const staffMember = staff.find(s => s.id === staffId);
+    return staffMember ? `${staffMember.name} - ${staffMember.role}` : staffId;
+  };
 
   if (loading) {
     return (
@@ -647,40 +689,21 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Audiologist Name</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Staff</label>
               {isEditing ? (
                 <div className="flex items-center space-x-2">
                   <UserCheck size={16} className="text-gray-400" />
                   <CustomDropdown
-                    options={doctorOptions}
+                    options={staffOptions}
                     value={formData.audiologistId}
                     onChange={(value) => handleInputChange('audiologistId', value)}
-                    placeholder="Select audiologist"
+                    placeholder="Select staff member"
                   />
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
                   <UserCheck size={16} className="text-gray-400" />
-                  <p className="text-xs text-gray-900">{formData.audiologistId}</p>
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Doctor Name</label>
-              {isEditing ? (
-                <div className="flex items-center space-x-2">
-                  <User size={16} className="text-gray-400" />
-                  <CustomDropdown
-                    options={doctorOptions}
-                    value={formData.doctorName}
-                    onChange={(value) => handleInputChange('doctorName', value)}
-                    placeholder="Select doctor"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <User size={16} className="text-gray-400" />
-                  <p className="text-xs text-gray-900">{formData.doctorName}</p>
+                  <p className="text-xs text-gray-900">{getStaffName(formData.audiologistId)}</p>
                 </div>
               )}
             </div>
@@ -746,10 +769,6 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                     <div>
                       <span className="font-medium text-gray-700">Conducted By:</span>
                       <span className="ml-2 text-gray-900">{form.conductedBy}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Equipment:</span>
-                      <span className="ml-2 text-gray-900">{form.equipmentUsed}</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Notes:</span>
@@ -854,19 +873,10 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Conducted By *</label>
                     <CustomDropdown
-                      options={doctorOptions}
+                      options={conductedByOptions}
                   value={formData.conductedBy}
                       onChange={(value) => handleInputChange('conductedBy', value)}
-                      placeholder="Select doctor"
-                    />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Equipment Used</label>
-                    <CustomDropdown
-                      options={equipmentOptions}
-                  value={formData.equipmentUsed}
-                      onChange={(value) => handleInputChange('equipmentUsed', value)}
-                      placeholder="Select equipment"
+                      placeholder="Select audiologist"
                     />
               </div>
             </div>

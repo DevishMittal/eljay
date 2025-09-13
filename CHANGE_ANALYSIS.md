@@ -42,9 +42,16 @@ Based on the examination of the current codebase against the provided change lis
 9. **✅ Change Doctor name to Audiologist**
    - **Status**: COMPLETED (based on project context mentions)
 
-10. **✅ Mark as check in/absent functionality**
-   - **Status**: COMPLETED
-   - **Evidence**: Status management with check_in, absent, no_show in dynamic-calendar.tsx
+10. **✅ Mark as check in/absent functionality (UPDATED)**
+   - **Status**: COMPLETED & REFINED
+   - **Latest Changes**: 
+     - ✅ Removed "no_show" option from dropdown
+     - ✅ Check In now direct action (no modal)
+     - ✅ Mark as Absent simple confirmation (no reason/notes required)
+     - ✅ Cancel Appointment separate button with reason (required) and notes (optional)
+     - ✅ Updated all TypeScript types from 'no_show' to 'cancelled'
+     - ✅ Fixed status display functions and color mappings
+   - **Files Updated**: dynamic-calendar.tsx, types/index.ts, edit-appointment-modal.tsx, patient profile page
 
 12. **✅ Appointment-details incomplete profile redirect**
    - **Status**: COMPLETED

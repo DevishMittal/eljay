@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
-  Invoice, 
   CreateInvoiceData, 
   UpdateInvoiceData, 
   InvoicesResponse, 
@@ -27,7 +26,8 @@ class PatientInvoiceService {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/invoices?patientId=${patientId}`, {
+      // Fetch all invoices since the API doesn't support patientId filtering
+      const response = await fetch(`${API_BASE_URL}/invoices`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -43,6 +43,22 @@ class PatientInvoiceService {
       }
 
       const data = await response.json();
+      
+      // Filter invoices for the specific patient on the client side
+      if (data.data && data.data.invoices) {
+        const filteredInvoices = data.data.invoices.filter((invoice: { patientId: string }) => 
+          invoice.patientId === patientId
+        );
+        
+        return {
+          ...data,
+          data: {
+            ...data.data,
+            invoices: filteredInvoices
+          }
+        };
+      }
+      
       return data;
     } catch (error) {
       console.error('Error fetching patient invoices:', error);

@@ -4,7 +4,7 @@ export interface OAEForm {
   id: string;
   organizationId: string;
   userId: string;
-  audiologistId: string;
+  audiologistId?: string;
   patientName: string;
   patientId: string;
   classification: string;
@@ -66,7 +66,7 @@ export interface OAEFormResponse {
 
 export interface CreateOAEFormData {
   userId: string;
-  audiologistId: string;
+  audiologistId?: string;
   patientName: string;
   patientId: string;
   classification: string;
@@ -122,10 +122,9 @@ class OAEFormService {
     return this.makeRequest(url, {}, token);
   }
 
-  async getOAEFormsByPatient(patientId: string, token?: string): Promise<OAEFormResponse> {
-    // Since the API doesn't have a patient-specific endpoint, we'll get all forms and filter
-    // or use the user endpoint if we have the user ID
-    const url = `${API_BASE_URL}/oae-forms`;
+  async getOAEFormsByPatient(userId: string, token?: string): Promise<OAEFormResponse> {
+    // Use the correct user endpoint since patientId is the userId
+    const url = `${API_BASE_URL}/oae-forms/user/${userId}`;
     return this.makeRequest(url, {}, token);
   }
 
@@ -140,9 +139,14 @@ class OAEFormService {
 
   async updateOAEForm(id: string, formData: Partial<CreateOAEFormData>, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
+    
+    // Remove userId and audiologistId from the update payload as per API requirement
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { userId, audiologistId, ...updatePayload } = formData;
+    
     const response = await this.makeRequest(url, {
       method: 'PUT',
-      body: JSON.stringify(formData),
+      body: JSON.stringify(updatePayload),
     }, token);
     return response.data;
   }
