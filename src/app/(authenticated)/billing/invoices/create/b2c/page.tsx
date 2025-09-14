@@ -10,7 +10,8 @@ import InvoiceService from '@/services/invoiceService';
 import { patientService } from '@/services/patientService';
 import OutstandingPaymentsService from '@/services/outstandingPaymentsService';
 import DiagnosticsService from '@/services/diagnosticsService';
-import { CreateInvoiceData, InvoiceService as InvoiceServiceType, OutstandingPayment, AppliedAdvancePayment, Patient, Diagnostic } from '@/types';
+import { InventoryService } from '@/services/inventoryService';
+import { CreateInvoiceData, InvoiceService as InvoiceServiceType, OutstandingPayment, AppliedAdvancePayment, Patient, Diagnostic, InventoryItem } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CustomDropdown from '@/components/ui/custom-dropdown';
@@ -26,6 +27,7 @@ export default function B2CInvoicePage() {
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [outstandingPayments, setOutstandingPayments] = useState<OutstandingPayment[]>([]);
   const [selectedPayments, setSelectedPayments] = useState<{ [key: string]: number }>({});
   const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
@@ -40,6 +42,7 @@ export default function B2CInvoicePage() {
   const [loadingPatients, setLoadingPatients] = useState(false);
   const [loadingOutstandingPayments, setLoadingOutstandingPayments] = useState(false);
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -62,6 +65,7 @@ export default function B2CInvoicePage() {
     if (token) {
       loadPatients();
       loadDiagnostics();
+      loadInventory();
     }
   }, [token]);
 
@@ -124,6 +128,18 @@ export default function B2CInvoicePage() {
     }
   };
 
+  const loadInventory = async () => {
+    try {
+      setLoadingInventory(true);
+      const response = await InventoryService.getInventoryItems(1, 50); // Get more items for better selection
+      setInventoryItems(response.items);
+    } catch (error) {
+      console.error('Error loading inventory items:', error);
+    } finally {
+      setLoadingInventory(false);
+    }
+  };
+
   const loadOutstandingPayments = async (patientId: string) => {
     try {
       setLoadingOutstandingPayments(true);
@@ -157,14 +173,15 @@ export default function B2CInvoicePage() {
   };
 
   const addService = () => {
-    const newService: InvoiceServiceType & { diagnosticId?: string } = {
+    const newService: InvoiceServiceType & { diagnosticId?: string; inventoryId?: string } = {
       serviceName: '',
       description: '',
       quantity: 1,
       unitCost: 0,
       discount: 0,
       total: 0,
-      diagnosticId: ''
+      diagnosticId: '',
+      inventoryId: ''
     };
     setServices([...services, newService]);
   };
@@ -174,7 +191,7 @@ export default function B2CInvoicePage() {
     setServices(updatedServices);
   };
 
-  const updateService = (index: number, field: keyof InvoiceServiceType | 'diagnosticId', value: any) => {
+  const updateService = (index: number, field: keyof InvoiceServiceType | 'diagnosticId' | 'inventoryId', value: any) => {
     const updatedServices = [...services];
     updatedServices[index] = { ...updatedServices[index], [field]: value };
     
@@ -185,11 +202,25 @@ export default function B2CInvoicePage() {
         updatedServices[index].serviceName = selectedDiagnostic.name;
         updatedServices[index].description = selectedDiagnostic.description;
         updatedServices[index].unitCost = selectedDiagnostic.price;
+        // Clear inventory selection when diagnostic is selected
+        (updatedServices[index] as any).inventoryId = '';
+      }
+    }
+    
+    // If inventory item is selected, auto-populate name, description, and MRP as unit cost
+    if (field === 'inventoryId' && value) {
+      const selectedInventoryItem = inventoryItems.find(item => item.id === value);
+      if (selectedInventoryItem) {
+        updatedServices[index].serviceName = selectedInventoryItem.itemName;
+        updatedServices[index].description = selectedInventoryItem.description;
+        updatedServices[index].unitCost = selectedInventoryItem.mrp;
+        // Clear diagnostic selection when inventory is selected
+        (updatedServices[index] as any).diagnosticId = '';
       }
     }
     
     // Calculate total when quantity, unitCost, or discount changes
-    if (field === 'quantity' || field === 'unitCost' || field === 'discount' || field === 'diagnosticId') {
+    if (field === 'quantity' || field === 'unitCost' || field === 'discount' || field === 'diagnosticId' || field === 'inventoryId') {
       const service = updatedServices[index];
       const total = (service.quantity * service.unitCost) - service.discount;
       updatedServices[index].total = Math.max(0, total);
@@ -538,31 +569,49 @@ export default function B2CInvoicePage() {
                         <td className="py-3 px-4">
                           <div className="space-y-2">
                             <select
-                              value={(service as any).diagnosticId || ''}
-                              onChange={(e) => updateService(index, 'diagnosticId', e.target.value)}
+                              value={(service as any).diagnosticId || (service as any).inventoryId || ''}
+                              onChange={(e) => {
+                                const selectedValue = e.target.value;
+                                if (selectedValue.startsWith('diag_')) {
+                                  updateService(index, 'diagnosticId', selectedValue.replace('diag_', ''));
+                                } else if (selectedValue.startsWith('inv_')) {
+                                  updateService(index, 'inventoryId', selectedValue.replace('inv_', ''));
+                                } else {
+                                  // Clear both selections
+                                  updateService(index, 'diagnosticId', '');
+                                  updateService(index, 'inventoryId', '');
+                                }
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
                               aria-label={`Select service for item ${index + 1}`}
                             >
                               <option value="">Select Service/Item</option>
-                              {diagnostics.map((diagnostic) => (
-                                <option key={diagnostic.id} value={diagnostic.id}>
-                                  {diagnostic.name} - {diagnostic.category}
-                                </option>
-                              ))}
+                              <optgroup label="🏥 Diagnostic Services">
+                                {diagnostics.map((diagnostic) => (
+                                  <option key={`diag_${diagnostic.id}`} value={`diag_${diagnostic.id}`}>
+                                    {diagnostic.name} - {diagnostic.category} (₹{diagnostic.price})
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="📦 Inventory Items">
+                                {inventoryItems.map((item) => (
+                                  <option key={`inv_${item.id}`} value={`inv_${item.id}`}>
+                                    {item.itemName} - {item.brand} (₹{item.mrp})
+                                  </option>
+                                ))}
+                              </optgroup>
                             </select>
                             <Input
                               value={service.serviceName}
                               onChange={(e) => updateService(index, 'serviceName', e.target.value)}
-                              placeholder="Service/Item name"
-                              className="w-full bg-gray-50 border-gray-300"
-                              readOnly
+                              placeholder="Service/Item name (Auto-filled or manual)"
+                              className="w-full bg-white border-gray-300"
                             />
                             <Input
                               value={service.description}
                               onChange={(e) => updateService(index, 'description', e.target.value)}
-                              placeholder="Description"
-                              className="w-full bg-gray-50 border-gray-300"
-                              readOnly
+                              placeholder="Description (Auto-filled or manual)"
+                              className="w-full bg-white border-gray-300"
                             />
                           </div>
                         </td>
@@ -580,9 +629,9 @@ export default function B2CInvoicePage() {
                             type="number"
                             value={service.unitCost}
                             onChange={(e) => updateService(index, 'unitCost', parseInt(e.target.value) || 0)}
-                            className="w-24 bg-gray-50 border-gray-300"
+                            className="w-24 bg-white border-gray-300"
                             min="0"
-                            readOnly
+                            placeholder="Auto-filled or manual"
                           />
                         </td>
                           <td className="py-3 px-4">

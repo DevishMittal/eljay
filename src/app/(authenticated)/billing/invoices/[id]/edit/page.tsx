@@ -691,20 +691,18 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                       rows={3}
                     />
                   </div>
-                  {invoice.invoiceType === 'B2B' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Warranty
-                      </label>
-                      <textarea
-                        value={warranty}
-                        onChange={(e) => setWarranty(e.target.value)}
-                        placeholder="Warranty terms and conditions"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                        rows={3}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Warranty
+                    </label>
+                    <textarea
+                      value={warranty}
+                      onChange={(e) => setWarranty(e.target.value)}
+                      placeholder="Warranty terms and conditions"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      rows={3}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

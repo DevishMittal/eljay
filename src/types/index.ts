@@ -978,6 +978,7 @@ export interface Invoice {
   updatedAt: string;
   screenings: InvoiceScreening[];
   services: InvoiceService[];
+  appliedAdvancePayments?: AppliedAdvancePayment[];
 }
 
 export interface CreateInvoiceData {
