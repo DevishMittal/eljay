@@ -29,8 +29,10 @@ export default function B2CInvoicePage() {
   const [outstandingPayments, setOutstandingPayments] = useState<OutstandingPayment[]>([]);
   const [selectedPayments, setSelectedPayments] = useState<{ [key: string]: number }>({});
   const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
-  const [sgstRate, setSgstRate] = useState(9);
-  const [cgstRate, setCgstRate] = useState(9);
+  const [sgstRate, setSgstRate] = useState<number>(0);
+  const [cgstRate, setCgstRate] = useState<number>(0);
+  const [sgstRateInput, setSgstRateInput] = useState<string>('');
+  const [cgstRateInput, setCgstRateInput] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
   const [services, setServices] = useState<InvoiceServiceType[]>([]);
@@ -623,10 +625,10 @@ export default function B2CInvoicePage() {
                 {/* Invoice Settings */}
                 <Card className="bg-white">
                   <CardContent className="p-6">
-                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4">
                       Invoice Settings
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
                           Payment Status
@@ -641,23 +643,23 @@ export default function B2CInvoicePage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
-                          Overall Discount (₹)
-                        </label>
-                        <Input
-                          type="number"
-                          value={calculateTotalDiscount()}
-                          className="bg-white border-gray-300"
-                          readOnly
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           SGST Rate (%)
                         </label>
                         <Input
                           type="number"
-                          value={sgstRate}
-                          onChange={(e) => setSgstRate(parseInt(e.target.value) || 0)}
+                          value={sgstRateInput}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setSgstRateInput(value);
+                            setSgstRate(parseFloat(value) || 0);
+                          }}
+                          onFocus={() => {
+                            // Clear the field when focused if it's showing the default 0
+                            if (sgstRateInput === '' && sgstRate === 0) {
+                              setSgstRateInput('');
+                            }
+                          }}
+                          placeholder="0"
                           className="bg-white border-gray-300"
                         />
                       </div>
@@ -667,8 +669,19 @@ export default function B2CInvoicePage() {
                         </label>
                         <Input
                           type="number"
-                          value={cgstRate}
-                          onChange={(e) => setCgstRate(parseInt(e.target.value) || 0)}
+                          value={cgstRateInput}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCgstRateInput(value);
+                            setCgstRate(parseFloat(value) || 0);
+                          }}
+                          onFocus={() => {
+                            // Clear the field when focused if it's showing the default 0
+                            if (cgstRateInput === '' && cgstRate === 0) {
+                              setCgstRateInput('');
+                            }
+                          }}
+                          placeholder="0"
                           className="bg-white border-gray-300"
                         />
                       </div>
@@ -707,7 +720,7 @@ export default function B2CInvoicePage() {
               <div>
                 <Card className="bg-white sticky top-6">
                   <CardContent className="p-6">
-                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4">
                       Invoice Summary
                     </h2>
                 

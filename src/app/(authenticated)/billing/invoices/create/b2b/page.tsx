@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import InvoiceService from '@/services/invoiceService';
 import HospitalService from '@/services/hospitalService';
-import { CreateInvoiceData, InvoiceScreening } from '@/types';
+import PatientService from '@/services/patientService';
+import DiagnosticsService from '@/services/diagnosticsService';
+import { CreateInvoiceData, InvoiceScreening, Patient } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
-import { PROCEDURE_PRICING } from '@/utils/commissionUtils';
 
 export default function B2BInvoicePage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -22,21 +23,18 @@ export default function B2BInvoicePage() {
   const [primaryContact, setPrimaryContact] = useState('');
   const [hospitalName, setHospitalName] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'Pending' | 'Paid' | 'Cancelled'>('Pending');
-  const [sgstRate, setSgstRate] = useState(9);
-  const [cgstRate, setCgstRate] = useState(9);
+  const [sgstRate, setSgstRate] = useState<number>(0);
+  const [cgstRate, setCgstRate] = useState<number>(0);
+  const [sgstRateInput, setSgstRateInput] = useState<string>('');
+  const [cgstRateInput, setCgstRateInput] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [warrantyInfo, setWarrantyInfo] = useState('');
   const [screenings, setScreenings] = useState<InvoiceScreening[]>([]);
   const [loading, setLoading] = useState(false);
   const [hospitalOptions, setHospitalOptions] = useState<{ value: string; label: string }[]>([]);
-
-  // Diagnostic options for dropdown
-  const diagnosticOptions = PROCEDURE_PRICING
-    .filter(procedure => procedure.category === 'diagnostic')
-    .map(procedure => ({
-      value: procedure.name,
-      label: procedure.name
-    }));
+  const [hospitalPatients, setHospitalPatients] = useState<Patient[]>([]);
+  const [diagnosticOptions, setDiagnosticOptions] = useState<{ value: string; label: string; price: number }[]>([]);
+  const [fetchingPatients, setFetchingPatients] = useState(false);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -74,9 +72,62 @@ export default function B2BInvoicePage() {
     }
   }, [isAuthenticated, authLoading]);
 
-  // Auto-populate screenings when hospital is selected
-  // Note: Auto-populating screenings from hospital pending invoices is not implemented
-  // This would require a new API endpoint to fetch pending invoices for a specific hospital
+  // Fetch diagnostics on component mount
+  useEffect(() => {
+    const fetchDiagnostics = async () => {
+      try {
+        if (!token) return;
+        const response = await DiagnosticsService.getDiagnostics(token);
+        const diagnostics = response.data;
+        setDiagnosticOptions(diagnostics.map(diagnostic => ({
+          value: diagnostic.name,
+          label: diagnostic.name,
+          price: diagnostic.price
+        })));
+      } catch (error) {
+        console.error('Error fetching diagnostics:', error);
+        alert('Failed to load diagnostic options. Please refresh the page.');
+      }
+    };
+
+    if (isAuthenticated && !authLoading && token) {
+      fetchDiagnostics();
+    }
+  }, [isAuthenticated, authLoading, token]);
+
+  // Fetch patients when hospital is selected
+  useEffect(() => {
+    const fetchHospitalPatients = async () => {
+      if (!hospitalName || !token) return;
+      
+      try {
+        setFetchingPatients(true);
+        const patientService = new PatientService();
+        const patients = await patientService.getPatientsByHospital(hospitalName, token);
+        setHospitalPatients(patients);
+        
+        // Auto-populate screenings based on hospital patients
+        if (patients.length > 0) {
+          const autoScreenings: InvoiceScreening[] = patients.map((patient, index) => ({
+            screeningDate: new Date().toISOString().split('T')[0],
+            opNumber: `OP-${(index + 1).toString().padStart(3, '0')}`, // Auto-generate OP number
+            bioName: patient.full_name,
+            diagnosticName: '',
+            amount: 0,
+            discount: 0
+          }));
+          setScreenings(autoScreenings);
+        }
+      } catch (error) {
+        console.error('Error fetching hospital patients:', error);
+        alert('Failed to load patients for this hospital. You can still manually enter patient details.');
+      } finally {
+        setFetchingPatients(false);
+      }
+    };
+
+    fetchHospitalPatients();
+  }, [hospitalName, token]);
 
   const addScreening = () => {
     const newScreening: InvoiceScreening = {
@@ -98,6 +149,15 @@ export default function B2BInvoicePage() {
   const updateScreening = (index: number, field: keyof InvoiceScreening, value: any) => {
     const updatedScreenings = [...screenings];
     updatedScreenings[index] = { ...updatedScreenings[index], [field]: value };
+    
+    // Auto-populate amount when diagnostic is selected
+    if (field === 'diagnosticName' && value) {
+      const selectedDiagnostic = diagnosticOptions.find(option => option.value === value);
+      if (selectedDiagnostic) {
+        updatedScreenings[index].amount = selectedDiagnostic.price;
+      }
+    }
+    
     setScreenings(updatedScreenings);
   };
 
@@ -205,10 +265,10 @@ export default function B2BInvoicePage() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-lg font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+            <h1 className="text-lg font-semibold text-[#101828]">
               Create B2B Invoice
             </h1>
-            <p className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
+            <p className="text-xs text-[#4A5565] mt-1">
               Create screening-based invoice for B2B organization.
             </p>
           </div>
@@ -230,7 +290,7 @@ export default function B2BInvoicePage() {
             {/* Invoice Information */}
             <Card className="bg-white">
               <CardContent className="p-6">
-                <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                <h2 className="text-sm font-semibold text-[#101828] mb-4">
                   Invoice Information
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -267,6 +327,9 @@ export default function B2BInvoicePage() {
                       placeholder="Select Hospital"
                       className="w-full"
                     />
+                    {fetchingPatients && (
+                      <p className="text-xs text-blue-600 mt-1">Loading patients...</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -276,9 +339,26 @@ export default function B2BInvoicePage() {
             <Card className="bg-white">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-                    Screening Details
-                  </h2>
+                  <div>
+                    <h2 className="text-sm font-semibold text-[#101828]">
+                      Screening Details
+                    </h2>
+                    {hospitalPatients.length > 0 && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Found {hospitalPatients.length} patient(s) from {hospitalName}. All fields can be manually edited.
+                      </p>
+                    )}
+                    {hospitalName && hospitalPatients.length === 0 && !fetchingPatients && (
+                      <p className="text-xs text-yellow-600 mt-1">
+                        No patients found for {hospitalName}. You can manually enter patient details.
+                      </p>
+                    )}
+                    {!hospitalName && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Select a hospital to auto-populate patients, or add screening rows manually.
+                      </p>
+                    )}
+                  </div>
                   <Button 
                     onClick={addScreening}
                     className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
@@ -322,12 +402,28 @@ export default function B2BInvoicePage() {
                             />
                           </td>
                           <td className="py-3 px-4">
-                            <Input
-                              value={screening.bioName}
-                              onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
-                              placeholder="Patient Name"
-                              className="w-32 bg-white border-gray-300"
-                            />
+                            {hospitalPatients.length > 0 ? (
+                              <select
+                                value={screening.bioName}
+                                onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
+                                className="w-32 px-2 py-2 border border-gray-300 rounded-md bg-white text-xs"
+                                aria-label={`Select patient for screening ${index + 1}`}
+                              >
+                                <option value="">Select Patient</option>
+                                {hospitalPatients.map((patient) => (
+                                  <option key={patient.id} value={patient.full_name}>
+                                    {patient.full_name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <Input
+                                value={screening.bioName}
+                                onChange={(e) => updateScreening(index, 'bioName', e.target.value)}
+                                placeholder="Patient Name"
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            )}
                           </td>
                                                      <td className="py-3 px-4">
                              <select
@@ -339,7 +435,7 @@ export default function B2BInvoicePage() {
                                <option value="">Select Diagnostic</option>
                                {diagnosticOptions.map((option) => (
                                  <option key={option.value} value={option.value}>
-                                   {option.label}
+                                   {option.label} - ₹{option.price}
                                  </option>
                                ))}
                              </select>
@@ -386,10 +482,10 @@ export default function B2BInvoicePage() {
                 {/* Invoice Settings */}
                 <Card className="bg-white">
                   <CardContent className="p-6">
-                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4">
                       Invoice Settings
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
                           Payment Status
@@ -404,23 +500,23 @@ export default function B2BInvoicePage() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
-                          Overall Discount (₹)
-                        </label>
-                        <Input
-                          type="number"
-                          value={calculateTotalDiscount()}
-                          className="bg-white border-gray-300"
-                          readOnly
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-2">
                           SGST Rate (%)
                         </label>
                         <Input
                           type="number"
-                          value={sgstRate}
-                          onChange={(e) => setSgstRate(parseInt(e.target.value) || 0)}
+                          value={sgstRateInput}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setSgstRateInput(value);
+                            setSgstRate(parseFloat(value) || 0);
+                          }}
+                          onFocus={() => {
+                            // Clear the field when focused if it's showing the default 0
+                            if (sgstRateInput === '' && sgstRate === 0) {
+                              setSgstRateInput('');
+                            }
+                          }}
+                          placeholder="0"
                           className="bg-white border-gray-300"
                         />
                       </div>
@@ -430,8 +526,19 @@ export default function B2BInvoicePage() {
                         </label>
                         <Input
                           type="number"
-                          value={cgstRate}
-                          onChange={(e) => setCgstRate(parseInt(e.target.value) || 0)}
+                          value={cgstRateInput}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCgstRateInput(value);
+                            setCgstRate(parseFloat(value) || 0);
+                          }}
+                          onFocus={() => {
+                            // Clear the field when focused if it's showing the default 0
+                            if (cgstRateInput === '' && cgstRate === 0) {
+                              setCgstRateInput('');
+                            }
+                          }}
+                          placeholder="0"
                           className="bg-white border-gray-300"
                         />
                       </div>
@@ -453,7 +560,7 @@ export default function B2BInvoicePage() {
                 {/* General Warranty Information */}
                 <Card className="bg-white">
                   <CardContent className="p-6">
-                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4">
                       General Warranty Information
                     </h2>
                     <textarea
@@ -470,7 +577,7 @@ export default function B2BInvoicePage() {
               <div>
                 <Card className="bg-white sticky top-6">
                   <CardContent className="p-6">
-                    <h2 className="text-sm font-semibold text-[#101828] mb-4" style={{ fontFamily: 'Segoe UI' }}>
+                    <h2 className="text-sm font-semibold text-[#101828] mb-4">
                       Invoice Summary
                     </h2>
                 

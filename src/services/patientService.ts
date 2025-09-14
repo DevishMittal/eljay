@@ -437,6 +437,82 @@ class PatientService {
       patient.type === 'B2B' && !this.isProfileComplete(patient)
     );
   }
+
+  // Get patients by hospital name using individual user API calls
+  async getPatientsByHospital(hospitalName: string, token?: string): Promise<Patient[]> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // First, get all users to get their IDs
+      const response = await fetch(`${BASE_URL}/api/v1/users?limit=1000`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+
+      const usersResponse: UsersResponse = await response.json();
+      const users = usersResponse.data.users;
+      
+      // Filter for B2B users only to reduce API calls
+      const b2bUsers = users.filter(user => user.customerType === 'B2B');
+      
+      // For each B2B user, get detailed info to check hospital name
+      const hospitalPatients: Patient[] = [];
+      
+      for (const user of b2bUsers) {
+        try {
+          const userDetailResponse = await fetch(`${BASE_URL}/api/v1/users/${user.id}`, {
+            method: 'GET',
+            headers,
+          });
+
+          if (userDetailResponse.ok) {
+            const userDetail: UserResponse = await userDetailResponse.json();
+            const detailedUser = userDetail.data;
+            
+            // Check if this user belongs to the selected hospital
+            if (detailedUser.hospitalName === hospitalName) {
+              hospitalPatients.push({
+                id: detailedUser.id,
+                patient_id: detailedUser.id,
+                full_name: detailedUser.fullname,
+                mobile_number: detailedUser.phoneNumber,
+                email_address: detailedUser.email,
+                dob: detailedUser.dob,
+                gender: detailedUser.gender as 'Male' | 'Female',
+                occupation: detailedUser.occupation,
+                type: detailedUser.customerType,
+                status: 'Active' as const,
+                created_at: detailedUser.createdAt,
+                updated_at: detailedUser.updatedAt,
+                alternative_number: detailedUser.alternateNumber,
+                countrycode: detailedUser.countrycode,
+                hospital_name: detailedUser.hospitalName
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching details for user ${user.id}:`, error);
+          // Continue with other users even if one fails
+        }
+      }
+
+      return hospitalPatients;
+    } catch (error) {
+      console.error('Error fetching patients by hospital:', error);
+      throw error;
+    }
+  }
 }
 
 export const patientService = new PatientService();
