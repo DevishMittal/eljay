@@ -245,7 +245,7 @@ class PatientPaymentService {
         return 'bg-blue-100 text-blue-800';
       case 'UPI':
         return 'bg-purple-100 text-purple-800';
-      case 'Bank Transfer':
+      case 'Netbanking':
         return 'bg-indigo-100 text-indigo-800';
       case 'Cheque':
         return 'bg-orange-100 text-orange-800';

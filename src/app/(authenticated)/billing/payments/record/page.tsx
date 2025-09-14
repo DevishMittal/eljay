@@ -26,7 +26,7 @@ export default function RecordPaymentPage() {
   const [status, setStatus] = useState('Completed');
   const [transactionId, setTransactionId] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
-  const [paymentType, setPaymentType] = useState('Full');
+  const [paymentType, setPaymentType] = useState('Advance');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,6 +66,15 @@ export default function RecordPaymentPage() {
       return;
     }
 
+    // Validate transaction ID for specific payment methods
+    const requiresTransactionId = ['Cheque', 'Netbanking', 'Card'].includes(method);
+    if (requiresTransactionId && !transactionId) {
+      const fieldName = method === 'Cheque' ? 'Cheque Number' : 
+                       method === 'Card' ? 'Card Last 4 Digits' : 'Transaction ID';
+      setError(`${fieldName} is required for ${method} payments`);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -75,7 +84,7 @@ export default function RecordPaymentPage() {
         patientName,
         patientId,
         amount: parseFloat(amount),
-        method: method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
+        method: method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
         status: status as 'Pending' | 'Completed' | 'Failed' | 'Cancelled',
         transactionId: transactionId || undefined,
         receivedBy: receivedBy || undefined,
@@ -218,19 +227,21 @@ export default function RecordPaymentPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Patient *
+                    Select Patient (B2C Only) *
                   </label>
                   <CustomDropdown
                     options={[
                       { value: '', label: 'Select a patient' },
-                      ...users.map(user => ({
-                        value: user.id,
-                        label: `${user.fullname} (${user.phoneNumber})`
-                      }))
+                      ...users
+                        .filter(user => user.customerType === 'B2C')
+                        .map(user => ({
+                          value: user.id,
+                          label: `${user.fullname} (${user.phoneNumber})`
+                        }))
                     ]}
                     value={patientId}
                     onChange={handleUserChange}
-                    placeholder="Select a patient"
+                    placeholder="Select a B2C patient"
                     className="w-full"
                     aria-label="Select patient"
                     disabled={loadingUsers}
@@ -266,7 +277,7 @@ export default function RecordPaymentPage() {
                       { value: 'Cash', label: 'Cash' },
                       { value: 'Card', label: 'Card' },
                       { value: 'UPI', label: 'UPI' },
-                      { value: 'Bank Transfer', label: 'Bank Transfer' },
+                      { value: 'Netbanking', label: 'Netbanking' },
                       { value: 'Cheque', label: 'Cheque' }
                     ]}
                     value={method}
@@ -298,13 +309,21 @@ export default function RecordPaymentPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Transaction ID
+                    {method === 'Cheque' ? 'Cheque Number' : 
+                     method === 'Card' ? 'Card Last 4 Digits' : 'Transaction ID'}
+                    {['Cheque', 'Netbanking', 'Card'].includes(method) ? ' *' : ''}
                   </label>
                   <Input
                     value={transactionId || ''}
                     onChange={(e) => setTransactionId(e.target.value)}
-                    placeholder="Enter transaction ID (optional)"
+                    placeholder={
+                      method === 'Cheque' ? 'Enter cheque number' :
+                      method === 'Card' ? 'Enter last 4 digits of card' :
+                      method === 'Netbanking' ? 'Enter transaction ID' :
+                      'Enter transaction ID (optional)'
+                    }
                     className="bg-white border-gray-300"
+                    required={['Cheque', 'Netbanking', 'Card'].includes(method)}
                   />
                 </div>
 
@@ -330,17 +349,6 @@ export default function RecordPaymentPage() {
                       <input
                         type="radio"
                         name="paymentType"
-                        value="Full"
-                        checked={paymentType === 'Full'}
-                        onChange={(e) => setPaymentType(e.target.value)}
-                        className="mr-2 text-orange-600 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">Full Payment</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="paymentType"
                         value="Advance"
                         checked={paymentType === 'Advance'}
                         onChange={(e) => setPaymentType(e.target.value)}
@@ -348,6 +356,9 @@ export default function RecordPaymentPage() {
                       />
                       <span className="text-sm text-gray-700">Advance Payment</span>
                     </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Only advance payments are available for B2C customers
+                    </p>
                   </div>
                 </div>
               </div>

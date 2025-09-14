@@ -138,7 +138,7 @@ export default function PaymentsPage() {
         return 'bg-blue-100 text-blue-800';
       case 'Cash':
         return 'bg-green-100 text-green-800';
-      case 'Bank Transfer':
+      case 'Netbanking':
         return 'bg-orange-100 text-orange-800';
       case 'Cheque':
         return 'bg-gray-100 text-gray-800';
@@ -418,7 +418,7 @@ export default function PaymentsPage() {
                     { value: "Cash", label: "Cash" },
                     { value: "Card", label: "Card" },
                     { value: "UPI", label: "UPI" },
-                    { value: "Bank Transfer", label: "Bank Transfer" },
+                    { value: "Netbanking", label: "Netbanking" },
                     { value: "Cheque", label: "Cheque" }
                   ]}
                   value={methodFilter}

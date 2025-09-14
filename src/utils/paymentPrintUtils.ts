@@ -126,7 +126,7 @@ const generatePaymentReceiptHTML = (payment: Payment, options: PrintOptions = {}
         return 'method-card';
       case 'Cash':
         return 'method-cash';
-      case 'Bank Transfer':
+      case 'Netbanking':
         return 'method-bank';
       case 'Cheque':
         return 'method-cheque';
