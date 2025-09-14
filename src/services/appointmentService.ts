@@ -256,7 +256,7 @@ class AppointmentService {
   }
 
   // Get appointments by user ID
-  async getAppointmentsByUserId(userId: string, token?: string): Promise<AppointmentsResponse> {
+  async getAppointmentsByUserId(userId: string, token?: string): Promise<any> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -267,29 +267,25 @@ class AppointmentService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Fetch all appointments and filter by userId
-      const response = await fetch(`${BASE_URL}/api/v1/appointments?page=1&limit=1000`, {
+      // Use the new API endpoint that returns user data including appointments
+      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
         method: 'GET',
         headers,
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch appointments: ${response.statusText}`);
+        throw new Error(`Failed to fetch user appointments: ${response.statusText}`);
       }
 
-      const appointmentsData = await response.json();
+      const userData = await response.json();
       
-      // Filter appointments by userId
-      const userAppointments = appointmentsData.data.appointments.filter(
-        (appointment: any) => appointment.userId === userId
-      );
-
+      // Return in the expected format
       return {
         status: 'success',
         data: {
-          appointments: userAppointments,
+          appointments: userData.data.appointments || [],
           pagination: {
-            total: userAppointments.length,
+            total: userData.data.appointments?.length || 0,
             page: 1,
             limit: 1000,
             pages: 1

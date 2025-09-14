@@ -450,6 +450,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     router.push(`/patients/${patient?.id}/diagnostics/${appointmentId}`);
   };
 
+  const handleAppointmentClick = (appointmentId: string) => {
+    // Navigate to individual diagnostic page for the appointment
+    router.push(`/patients/${patient?.id}/diagnostics/${appointmentId}`);
+  };
+
   const handleDiagnosticPlanCreated = useCallback((newAppointment: any) => {
     // Refresh the diagnostics list
     fetchDiagnosticAppointments();
@@ -1431,8 +1436,83 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     </button>
                   </div>
 
+                  {/* Appointment History for Diagnostics */}
+                  <div className="mb-8">
+                    <h3 className="font-semibold text-gray-900 mb-4 text-sm">Appointment History</h3>
+                    {appointmentsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                        <p className="mt-2 text-gray-600 text-xs">Loading appointments...</p>
+                      </div>
+                    ) : appointments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <p className="text-gray-500 text-xs">No appointments found</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {appointments.slice(0, 5).map((appointment) => (
+                          <div 
+                            key={appointment.id} 
+                            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => handleAppointmentClick(appointment.id)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <h4 className="font-medium text-gray-900 text-sm">{appointment.procedures || 'General Appointment'}</h4>
+                                  <span className={`px-2 py-1 text-xs rounded-full ${getAppointmentStatusColor(appointment.visitStatus, appointment.appointmentDate)}`}>
+                                    {getAppointmentStatusText(appointment.visitStatus, appointment.appointmentDate)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-gray-600">
+                                  <div className="flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>{new Date(appointment.appointmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                  </div>
+                                  <span className="text-gray-400">•</span>
+                                  <div className="flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{new Date(appointment.appointmentTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                                  </div>
+                                  <span className="text-gray-400">•</span>
+                                  <div className="flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span>{appointment.audiologist?.name || 'Not assigned'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs text-gray-500">{appointment.appointmentDuration || 30} min</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {appointments.length > 5 && (
+                          <button 
+                            onClick={() => setActiveSubTab('appointments')}
+                            className="w-full text-center py-2 text-sm text-orange-600 hover:text-orange-700 font-medium"
+                          >
+                            View all {appointments.length} appointments
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Diagnostic Plans */}
                   <div className="space-y-4 mb-8">
+                    <h3 className="font-semibold text-gray-900 text-sm">Diagnostic Plans</h3>
                     {diagnosticAppointmentsLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>

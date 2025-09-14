@@ -115,37 +115,43 @@ class FileService {
     return await response.json();
   }
 
-  async viewFile(fileUrl: string, token?: string): Promise<void> {
+  async viewFile(fileId: string, token?: string): Promise<void> {
     if (!token) {
       throw new Error('No token provided');
     }
 
     try {
-      // If the fileUrl is a full URL, use it directly
-      // Otherwise, construct the full URL with authentication
-      const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${this.baseUrl}/files/${fileUrl}`;
+      // If the fileId is a full URL, use it directly
+      if (fileId.startsWith('http')) {
+        window.open(fileId, '_blank');
+        return;
+      }
       
-      // For authenticated file access, we need to fetch the file with the token
-      // and then create a blob URL to open in a new tab
-      const response = await fetch(fullUrl, {
+      // Try to access the file using the file ID endpoint
+      // Based on the Postman collection, files should be accessible via /files/:id
+      const fileAccessUrl = `${this.baseUrl}/files/${fileId}`;
+      
+      const response = await fetch(fileAccessUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Open the blob URL in a new tab
+        window.open(blobUrl, '_blank');
+        
+        // Clean up the blob URL after a delay
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        return;
       }
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
       
-      // Open the blob URL in a new tab
-      window.open(blobUrl, '_blank');
+      throw new Error(`Failed to access file: ${response.status} ${response.statusText}`);
       
-      // Clean up the blob URL after a delay
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (error) {
       console.error('Error viewing file:', error);
       throw error;

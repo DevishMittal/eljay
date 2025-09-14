@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
 import { DiagnosticAppointment, ClinicalNote, CreateClinicalNoteData } from '@/types';
-import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
+import { appointmentService } from '@/services/appointmentService';
 import { fileService, UploadedFile } from '@/services/fileService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -102,25 +102,45 @@ export default function DiagnosticPlanPage({
   };
 
   useEffect(() => {
-    const fetchDiagnosticPlan = async () => {
+    const fetchAppointmentDetails = async () => {
       try {
         setLoading(true);
         setError(null);
-        const appointment = await diagnosticAppointmentsService.getDiagnosticAppointmentById(
+        const response = await appointmentService.getAppointmentSummary(
           diagnosticId, 
           token || undefined
         );
-        setDiagnosticPlan(appointment);
+        // Map the appointment response to diagnostic plan format for compatibility
+        const appointmentData = response.data;
+        const mappedDiagnosticPlan: DiagnosticAppointment = {
+          id: appointmentData.id,
+          appointmentDate: appointmentData.date,
+          appointmentTime: appointmentData.time,
+          appointmentDuration: appointmentData.duration,
+          procedures: appointmentData.procedures,
+          status: appointmentData.visitStatus === 'check_in' ? 'completed' : 
+                 appointmentData.visitStatus === 'cancelled' ? 'cancelled' : 'planned',
+          cost: 0, // Cost not available in appointment API
+          audiologist: appointmentData.audiologist,
+          audiologistId: appointmentData.audiologist?.id || '',
+          userId: appointmentData.patient?.id || id,
+          user: appointmentData.patient,
+          referralSourceId: appointmentData.referralSource?.id || '',
+          files: 0, // Will be fetched separately
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        setDiagnosticPlan(mappedDiagnosticPlan);
       } catch (err) {
-        setError('Failed to fetch diagnostic plan details. Please try again.');
-        console.error('Error fetching diagnostic plan:', err);
+        setError('Failed to fetch appointment details. Please try again.');
+        console.error('Error fetching appointment details:', err);
       } finally {
         setLoading(false);
       }
     };
 
     if (token) {
-      fetchDiagnosticPlan();
+      fetchAppointmentDetails();
       fetchDocuments();
       fetchComments();
     }
@@ -132,7 +152,7 @@ export default function DiagnosticPlanPage({
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading diagnostic plan...</p>
+            <p className="mt-4 text-gray-600">Loading appointment details...</p>
           </div>
         </div>
       </MainLayout>
@@ -145,7 +165,7 @@ export default function DiagnosticPlanPage({
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="text-red-500 text-xl mb-4">⚠️</div>
-            <p className="text-red-600 mb-4">{error || 'Diagnostic plan not found'}</p>
+            <p className="text-red-600 mb-4">{error || 'Appointment not found'}</p>
             <button 
               onClick={() => router.back()}
               className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
@@ -170,7 +190,7 @@ export default function DiagnosticPlanPage({
               </svg>
             </Link>
             <div>
-              <h1 className="text-sm font-semibold text-gray-900">{diagnosticPlan.procedures || 'Diagnostic Plan'}</h1>
+              <h1 className="text-sm font-semibold text-gray-900">{diagnosticPlan.procedures || 'Appointment Details'}</h1>
               <p className="text-xs text-gray-600">
                 Patient: {diagnosticPlan.user?.fullname || 'Not specified'} • Assigned to: {diagnosticPlan.audiologist?.name || 'Not assigned'}
               </p>
@@ -183,9 +203,9 @@ export default function DiagnosticPlanPage({
           </div>
         </div>
 
-        {/* Diagnostic Overview Card */}
+        {/* Appointment Overview Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Diagnostic Overview</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Appointment Overview</h2>
           
           {/* Single line overview */}
           <div className="flex items-center justify-between  border-gray-200 pb-3 mb-3">
@@ -195,8 +215,16 @@ export default function DiagnosticPlanPage({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className="text-xs text-gray-900">
-                  {diagnosticPlan.appointmentDate ? diagnosticAppointmentsService.formatDate(diagnosticPlan.appointmentDate) : 'Not scheduled'}
-                  {diagnosticPlan.appointmentTime && ` at ${diagnosticAppointmentsService.formatTime(diagnosticPlan.appointmentTime)}`}
+                  {diagnosticPlan.appointmentDate ? new Date(diagnosticPlan.appointmentDate).toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  }) : 'Not scheduled'}
+                  {diagnosticPlan.appointmentTime && ` at ${new Date(diagnosticPlan.appointmentTime).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  })}`}
                 </span>
               </div>
               
@@ -233,9 +261,11 @@ export default function DiagnosticPlanPage({
           
           {/* Notes section */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Appointment Notes</label>
             <p className="text-xs text-gray-600">
-              Initial comprehensive hearing assessment including pure tone audiometry, speech audiometry, and tympanometry.
+              {diagnosticPlan.procedures ? `Appointment for ${diagnosticPlan.procedures}` : 'No specific notes available for this appointment.'}
+              {diagnosticPlan.status === 'completed' && ' - Appointment completed.'}
+              {diagnosticPlan.status === 'cancelled' && ' - Appointment was cancelled.'}
             </p>
           </div>
         </div>
@@ -300,7 +330,14 @@ export default function DiagnosticPlanPage({
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
-                      onClick={() => fileService.viewFile(doc.fileUrl, token || undefined)}
+                      onClick={async () => {
+                        try {
+                          await fileService.viewFile(doc.id, token || undefined);
+                        } catch (error) {
+                          console.error('Error viewing file:', error);
+                          alert('Failed to open file. Please try again.');
+                        }
+                      }}
                       className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="View document"
                       title="View document"

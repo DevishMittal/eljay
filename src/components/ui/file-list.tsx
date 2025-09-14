@@ -13,12 +13,12 @@ interface FileListProps {
 export default function FileList({ files, onFileDeleted, isLoading = false, token }: FileListProps) {
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
-  const handleViewFile = async (fileUrl: string) => {
+  const handleViewFile = async (fileId: string) => {
     try {
-      await fileService.viewFile(fileUrl);
+      await fileService.viewFile(fileId, token);
     } catch (error) {
       console.error('Error viewing file:', error);
-      // You could add a toast notification here
+      alert('Failed to open file. Please try again.');
     }
   };
 
@@ -172,7 +172,7 @@ export default function FileList({ files, onFileDeleted, isLoading = false, toke
             <div className="flex items-center space-x-2">
               {/* View Button */}
               <button
-                onClick={() => handleViewFile(file.fileUrl)}
+                onClick={() => handleViewFile(file.id)}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 title="View file"
               >
