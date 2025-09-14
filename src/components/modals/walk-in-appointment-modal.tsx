@@ -1080,6 +1080,24 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
               placeholder="Select doctor referral source"
               aria-label="Doctor referral source"
             />
+            
+            {/* Display doctor notes when a doctor is selected */}
+            {formData.selectedReferralId && (() => {
+              const selectedDoctor = referralDoctors.find(d => d.id === formData.selectedReferralId);
+              return selectedDoctor?.notes ? (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <div className="text-xs font-medium text-blue-900 mb-1">Doctor Notes:</div>
+                      <div className="text-xs text-blue-800">{selectedDoctor.notes}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
 

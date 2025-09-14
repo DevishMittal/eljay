@@ -30,7 +30,12 @@ const DoctorsPage = () => {
     bdmName: '',
     bdmContact: '',
     commissionRate: 15,
-    facilityName: ''
+    facilityName: '',
+    notes: '',
+    diagnosticProceduresCommission: '50',
+    hearingAidsBelow15kCommission: '15',
+    hearingAidsBetween15kAnd20kCommission: '20',
+    hearingAidsAbove20kCommission: '25'
   });
 
   const tabs = [
@@ -145,7 +150,7 @@ const DoctorsPage = () => {
     }
   };
 
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditFormData(prev => ({
       ...prev,
@@ -180,7 +185,12 @@ const DoctorsPage = () => {
       bdmName: doctor.bdmName || '',
       bdmContact: doctor.bdmContact || '',
       commissionRate: doctor.commissionRate || 15,
-      facilityName: doctor.facilityName || ''
+      facilityName: doctor.facilityName || '',
+      notes: doctor.notes || '',
+      diagnosticProceduresCommission: doctor.diagnosticProceduresCommission || '50',
+      hearingAidsBelow15kCommission: doctor.hearingAidsBelow15kCommission || '15',
+      hearingAidsBetween15kAnd20kCommission: doctor.hearingAidsBetween15kAnd20kCommission || '20',
+      hearingAidsAbove20kCommission: doctor.hearingAidsAbove20kCommission || '25'
     });
     setShowEditModal(true);
   };
@@ -196,7 +206,12 @@ const DoctorsPage = () => {
         bdmName: editFormData.bdmName,
         bdmContact: editFormData.bdmContact,
         commissionRate: editFormData.commissionRate,
-        facilityName: editFormData.facilityName
+        facilityName: editFormData.facilityName,
+        notes: editFormData.notes?.trim() || undefined,
+        diagnosticProceduresCommission: editFormData.diagnosticProceduresCommission?.trim() || undefined,
+        hearingAidsBelow15kCommission: editFormData.hearingAidsBelow15kCommission?.trim() || undefined,
+        hearingAidsBetween15kAnd20kCommission: editFormData.hearingAidsBetween15kAnd20kCommission?.trim() || undefined,
+        hearingAidsAbove20kCommission: editFormData.hearingAidsAbove20kCommission?.trim() || undefined
       };
       await doctorService.updateDoctor(editingDoctor.id, updateData, token || undefined);
       await fetchDoctors(); // Refresh the list
@@ -211,7 +226,12 @@ const DoctorsPage = () => {
         bdmName: '',
         bdmContact: '',
         commissionRate: 15,
-        facilityName: ''
+        facilityName: '',
+        notes: '',
+        diagnosticProceduresCommission: '50',
+        hearingAidsBelow15kCommission: '15',
+        hearingAidsBetween15kAnd20kCommission: '20',
+        hearingAidsAbove20kCommission: '25'
       });
     } catch (err) {
       console.error('Error updating doctor:', err);
@@ -583,22 +603,112 @@ const DoctorsPage = () => {
                       />
                     </div>
 
+                    {/* Commission Rate Fields Section */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900">
+                        Commission Rates
+                      </h3>
+                      
+                      {/* Diagnostic Commission Rate */}
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Diagnostic Procedures Commission (%)
+                        </label>
+                        <input
+                          type="number"
+                          name="diagnosticProceduresCommission"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="50"
+                          value={editFormData.diagnosticProceduresCommission || ''}
+                          onChange={handleEditInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Default: 50%
+                        </p>
+                      </div>
+
+                      {/* Hearing Aid Commission Rates */}
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-900">
+                          Hearing Aid Commission Rates
+                        </p>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Below ₹15,000 (%)
+                          </label>
+                          <input
+                            type="number"
+                            name="hearingAidsBelow15kCommission"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="15"
+                            value={editFormData.hearingAidsBelow15kCommission || ''}
+                            onChange={handleEditInputChange}
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            ₹15,000 - ₹20,000 (%)
+                          </label>
+                          <input
+                            type="number"
+                            name="hearingAidsBetween15kAnd20kCommission"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="20"
+                            value={editFormData.hearingAidsBetween15kAnd20kCommission || ''}
+                            onChange={handleEditInputChange}
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Above ₹20,000 (%)
+                          </label>
+                          <input
+                            type="number"
+                            name="hearingAidsAbove20kCommission"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="25"
+                            value={editFormData.hearingAidsAbove20kCommission || ''}
+                            onChange={handleEditInputChange}
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-500 mt-3">
+                        You can set commission to 0 for specific cases by manual override
+                      </p>
+                    </div>
+
+                    {/* Notes */}
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Commission Rate (%)
+                        Doctor Notes
                       </label>
-                      <input
-                        type="number"
-                        name="commissionRate"
-                        value={editFormData.commissionRate}
+                      <textarea
+                        name="notes"
+                        placeholder="Enter any notes about this doctor (optional)"
+                        value={editFormData.notes || ''}
                         onChange={handleEditInputChange}
-                        placeholder="e.g., 10.5"
-                        step="0.1"
-                        min="0"
-                        max="100"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm resize-vertical"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Percentage commission rate for referrals (0-100%)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        These notes will be displayed when selecting this doctor during appointment booking
+                      </p>
                     </div>
                   </div>
                 </div>

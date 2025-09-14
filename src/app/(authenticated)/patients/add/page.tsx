@@ -29,7 +29,8 @@ export default function AddPatientPage() {
     customerType: 'B2C',
     alternateNumber: '',
     countrycode: '+91',
-    hospitalName: ''
+    hospitalName: '',
+    opipNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,11 +84,23 @@ export default function AddPatientPage() {
       return;
     }
 
+    // Note: OP/IP number is not required during patient creation
+    // It can be added later during profile editing to complete the profile
+
+    // Filter out empty optional fields to avoid backend validation issues
+    const submitData = { ...formData };
+    if (!submitData.alternateNumber?.trim()) {
+      delete submitData.alternateNumber;
+    }
+    if (!submitData.opipNumber?.trim()) {
+      delete submitData.opipNumber;
+    }
+
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      const response = await patientService.createUser(formData, token || undefined);
+      const response = await patientService.createUser(submitData, token || undefined);
       
       if (response.status === 'success') {
         setSuccess('Patient created successfully!');
@@ -534,6 +547,23 @@ export default function AddPatientPage() {
                                 </div>
                               )}
                             </div>
+                          </div>
+                        )}
+
+                        {/* OP/IP/UHID Number - Only for B2B patients, optional during creation */}
+                        {formData.customerType === 'B2B' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">OP/IP/UHID Number (Optional)</label>
+                            <input
+                              type="text"
+                              value={formData.opipNumber || ''}
+                              onChange={(e) => handleInputChange('opipNumber', e.target.value)}
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              placeholder="Enter OP/IP/UHID number (can be added later)"
+                              disabled={loading}
+                              aria-label="OP/IP/UHID number"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Can be added later to complete profile</p>
                           </div>
                         )}
 

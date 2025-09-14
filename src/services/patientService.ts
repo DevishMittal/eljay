@@ -242,10 +242,38 @@ class PatientService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Transform field names to match API expectations
+      const transformedData: any = {};
+      
+      // Map frontend field names to backend field names
+      Object.keys(userData).forEach(key => {
+        const value = (userData as any)[key];
+        switch (key) {
+          case 'full_name':
+            transformedData.fullname = value;
+            break;
+          case 'mobile_number':
+            transformedData.phoneNumber = value;
+            break;
+          case 'email_address':
+            transformedData.email = value;
+            break;
+          case 'alternative_number':
+            transformedData.alternateNumber = value;
+            break;
+          case 'hospital_name':
+            transformedData.hospitalName = value;
+            break;
+          default:
+            transformedData[key] = value;
+            break;
+        }
+      });
+
       const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify(userData),
+        body: JSON.stringify(transformedData),
       });
 
       if (!response.ok) {
@@ -392,7 +420,25 @@ class PatientService {
     // Redirect to deleteUser for backward compatibility
     return this.deleteUser(patientId, token);
   }
+
+  // Check if a B2B patient profile is complete
+  static isProfileComplete(patient: Patient): boolean {
+    if (patient.type !== 'B2B') {
+      return true; // B2C patients don't need OP/IP number
+    }
+    
+    // B2B patients need OP/IP number for complete profile
+    return !!(patient.opipNumber && patient.opipNumber.trim() !== '');
+  }
+
+  // Get incomplete B2B patients (missing OP/IP number)
+  static getIncompleteB2BPatients(patients: Patient[]): Patient[] {
+    return patients.filter(patient => 
+      patient.type === 'B2B' && !this.isProfileComplete(patient)
+    );
+  }
 }
 
 export const patientService = new PatientService();
+export default PatientService;
 

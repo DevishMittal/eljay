@@ -8,8 +8,9 @@ import MainLayout from '@/components/layout/main-layout';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Patient, UpdatePatientData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
+import { Patient, UpdateUserData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
 import { patientService } from '@/services/patientService';
+import PatientService from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
 import { clinicalNotesService } from '@/services/clinicalNotesService';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
@@ -48,7 +49,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     oaeAppointments: []
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [editFormData, setEditFormData] = useState<UpdatePatientData>({});
+  const [editFormData, setEditFormData] = useState<UpdateUserData>({});
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
   // Clinical Notes state
@@ -315,20 +316,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       // Start editing
       setIsEditing(true);
       setEditFormData({
-        full_name: patient?.full_name || '',
-        mobile_number: patient?.mobile_number || '',
-        email_address: patient?.email_address || '',
+        fullname: patient?.full_name || '',
+        phoneNumber: patient?.mobile_number || '',
+        email: patient?.email_address || '',
         dob: patient?.dob || '',
         gender: patient?.gender || 'Male',
         occupation: patient?.occupation || '',
-        alternative_number: patient?.alternative_number || '',
+        alternateNumber: patient?.alternative_number || '',
         countrycode: patient?.countrycode || '+91',
-        hospital_name: patient?.hospital_name || ''
+        hospitalName: patient?.hospital_name || '',
+        opipNumber: patient?.opipNumber || ''
       });
     }
   };
 
-  const handleInputChange = (field: keyof UpdatePatientData, value: string) => {
+  const handleInputChange = (field: keyof UpdateUserData, value: string) => {
     setEditFormData(prev => ({
       ...prev,
       [field]: value
@@ -340,7 +342,25 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       setLoading(true);
       setError(null);
       setSuccess(null);
-      await patientService.updateUser(patient?.id || '', editFormData, token || undefined);
+
+      // Format the DOB to YYYY-MM-DD format for API
+      const formattedData = { ...editFormData };
+      if (formattedData.dob) {
+        // If it's an ISO string, extract just the date part
+        if (formattedData.dob.includes('T')) {
+          formattedData.dob = formattedData.dob.split('T')[0];
+        }
+        // Ensure it's in YYYY-MM-DD format
+        const dobDate = new Date(formattedData.dob);
+        if (!isNaN(dobDate.getTime())) {
+          formattedData.dob = dobDate.toISOString().split('T')[0];
+        }
+      }
+
+      // Note: OP/IP number is not required for saving, but affects profile completion status
+      // Profile is considered incomplete for B2B patients without OP/IP number
+
+      await patientService.updateUser(patient?.id || '', formattedData, token || undefined);
       await fetchPatient(); // Refresh patient data
       setIsEditing(false);
       setSuccess('Patient information updated successfully!');
@@ -971,6 +991,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <path d="M11 10.125C12.933 10.125 14.5 8.558 14.5 6.625C14.5 4.692 12.933 3.125 11 3.125C9.067 3.125 7.5 4.692 7.5 6.625C7.5 8.558 9.067 10.125 11 10.125Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       <h2 className="text-sm font-semibold text-gray-900">Patient Information</h2>
+                      {/* Profile Completion Status for B2B patients */}
+                      {patient.type === 'B2B' && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          PatientService.isProfileComplete(patient)
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {PatientService.isProfileComplete(patient) ? 'Complete Profile' : 'Incomplete Profile'}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
@@ -1046,8 +1076,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {isEditing ? (
                             <input
                               type="text"
-                              value={editFormData.full_name || ''}
-                              onChange={(e) => handleInputChange('full_name', e.target.value)}
+                              value={editFormData.fullname || ''}
+                              onChange={(e) => handleInputChange('fullname', e.target.value)}
                               className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter full name"
                               aria-label="Full name"
@@ -1128,8 +1158,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {isEditing ? (
                             <input
                               type="tel"
-                              value={editFormData.mobile_number || ''}
-                              onChange={(e) => handleInputChange('mobile_number', e.target.value)}
+                              value={editFormData.phoneNumber || ''}
+                              onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                               className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter phone number"
                               aria-label="Phone number"
@@ -1166,8 +1196,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {isEditing ? (
                             <input
                               type="tel"
-                              value={editFormData.alternative_number || ''}
-                              onChange={(e) => handleInputChange('alternative_number', e.target.value)}
+                              value={editFormData.alternateNumber || ''}
+                              onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
                               className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter alternate number (optional)"
                               aria-label="Alternate number"
@@ -1184,8 +1214,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {isEditing ? (
                             <input
                               type="email"
-                              value={editFormData.email_address || ''}
-                              onChange={(e) => handleInputChange('email_address', e.target.value)}
+                              value={editFormData.email || ''}
+                              onChange={(e) => handleInputChange('email', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               placeholder="Enter email address"
                               aria-label="Email address"
@@ -1211,8 +1241,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             {isEditing ? (
                               <input
                                 type="text"
-                                value={editFormData.hospital_name || ''}
-                                onChange={(e) => handleInputChange('hospital_name', e.target.value)}
+                                value={editFormData.hospitalName || ''}
+                                onChange={(e) => handleInputChange('hospitalName', e.target.value)}
                                 className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                 placeholder="Enter hospital name"
                                 aria-label="Hospital name"
@@ -1221,6 +1251,35 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                                 {patient.hospital_name || 'Not provided'}
                               </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* OP/IP/UHID Number field - only show for B2B patients */}
+                        {patient.type === 'B2B' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              OP/IP/UHID Number
+                              {!PatientService.isProfileComplete(patient) && (
+                                <span className="text-orange-600 ml-1">(Required for complete profile)</span>
+                              )}
+                            </label>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editFormData.opipNumber || ''}
+                                onChange={(e) => handleInputChange('opipNumber', e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                placeholder="Enter OP/IP/UHID number"
+                                aria-label="OP/IP/UHID number"
+                              />
+                            ) : (
+                              <div className={`w-full px-3 py-2 text-xs rounded-lg ${!PatientService.isProfileComplete(patient) ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-gray-50 text-gray-600'}`}>
+                                {patient.opipNumber || 'Not provided - Profile incomplete'}
+                              </div>
+                            )}
+                            {!PatientService.isProfileComplete(patient) && (
+                              <p className="text-xs text-orange-600 mt-1">Adding this will complete the patient profile</p>
                             )}
                           </div>
                         )}

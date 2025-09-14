@@ -170,6 +170,7 @@ export interface Patient {
   alternative_number?: string | null;
   occupation?: string;
   hospital_name?: string; // For B2B patients
+  opipNumber?: string; // OP/IP/UHID number for B2B patients
   existing_hearing_aid_user?: boolean;
   previous_hearing_aid_model?: string;
   reason_for_visit?: string;
@@ -202,6 +203,7 @@ export interface UpdatePatientData {
   alternative_number?: string;
   countrycode?: string;
   hospital_name?: string; // For B2B patients
+  opipNumber?: string; // OP/IP/UHID number for B2B patients
 }
 
 export interface PatientsResponse {
@@ -239,6 +241,7 @@ export interface User {
   occupation: string;
   customerType: string;
   hospitalName?: string; // For B2B patients
+  opipNumber?: string; // OP/IP/UHID number for hospital visits
   createdAt: string;
   updatedAt: string;
   organization?: {
@@ -259,6 +262,7 @@ export interface CreateUserData {
   customerType: string;
   alternateNumber?: string;
   hospitalName?: string; // For B2B patients
+  opipNumber?: string; // OP/IP/UHID number for hospital visits (mandatory for B2B)
 }
 
 export interface UpdateUserData {
@@ -272,6 +276,7 @@ export interface UpdateUserData {
   customerType?: string;
   alternateNumber?: string;
   hospitalName?: string; // For B2B patients
+  opipNumber?: string; // OP/IP/UHID number for hospital visits
 }
 
 export interface UsersResponse {
@@ -615,6 +620,11 @@ export interface Doctor {
   createdAt: string;
   updatedAt: string;
   appointments: any[];
+  notes?: string;
+  diagnosticProceduresCommission?: string;
+  hearingAidsBelow15kCommission?: string;
+  hearingAidsBetween15kAnd20kCommission?: string;
+  hearingAidsAbove20kCommission?: string;
 }
 
 export interface DoctorsResponse {
@@ -638,6 +648,11 @@ export interface CreateDoctorData {
   commissionRate?: number;
   facilityName?: string;
   location?: string;
+  notes?: string;
+  diagnosticProceduresCommission?: string;
+  hearingAidsBelow15kCommission?: string;
+  hearingAidsBetween15kAnd20kCommission?: string;
+  hearingAidsAbove20kCommission?: string;
 }
 
 export interface UpdateDoctorData {
@@ -648,6 +663,11 @@ export interface UpdateDoctorData {
   commissionRate?: number;
   facilityName?: string;
   location?: string;
+  notes?: string;
+  diagnosticProceduresCommission?: string;
+  hearingAidsBelow15kCommission?: string;
+  hearingAidsBetween15kAnd20kCommission?: string;
+  hearingAidsAbove20kCommission?: string;
 }
 
 // Notification types

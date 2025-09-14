@@ -29,7 +29,12 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
     bdmContact: '',
     bdmName: '',
     commissionRate: 0,
-    facilityName: ''
+    facilityName: '',
+    notes: '',
+    diagnosticProceduresCommission: '50',
+    hearingAidsBelow15kCommission: '15',
+    hearingAidsBetween15kAnd20kCommission: '20',
+    hearingAidsAbove20kCommission: '25'
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,14 +72,6 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
     if (!formData.bdmName?.trim()) {
       newErrors.bdmName = 'BDM Name is required';
     }
-    if (formData.commissionRate === undefined || formData.commissionRate === null) {
-      newErrors.commissionRate = 'Commission rate is required';
-    } else {
-      const rate = Number(formData.commissionRate);
-      if (isNaN(rate) || rate < 0 || rate > 100) {
-        newErrors.commissionRate = 'Commission rate must be between 0 and 100';
-      }
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -86,7 +83,12 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
       // Convert empty strings to undefined for optional fields (omit from API call)
       const submitData = {
         ...formData,
-        bdmContact: formData.bdmContact?.trim() || undefined
+        bdmContact: formData.bdmContact?.trim() || undefined,
+        notes: formData.notes?.trim() || undefined,
+        diagnosticProceduresCommission: formData.diagnosticProceduresCommission?.trim() || undefined,
+        hearingAidsBelow15kCommission: formData.hearingAidsBelow15kCommission?.trim() || undefined,
+        hearingAidsBetween15kAnd20kCommission: formData.hearingAidsBetween15kAnd20kCommission?.trim() || undefined,
+        hearingAidsAbove20kCommission: formData.hearingAidsAbove20kCommission?.trim() || undefined
       };
       onSubmit(submitData);
       // Reset form
@@ -99,7 +101,12 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
         bdmContact: '',
         bdmName: '',
         commissionRate: 0,
-        facilityName: ''
+        facilityName: '',
+        notes: '',
+        diagnosticProceduresCommission: '50',
+        hearingAidsBelow15kCommission: '15',
+        hearingAidsBetween15kAnd20kCommission: '20',
+        hearingAidsAbove20kCommission: '25'
       });
       setErrors({});
       onClose();
@@ -229,32 +236,106 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 )}
               </div>
 
-              {/* Commission Rate */}
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Commission Rate (%) *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  placeholder="e.g., 10.5"
-                  value={formData.commissionRate || ''}
-                  onChange={(e) => handleInputChange('commissionRate', parseFloat(e.target.value) || 0)}
-                  className={cn(
-                    "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                    errors.commissionRate ? "border-red-300" : "border-gray-300",
-                    "bg-gray-50"
-                  )}
-                  style={{ color: '#101828' }}
-                />
-                <p className="text-xs mt-1" style={{ color: '#717182' }}>
-                  Percentage commission rate for referrals (0-100%)
+              {/* Commission Rate Fields Section */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h3 className="text-sm font-semibold mb-3" style={{ color: '#101828' }}>
+                  Commission Rates
+                </h3>
+                
+                {/* Diagnostic Commission Rate */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#101828' }}>
+                    Diagnostic Procedures Commission (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder="50"
+                    value={formData.diagnosticProceduresCommission || ''}
+                    onChange={(e) => handleInputChange('diagnosticProceduresCommission', e.target.value)}
+                    className={cn(
+                      "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                      "border-gray-300 bg-white"
+                    )}
+                    style={{ color: '#101828' }}
+                  />
+                  <p className="text-xs mt-1" style={{ color: '#717182' }}>
+                    Default: 50%
+                  </p>
+                </div>
+
+                {/* Hearing Aid Commission Rates */}
+                <div className="space-y-3">
+                  <p className="text-sm font-medium" style={{ color: '#101828' }}>
+                    Hearing Aid Commission Rates
+                  </p>
+                  
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: '#101828' }}>
+                      Below ₹15,000 (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      placeholder="15"
+                      value={formData.hearingAidsBelow15kCommission || ''}
+                      onChange={(e) => handleInputChange('hearingAidsBelow15kCommission', e.target.value)}
+                      className={cn(
+                        "w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                        "border-gray-300 bg-white"
+                      )}
+                      style={{ color: '#101828' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: '#101828' }}>
+                      ₹15,000 - ₹20,000 (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      placeholder="20"
+                      value={formData.hearingAidsBetween15kAnd20kCommission || ''}
+                      onChange={(e) => handleInputChange('hearingAidsBetween15kAnd20kCommission', e.target.value)}
+                      className={cn(
+                        "w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                        "border-gray-300 bg-white"
+                      )}
+                      style={{ color: '#101828' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: '#101828' }}>
+                      Above ₹20,000 (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      placeholder="25"
+                      value={formData.hearingAidsAbove20kCommission || ''}
+                      onChange={(e) => handleInputChange('hearingAidsAbove20kCommission', e.target.value)}
+                      className={cn(
+                        "w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                        "border-gray-300 bg-white"
+                      )}
+                      style={{ color: '#101828' }}
+                    />
+                  </div>
+                </div>
+
+                <p className="text-xs mt-3" style={{ color: '#717182' }}>
+                  You can set commission to 0 for specific cases by manual override
                 </p>
-                {errors.commissionRate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.commissionRate}</p>
-                )}
               </div>
             </div>
 
@@ -322,6 +403,27 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 {errors.bdmContact && (
                   <p className="text-red-500 text-xs mt-1">{errors.bdmContact}</p>
                 )}
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
+                  Doctor Notes
+                </label>
+                <textarea
+                  placeholder="Enter any notes about this doctor (optional)"
+                  value={formData.notes || ''}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  rows={3}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-vertical",
+                    "border-gray-300 bg-gray-50"
+                  )}
+                  style={{ color: '#101828' }}
+                />
+                <p className="text-xs mt-1" style={{ color: '#717182' }}>
+                  These notes will be displayed when selecting this doctor during appointment booking
+                </p>
               </div>
             </div>
           </div>
