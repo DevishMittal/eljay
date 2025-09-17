@@ -6,10 +6,12 @@ import { cn } from "@/utils";
 import AddItemModal from "@/components/modals/add-item-modal";
 import AddStockModal from "@/components/modals/add-stock-modal";
 import ConsumeStockModal from "@/components/modals/consume-stock-modal";
+import DeleteConfirmationModal from "@/components/modals/delete-confirmation-modal";
 import { InventoryService } from "@/services/inventoryService";
 import { InventoryItem as InventoryItemType } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
-import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical, Building2, Network } from "lucide-react";
+import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical, Building2, Network, Trash2 } from "lucide-react";
+import { getColorHex, colorStorage } from "@/utils/colorStorage";
 
 // Helper function to get status based on stock levels
 const getStockStatus = (currentStock: number, minimumStock: number): string => {
@@ -31,18 +33,6 @@ const getExpiryInfo = (expiresAt: string): string | undefined => {
   if (diffDays <= 7) return `Expires in ${diffDays} days`;
   if (diffDays <= 30) return `Expires in ${diffDays} days`;
   return undefined;
-};
-
-const getColorSwatch = (color: string) => {
-  const colorMap: { [key: string]: string } = {
-    Blue: "#3B82F6",
-    Silver: "#9CA3AF",
-    Beige: "#F5F5DC",
-    Black: "#000000",
-    White: "#FFFFFF",
-    Brown: "#8B4513",
-  };
-  return colorMap[color] || "#9CA3AF";
 };
 
 const getStatusColor = (status: string) => {
@@ -72,6 +62,9 @@ export default function InventoryPage() {
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [showConsumeStockModal, setShowConsumeStockModal] = useState(false);
   const [showEditItemModal, setShowEditItemModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<InventoryItemType | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemType | null>(
     null
   );
@@ -103,6 +96,10 @@ export default function InventoryPage() {
       setInventoryItems(response.items);
       setPagination(response.pagination);
       setAvailableBranches(response.availableBranches);
+      
+      // Initialize colors from fetched data
+      const colorStrings = response.items.map(item => item.color).filter(Boolean);
+      colorStorage.initializeColorsFromData(colorStrings);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch inventory items";
@@ -208,6 +205,38 @@ export default function InventoryPage() {
         alert(`Failed to ${action} stock. Please try again.`);
       }
     }
+  };
+
+  // Handle delete item
+  const handleDeleteItem = async (item: InventoryItemType) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+    setOpenDropdownId(null); // Close dropdown
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      await InventoryService.deleteInventoryItem(itemToDelete.id);
+      refreshInventory();
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      // You could add a success toast here instead of alert
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      // You could add an error toast here instead of alert
+      alert('Failed to delete item. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+    setDeleteLoading(false);
   };
 
   const filteredItems = inventoryItems.filter(
@@ -586,18 +615,34 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded-full border border-[#E5E7EB]"
-                            style={{
-                              backgroundColor: getColorSwatch(item.color),
-                            }}
-                          />
-                          <span
-                            className="text-xs text-[#101828]"
-                            style={{ fontFamily: "Segoe UI" }}
-                          >
-                            {item.color}
-                          </span>
+                          {item.color ? item.color.split(',').map((color, index) => (
+                            <div key={index} className="flex items-center gap-1">
+                              <div
+                                className="w-4 h-4 rounded-full border border-[#E5E7EB]"
+                                style={{
+                                  backgroundColor: getColorHex(color.trim()),
+                                }}
+                              />
+                              {index === 0 && (
+                                <span
+                                  className="text-xs text-[#101828]"
+                                  style={{ fontFamily: "Segoe UI" }}
+                                >
+                                  {item.color.split(',').length > 1 
+                                    ? `${color.trim()} +${item.color.split(',').length - 1}` 
+                                    : color.trim()
+                                  }
+                                </span>
+                              )}
+                            </div>
+                          )) : (
+                            <span
+                              className="text-xs text-[#6B7280]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              No color
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -737,6 +782,18 @@ export default function InventoryPage() {
                                 >
                                   <TrendingDown className="w-4 h-4 text-orange-600" />
                                   Consume Stock
+                                </button>
+
+                                {/* Separator */}
+                                <div className="border-t border-gray-200 my-1"></div>
+
+                                {/* Delete Item */}
+                                <button
+                                  onClick={() => handleDeleteItem(item)}
+                                  className="flex items-center gap-3 px-4 py-2 text-xs text-red-600 hover:bg-red-50 w-full text-left cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete Item
                                 </button>
                               </div>
                             </div>
@@ -880,6 +937,14 @@ export default function InventoryPage() {
           isEditMode={true}
         />
       )}
+      
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        itemName={itemToDelete?.itemName || ''}
+        loading={deleteLoading}
+      />
       </div>
     </MainLayout>
   );

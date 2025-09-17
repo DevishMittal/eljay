@@ -787,6 +787,7 @@ export interface InventoryItem {
   description: string;
   mrp: number;
   color: string;
+  formFactor?: string;
   currentStock: number;
   minimumStock: number;
   maximumStock: number;

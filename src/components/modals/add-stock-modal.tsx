@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import CustomCalendar from '@/components/ui/custom-calendar';
+import ColorSelector from '@/components/ui/color-selector';
 import { InventoryService } from '@/services/inventoryService';
 import { InventoryItem } from '@/types';
 
@@ -11,13 +12,13 @@ interface StockEntry {
   itemId: string;
   itemName: string;
   quantity: string;
-  batchNumber: string;
+  serialNumber: string;
   expiryDate: Date | null;
   supplierName: string;
-  supplierContact: string;
   purchasePrice: string;
   warranty: string;
   authorizedBy: string;
+  color: string[];
 }
 
 interface AddStockModalProps {
@@ -101,13 +102,13 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
       itemId: '',
       itemName: '',
       quantity: '',
-      batchNumber: '',
+      serialNumber: '',
       expiryDate: null,
       supplierName: '',
-      supplierContact: '',
       purchasePrice: '',
       warranty: '',
-      authorizedBy: 'Current User'
+      authorizedBy: 'Current User',
+      color: []
     }
   ]);
 
@@ -117,18 +118,18 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
       itemId: '',
       itemName: '',
       quantity: '',
-      batchNumber: '',
+      serialNumber: '',
       expiryDate: null,
       supplierName: '',
-      supplierContact: '',
       purchasePrice: '',
       warranty: '',
-      authorizedBy: 'Current User'
+      authorizedBy: 'Current User',
+      color: []
     };
     setStockEntries([...stockEntries, newEntry]);
   };
 
-  const updateStockEntry = (id: number, field: keyof StockEntry, value: string | Date) => {
+  const updateStockEntry = (id: number, field: keyof StockEntry, value: string | Date | string[]) => {
     setStockEntries(stockEntries.map(entry => {
       if (entry.id === id) {
         const updatedEntry = { ...entry, [field]: value };
@@ -164,10 +165,9 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
         .filter(entry => entry.itemId && entry.quantity)
         .map(async (entry) => {
           const additionalData = {
-            batchNumber: entry.batchNumber || undefined,
+            batchNumber: entry.serialNumber || undefined,
             expiryDate: entry.expiryDate ? entry.expiryDate.toISOString() : undefined,
             supplierName: entry.supplierName || undefined,
-            supplierContact: entry.supplierContact || undefined,
             purchasePrice: entry.purchasePrice ? parseFloat(entry.purchasePrice) : undefined,
             warranty: entry.warranty || undefined,
             authorizedBy: entry.authorizedBy || undefined,
@@ -350,18 +350,18 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
 
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Batch Number
+                        Serial Number
                       </label>
                       <input
                         type="text"
-                        value={entry.batchNumber}
-                        onChange={(e) => updateStockEntry(entry.id, 'batchNumber', e.target.value)}
-                        placeholder="e.g., BATCH-2024-001"
+                        value={entry.serialNumber}
+                        onChange={(e) => updateStockEntry(entry.id, 'serialNumber', e.target.value)}
+                        placeholder="e.g., SN-2024-001"
                         className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
                         style={{ fontFamily: 'Segoe UI' }}
                       />
                       <div className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
-                        Optional - batch or lot number
+                        Optional - serial or lot number
                       </div>
                     </div>
 
@@ -412,6 +412,16 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
                     </div>
 
                     <div>
+                      <ColorSelector
+                        selectedColors={entry.color}
+                        onChange={(colors) => updateStockEntry(entry.id, 'color', colors)}
+                        multiSelect={true}
+                        placeholder="Select colors"
+                        label="Color"
+                      />
+                    </div>
+
+                    <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
                         Supplier Name
                       </label>
@@ -420,20 +430,6 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
                         value={entry.supplierName}
                         onChange={(e) => updateStockEntry(entry.id, 'supplierName', e.target.value)}
                         placeholder="e.g., Hearing Aid Supplies Ltd"
-                        className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
-                        style={{ fontFamily: 'Segoe UI' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Supplier Contact
-                      </label>
-                      <input
-                        type="text"
-                        value={entry.supplierContact}
-                        onChange={(e) => updateStockEntry(entry.id, 'supplierContact', e.target.value)}
-                        placeholder="e.g., +1-234-567-8900"
                         className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none "
                         style={{ fontFamily: 'Segoe UI' }}
                       />

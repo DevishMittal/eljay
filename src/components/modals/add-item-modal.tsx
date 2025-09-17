@@ -5,6 +5,7 @@ import { InventoryService } from "@/services/inventoryService";
 import { InventoryItem } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
 import CustomCalendar from "@/components/ui/custom-calendar";
+import ColorSelector from "@/components/ui/color-selector";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -43,10 +44,10 @@ export default function AddItemModal({
       category: "accessories",
       description: "",
       mrp: "",
-      color: "",
+      color: [] as string[],
       currentStock: "",
       minimumStock: "",
-      maximumStock: "",
+      formFactor: "",
       status: "Active",
       expiresAt: "",
     }),
@@ -75,6 +76,26 @@ export default function AddItemModal({
     { value: "cleaning", label: "Cleaning" },
   ];
 
+  const formFactorOptions = [
+    { value: "BTE (Behind-The-Ear)", label: "BTE (Behind-The-Ear)" },
+    { value: "RIC (Receiver-In-Canal)", label: "RIC (Receiver-In-Canal)" },
+    { value: "CIC (Completely-In-Canal)", label: "CIC (Completely-In-Canal)" },
+    { value: "IIC (Invisible-In-Canal)", label: "IIC (Invisible-In-Canal)" },
+    { value: "IPC (In-The-Canal)", label: "IPC (In-The-Canal)" },
+    { value: "Pocket Model", label: "Pocket Model" },
+    { value: "Not Applicable", label: "Not Applicable" },
+  ];
+
+  // Check if form factor should be visible (hearing aid selected in either itemType or category)
+  const shouldShowFormFactor = formData.itemType === "hearing_aid" || formData.category === "hearing_aid";
+
+  // Clear formFactor when it's no longer applicable
+  useEffect(() => {
+    if (!shouldShowFormFactor && formData.formFactor) {
+      setFormData(prev => ({ ...prev, formFactor: "" }));
+    }
+  }, [shouldShowFormFactor, formData.formFactor]);
+
   // Reset form when modal opens/closes or when editing item changes
   useEffect(() => {
     if (isOpen) {
@@ -88,10 +109,10 @@ export default function AddItemModal({
           category: editingItem.category,
           description: editingItem.description,
           mrp: editingItem.mrp.toString(),
-          color: editingItem.color,
+          color: editingItem.color ? [editingItem.color] : [],
           currentStock: editingItem.currentStock.toString(),
           minimumStock: editingItem.minimumStock.toString(),
-          maximumStock: editingItem.maximumStock.toString(),
+          formFactor: editingItem.formFactor || "",
           status: editingItem.status,
           expiresAt: editingItem.expiresAt
             ? editingItem.expiresAt.split("T")[0]
@@ -143,8 +164,7 @@ export default function AddItemModal({
         !formData.brand ||
         !formData.mrp ||
         !formData.currentStock ||
-        !formData.minimumStock ||
-        !formData.maximumStock
+        !formData.minimumStock
       ) {
         setError("Please fill in all required fields");
         return;
@@ -154,8 +174,7 @@ export default function AddItemModal({
       if (
         isNaN(parseFloat(formData.mrp)) ||
         isNaN(parseInt(formData.currentStock)) ||
-        isNaN(parseInt(formData.minimumStock)) ||
-        isNaN(parseInt(formData.maximumStock))
+        isNaN(parseInt(formData.minimumStock))
       ) {
         setError("Please enter valid numbers for MRP and stock fields");
         return;
@@ -164,9 +183,11 @@ export default function AddItemModal({
       const payload = {
         ...formData,
         mrp: parseFloat(formData.mrp),
+        color: formData.color.join(", "), // Convert array to comma-separated string
         currentStock: parseInt(formData.currentStock),
         minimumStock: parseInt(formData.minimumStock),
-        maximumStock: parseInt(formData.maximumStock),
+        maximumStock: 999999, // Set a default high value since backend expects it
+        ...(shouldShowFormFactor && formData.formFactor ? { formFactor: formData.formFactor } : {}),
       };
 
       // Only add expiresAt if it's provided and convert to proper ISO format
@@ -362,6 +383,28 @@ export default function AddItemModal({
                 />
               </div>
 
+              {/* Form Factor field - only visible for hearing aids */}
+              {shouldShowFormFactor && (
+                <div>
+                  <label
+                    className="block text-xs font-medium text-[#101828] mb-2"
+                    style={{ fontFamily: "Segoe UI" }}
+                  >
+                    Form Factor
+                  </label>
+                  <CustomDropdown
+                    options={formFactorOptions}
+                    value={formData.formFactor}
+                    onChange={(value) =>
+                      setFormData({ ...formData, formFactor: value })
+                    }
+                    placeholder="Select form factor"
+                    className="w-full h-10"
+                    aria-label="Select form factor"
+                  />
+                </div>
+              )}
+
               <div>
                 <label
                   className="block text-xs font-medium text-[#101828] mb-2"
@@ -431,22 +474,13 @@ export default function AddItemModal({
               </div>
 
               <div>
-                <label
-                  className="block text-xs font-medium text-[#101828] mb-2"
-                  style={{ fontFamily: "Segoe UI" }}
-                >
-                  Color *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.color}
-                  onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
-                  }
-                  placeholder="e.g., Blue, Silver, Black"
-                  className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                  style={{ fontFamily: "Segoe UI" }}
+                <ColorSelector
+                  selectedColors={formData.color}
+                  onChange={(colors) => setFormData({ ...formData, color: colors })}
+                  multiSelect={true}
+                  placeholder="Select colors"
+                  label="Color"
+                  required={true}
                 />
               </div>
 
@@ -465,26 +499,6 @@ export default function AddItemModal({
                     setFormData({ ...formData, currentStock: e.target.value })
                   }
                   placeholder="e.g., 10"
-                  className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
-                  style={{ fontFamily: "Segoe UI" }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="block text-xs font-medium text-[#101828] mb-2"
-                  style={{ fontFamily: "Segoe UI" }}
-                >
-                  Maximum Stock *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.maximumStock}
-                  onChange={(e) =>
-                    setFormData({ ...formData, maximumStock: e.target.value })
-                  }
-                  placeholder="e.g., 50"
                   className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                   style={{ fontFamily: "Segoe UI" }}
                 />
