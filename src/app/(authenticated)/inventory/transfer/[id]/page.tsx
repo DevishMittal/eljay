@@ -9,6 +9,7 @@ import { InventoryTransfer } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/utils';
+import { downloadInventoryTransferReportAsPDF, printInventoryTransferReport } from '@/utils/transferPrintUtils';
 
 export default function TransferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -57,12 +58,19 @@ export default function TransferDetailsPage({ params }: { params: Promise<{ id: 
   };
 
   const handleDownloadPDF = () => {
-    console.log('Downloading PDF for transfer:', resolvedParams.id);
+    if (!transfer) {
+      console.error('No transfer data available for download');
+      return;
+    }
+    downloadInventoryTransferReportAsPDF(transfer);
   };
 
   const handlePrint = () => {
-    console.log('Printing transfer details:', resolvedParams.id);
-    window.print();
+    if (!transfer) {
+      console.error('No transfer data available for printing');
+      return;
+    }
+    printInventoryTransferReport(transfer);
   };
 
   const handleEdit = () => {
