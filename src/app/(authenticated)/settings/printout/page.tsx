@@ -73,6 +73,18 @@ const PrintoutPage = () => {
       )
     },
     {
+      id: 'hospitals',
+      title: 'Hospitals',
+      href: '/settings/hospitals',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.0348 1.86523H4.03483C3.3905 1.86523 2.86816 2.38757 2.86816 3.0319V12.3652C2.86816 13.0096 3.3905 13.5319 4.03483 13.5319H11.0348C11.6792 13.5319 12.2015 13.0096 12.2015 12.3652V3.0319C12.2015 2.38757 11.6792 1.86523 11.0348 1.86523Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M7.53491 5.36523V9.86523" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M9.78491 7.61523H5.28491" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
       id: 'printout',
       title: 'Printout',
       href: '/settings/printout',

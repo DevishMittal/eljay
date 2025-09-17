@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
@@ -73,7 +73,30 @@ export default function DoctorReferralsPage() {
     dueDate: string;
   }>>([]);
   const [isAddingDoctor, setIsAddingDoctor] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState('all');
+  const [selectedDateRange, setSelectedDateRange] = useState('current-month');
+  const [availableDoctors, setAvailableDoctors] = useState<Array<{id: string, name: string}>>([]);
+  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  
   const { token } = useAuth();
+
+  // Function to fetch available doctors for filter dropdown
+  const fetchAvailableDoctors = useCallback(async () => {
+    try {
+      const response = await doctorService.getAvailableAudiologists(token || undefined);
+      const doctorOptions = response.data.map(doctor => ({
+        id: doctor.id,
+        name: doctor.name
+      }));
+      setAvailableDoctors(doctorOptions);
+    } catch (error) {
+      console.error('Error fetching doctors for filter:', error);
+    }
+  }, [token]);
 
   // Fetch referrals and analytics from API
   useEffect(() => {
@@ -115,6 +138,9 @@ export default function DoctorReferralsPage() {
         setReferralTrends(trendsData);
         setTopDoctors(topDoctorsData);
         setCommissionStatements(statementsData);
+
+        // Fetch available doctors for filter
+        await fetchAvailableDoctors();
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -125,7 +151,23 @@ export default function DoctorReferralsPage() {
     if (token) {
       fetchData();
     }
-  }, [token]);
+  }, [token, fetchAvailableDoctors]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.relative')) {
+        setShowDoctorDropdown(false);
+        setShowDateDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Handle adding new doctor
   const handleAddDoctor = async (doctorData: CreateDoctorData) => {
@@ -192,6 +234,34 @@ export default function DoctorReferralsPage() {
     } finally {
       setIsAddingDoctor(false);
     }
+  };
+
+  // Helper function to get date range based on selected filter
+  const getDateRange = (range: string) => {
+    const now = new Date();
+    const startDate = new Date();
+    
+    switch (range) {
+      case 'current-month':
+        startDate.setDate(1); // First day of current month
+        break;
+      case 'last-month':
+        startDate.setMonth(now.getMonth() - 1);
+        startDate.setDate(1);
+        break;
+      case 'last-3-months':
+        startDate.setMonth(now.getMonth() - 3);
+        startDate.setDate(1);
+        break;
+      case 'last-6-months':
+        startDate.setMonth(now.getMonth() - 6);
+        startDate.setDate(1);
+        break;
+      default:
+        startDate.setDate(1); // Default to current month
+    }
+    
+    return { startDate, endDate: now };
   };
 
   // Filter referrals by type
@@ -341,8 +411,30 @@ export default function DoctorReferralsPage() {
       }],
       amount: formatCurrency(0), // No amount data in referrals API
       commission: formatCurrency(0), // No commission data in referrals API
-      status: 'pending' as const
+      status: 'pending' as const,
+      createdAt: referral.createdAt
     };
+  });
+
+  // Apply filters to referral data
+  const filteredReferralData = referralData.filter(referral => {
+    // Date range filter
+    const { startDate, endDate } = getDateRange(selectedDateRange);
+    const referralDate = new Date(referral.createdAt || new Date());
+    const isInDateRange = referralDate >= startDate && referralDate <= endDate;
+    
+    // Doctor filter
+    const isDoctorMatch = selectedDoctor === 'all' || 
+      (referral.type === 'doctor' && referral.sourceName.toLowerCase().includes(selectedDoctor.toLowerCase()));
+    
+    // Search filter (search in doctor name, patient name, contact number, hospital)
+    const isSearchMatch = searchTerm === '' || 
+      referral.sourceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      referral.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      referral.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      referral.hospital.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return isInDateRange && isDoctorMatch && isSearchMatch;
   });
 
   // Use real commission statements data with unique keys
@@ -667,43 +759,104 @@ export default function DoctorReferralsPage() {
                       <input
                         type="text"
                         placeholder="Search patients or doctors..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
-                    <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                      <Filter className="w-4 h-4 mr-2"/>
-                      All Doctors
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowDoctorDropdown(!showDoctorDropdown)}
+                        className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
-                    <button className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm">
-                      <Filter className="w-4 h-4 mr-2"/>
-                      All Status
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                        <Filter className="w-4 h-4 mr-2"/>
+                        {selectedDoctor === 'all' ? 'All Doctors' : availableDoctors.find(d => d.id === selectedDoctor)?.name || 'All Doctors'}
+                        <svg
+                          className="w-4 h-4 ml-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                      {showDoctorDropdown && (
+                        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-48">
+                          <div 
+                            className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                            onClick={() => {
+                              setSelectedDoctor('all');
+                              setShowDoctorDropdown(false);
+                            }}
+                          >
+                            All Doctors
+                          </div>
+                          {availableDoctors.map(doctor => (
+                            <div 
+                              key={doctor.id}
+                              className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                              onClick={() => {
+                                setSelectedDoctor(doctor.id);
+                                setShowDoctorDropdown(false);
+                              }}
+                            >
+                              {doctor.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowDateDropdown(!showDateDropdown)}
+                        className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
+                        <Filter className="w-4 h-4 mr-2"/>
+                        {selectedDateRange === 'current-month' ? 'Current Month' :
+                         selectedDateRange === 'last-month' ? 'Last Month' :
+                         selectedDateRange === 'last-3-months' ? 'Last 3 Months' :
+                         selectedDateRange === 'last-6-months' ? 'Last 6 Months' : 'Current Month'}
+                        <svg
+                          className="w-4 h-4 ml-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                      {showDateDropdown && (
+                        <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-48">
+                          {[
+                            { value: 'current-month', label: 'Current Month' },
+                            { value: 'last-month', label: 'Last Month' },
+                            { value: 'last-3-months', label: 'Last 3 Months' },
+                            { value: 'last-6-months', label: 'Last 6 Months' }
+                          ].map(option => (
+                            <div 
+                              key={option.value}
+                              className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                              onClick={() => {
+                                setSelectedDateRange(option.value);
+                                setShowDateDropdown(false);
+                              }}
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -730,8 +883,8 @@ export default function DoctorReferralsPage() {
                               Loading referrals...
                             </td>
                           </tr>
-                        ) : referralData.length > 0 ? (
-                          referralData.map((referral) => (
+                        ) : filteredReferralData.length > 0 ? (
+                          filteredReferralData.map((referral) => (
                             <tr key={referral.id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.date}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -804,7 +957,7 @@ export default function DoctorReferralsPage() {
                   <div className="bg-white px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Showing 1 to {Math.min(referralData.length, 4)} of {referralData.length}</span>
+                        <span className="text-sm text-gray-700">Showing 1 to {Math.min(filteredReferralData.length, 4)} of {filteredReferralData.length}</span>
                         <select 
                           className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
                           aria-label="Items per page"

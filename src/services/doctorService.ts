@@ -20,7 +20,7 @@ class DoctorService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/audiologists`, {
+      const response = await fetch(`${BASE_URL}/api/v1/audiologists/available`, {
         method: 'GET',
         headers,
       });
