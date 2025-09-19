@@ -25,7 +25,9 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
     gender: 'Male',
     occupation: '',
     customerType: 'B2C',
-    alternateNumber: ''
+    alternateNumber: '',
+    hospitalName: '',
+    opipNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,9 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
         gender: 'Male',
         occupation: '',
         customerType: 'B2C',
-        alternateNumber: ''
+        alternateNumber: '',
+        hospitalName: '',
+        opipNumber: ''
       });
       setError(null);
       onClose();
@@ -247,6 +251,42 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                     aria-label="Select customer type"
                   />
                 </div>
+
+                {/* Hospital Name field - only show for B2B patients */}
+                {formData.customerType === 'B2B' && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                      Hospital Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.hospitalName || ''}
+                      onChange={(e) => handleInputChange('hospitalName', e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Enter hospital name"
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* OP/IP Number field - only show for B2B patients */}
+                {formData.customerType === 'B2B' && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
+                      OP/IP/UHID Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.opipNumber || ''}
+                      onChange={(e) => handleInputChange('opipNumber', e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Enter OP/IP/UHID number (can be added later)"
+                      disabled={loading}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Can be added later to complete profile</p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>

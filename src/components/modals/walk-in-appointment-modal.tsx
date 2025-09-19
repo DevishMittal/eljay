@@ -45,6 +45,7 @@ interface FormData {
   occupation: string;
   customerType: string;
   hospitalName: string; // For B2B patients
+  opipNumber: string; // OP/IP/UHID number for B2B patients
   selectedAudiologist: string;
   appointmentType: string;
   appointmentDate: string;
@@ -83,6 +84,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     occupation: '',
     customerType: 'B2C',
     hospitalName: '',
+    opipNumber: '',
     selectedAudiologist: '',
     appointmentType: '',
     appointmentDate: '',
@@ -174,6 +176,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         occupation: '',
         customerType: 'B2C',
         hospitalName: '',
+        opipNumber: '',
         selectedAudiologist: '',
         appointmentType: '',
         appointmentDate: '',
@@ -250,6 +253,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           occupation: response.data.occupation,
           customerType: response.data.customerType,
           hospitalName: response.data.hospitalName || '',
+          opipNumber: response.data.opipNumber || '',
         }));
       } else {
         // User not found, populate mobile number with the phone number from stage 1
@@ -433,7 +437,8 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           occupation: formData.occupation,
           customerType: formData.customerType,
           alternateNumber: formData.alternateNumber || undefined,
-          hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined
+          hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined,
+          opipNumber: formData.customerType === 'B2B' ? formData.opipNumber : undefined
         };
 
         const userResponse = await patientService.createUser(userData, token || undefined);
@@ -843,9 +848,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              value={formData.customerType}
              onChange={(value) => {
                handleInputChange('customerType', value);
-               // Reset hospital name when changing customer type
+               // Reset hospital name and OP/IP number when changing customer type
                if (value === 'B2C') {
                  handleInputChange('hospitalName', '');
+                 handleInputChange('opipNumber', '');
                }
                // Set referral source to Direct for B2B patients
                if (value === 'B2B') {
@@ -918,6 +924,30 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                  </div>
                )}
              </div>
+             {existingUser && (
+               <p className="text-xs text-green-500 mt-1">
+                 ✓ This field is populated from existing user data
+               </p>
+             )}
+           </div>
+         )}
+
+         {/* OP/IP Number field - only show for B2B patients */}
+         {formData.customerType === 'B2B' && (
+           <div>
+             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
+               OP/IP/UHID Number {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>} (Optional)
+             </label>
+             <input
+               type="text"
+               value={formData.opipNumber}
+               onChange={(e) => handleInputChange('opipNumber', e.target.value)}
+               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+               style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
+               placeholder="Enter OP/IP/UHID number (can be added later)"
+               aria-label="OP/IP/UHID number"
+             />
+             <p className="text-xs text-gray-500 mt-1">Can be added later to complete profile</p>
              {existingUser && (
                <p className="text-xs text-green-500 mt-1">
                  ✓ This field is populated from existing user data

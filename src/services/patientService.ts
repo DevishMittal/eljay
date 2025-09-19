@@ -4,7 +4,6 @@ import {
   UpdateUserData, 
   PatientsResponse, 
   PatientResponse, 
-  PatientUpdateResponse,
   UserLookupResponse,
   UserCreateResponse,
   UsersResponse,
@@ -158,7 +157,8 @@ class PatientService {
         updated_at: user.updatedAt,
         alternative_number: user.alternateNumber,
         countrycode: user.countrycode,
-        hospital_name: user.hospitalName
+        hospital_name: user.hospitalName,
+        opipNumber: user.opipNumber // OP/IP number for B2B patients
       }));
 
       return {
@@ -217,7 +217,8 @@ class PatientService {
         updated_at: user.updatedAt,
         alternative_number: user.alternateNumber,
         countrycode: user.countrycode,
-        hospital_name: user.hospitalName
+        hospital_name: user.hospitalName,
+        opipNumber: user.opipNumber // OP/IP number for B2B patients
       };
 
       return {
@@ -263,6 +264,9 @@ class PatientService {
             break;
           case 'hospital_name':
             transformedData.hospitalName = value;
+            break;
+          case 'opipNumber':
+            transformedData.opipNumber = value;
             break;
           default:
             transformedData[key] = value;
@@ -497,7 +501,8 @@ class PatientService {
                 updated_at: detailedUser.updatedAt,
                 alternative_number: detailedUser.alternateNumber,
                 countrycode: detailedUser.countrycode,
-                hospital_name: detailedUser.hospitalName
+                hospital_name: detailedUser.hospitalName,
+                opipNumber: detailedUser.opipNumber // OP/IP number for B2B patients
               });
             }
           }

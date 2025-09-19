@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import Image from 'next/image';
 import MainLayout from '@/components/layout/main-layout';
+import { useAuth } from '@/contexts/AuthContext';
+import { OrganizationService } from '@/services/organizationService';
 
 interface Organization {
   id: string;
@@ -19,17 +21,9 @@ interface Organization {
   logo: string;
 }
 
-interface LoginResponse {
-  status: string;
-  data: {
-    token: string;
-    refreshToken: string;
-    organization: Organization;
-  };
-}
-
 const SettingsPage = () => {
   const pathname = usePathname();
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState(() => {
     if (pathname === '/settings') return 'profile';
     if (pathname === '/settings/diagnostics') return 'diagnostics';
@@ -50,52 +44,46 @@ const SettingsPage = () => {
     countrycode: '',
     website: '',
     gstNumber: '',
-    address: ''
+    address: '',
+    password: ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch organization data on component mount
   useEffect(() => {
     fetchOrganizationData();
-  }, []);
+  }, [token]);
 
-  const fetchOrganizationData = async () => {
+  const fetchOrganizationData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('https://eljay-api.vizdale.com/api/v1/organizations/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'info@eljayhearing.com',
-          password: 'Test@123456'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch organization data');
+      if (!token) {
+        throw new Error('No authentication token available');
       }
 
-      const data: LoginResponse = await response.json();
+      const response = await OrganizationService.getProfile(token);
       
-             if (data.status === 'success') {
-         setOrganization(data.data.organization);
-         setFormData({
-           name: data.data.organization.name,
-           email: data.data.organization.email,
-           phoneNumber: data.data.organization.phoneNumber,
-           countrycode: data.data.organization.countrycode,
-           website: data.data.organization.website,
-           gstNumber: data.data.organization.gstNumber,
-           address: data.data.organization.address
-         });
-         setImageError(false); // Reset image error state
-       } else {
+      if (response.status === 'success') {
+        setOrganization(response.data);
+        setFormData({
+          name: response.data.name,
+          email: response.data.email,
+          phoneNumber: response.data.phoneNumber,
+          countrycode: response.data.countrycode,
+          website: response.data.website,
+          gstNumber: response.data.gstNumber,
+          address: response.data.address,
+          password: '' // Don't populate password from response
+        });
+        setImageError(false); // Reset image error state
+      } else {
         throw new Error('API returned error status');
       }
     } catch (err) {
@@ -104,7 +92,12 @@ const SettingsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  // Fetch organization data on component mount
+  useEffect(() => {
+    fetchOrganizationData();
+  }, [fetchOrganizationData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -118,25 +111,71 @@ const SettingsPage = () => {
     try {
       setSaving(true);
       
-      // Here you would typically make an API call to update the organization data
-      // For now, we'll just simulate the save operation
-      console.log('Saving organization data:', formData);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update the organization state with new data
-      if (organization) {
-        setOrganization({
-          ...organization,
-          ...formData
-        });
+      if (!token) {
+        throw new Error('No authentication token available');
       }
+
+      if (!formData.password) {
+        setError('Password is required to save changes');
+        return;
+      }
+
+      let logoUrl = organization?.logo || 'https://example.com/logo.png';
       
-      setIsEditing(false);
+      // If a new logo is selected, convert it to base64
+      if (selectedLogo) {
+        try {
+          logoUrl = await convertFileToBase64(selectedLogo);
+        } catch (err) {
+          console.error('Error converting image to base64:', err);
+          setError('Failed to process the image. Please try again.');
+          return;
+        }
+      }
+
+      const updateData = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber,
+        countrycode: formData.countrycode,
+        website: formData.website,
+        gstNumber: formData.gstNumber,
+        address: formData.address,
+        logo: logoUrl
+      };
+
+      const response = await OrganizationService.updateProfile(token, updateData);
+      
+      if (response.status === 'success') {
+        // Update the organization state with new data
+        setOrganization(response.data);
+        
+        // Update form data to reflect the saved values
+        setFormData({
+          name: response.data.name,
+          email: response.data.email,
+          phoneNumber: response.data.phoneNumber,
+          countrycode: response.data.countrycode,
+          website: response.data.website,
+          gstNumber: response.data.gstNumber,
+          address: response.data.address,
+          password: '' // Clear password after successful save
+        });
+        
+        // Reset logo states
+        setSelectedLogo(null);
+        setLogoPreview(null);
+        setImageError(false);
+        
+        setIsEditing(false);
+        setError(null); // Clear any previous errors
+      } else {
+        throw new Error('Failed to update organization profile');
+      }
     } catch (err) {
       console.error('Error saving organization data:', err);
-      setError('Failed to save changes');
+      setError(err instanceof Error ? err.message : 'Failed to save changes');
     } finally {
       setSaving(false);
     }
@@ -152,14 +191,66 @@ const SettingsPage = () => {
         countrycode: organization.countrycode,
         website: organization.website,
         gstNumber: organization.gstNumber,
-        address: organization.address
+        address: organization.address,
+        password: '' // Clear password on cancel
       });
     }
+    
+    // Reset logo states
+    setSelectedLogo(null);
+    setLogoPreview(null);
+    setImageError(false);
+    
     setIsEditing(false);
+    setError(null); // Clear any error messages
   };
 
   const handleImageError = () => {
     setImageError(true);
+  };
+
+  const handleLogoClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        setError('Image file size must be less than 5MB');
+        return;
+      }
+
+      setSelectedLogo(file);
+      setError(null);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setLogoPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const tabs = [
@@ -371,10 +462,10 @@ const SettingsPage = () => {
               {/* Organization Logo */}
               <div className="flex-shrink-0">
                 <div className="relative">
-                  {organization.logo && organization.logo !== 'https://example.com/logo.png' && !imageError ? (
+                  {(logoPreview || (organization.logo && organization.logo !== 'https://example.com/logo.png')) && !imageError ? (
                     <div className="w-24 h-24 bg-[#f97316] rounded-full flex items-center justify-center relative overflow-hidden">
                       <Image
-                        src={organization.logo}
+                        src={logoPreview || organization.logo}
                         alt="Organization Logo"
                         width={96}
                         height={96}
@@ -390,15 +481,35 @@ const SettingsPage = () => {
                     </div>
                   )}
                   {/* Camera icon overlay */}
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full border-2 border-[#f97316] flex items-center justify-center cursor-pointer">
+                  <div 
+                    className={cn(
+                      "absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full border-2 border-[#f97316] flex items-center justify-center",
+                      isEditing ? "cursor-pointer hover:bg-gray-50 transition-colors" : "cursor-default"
+                    )}
+                    onClick={handleLogoClick}
+                    title={isEditing ? "Change logo" : ""}
+                  >
                     <svg className="w-3 h-3 text-[#f97316]" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4z"/>
                       <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
                     </svg>
                   </div>
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleLogoChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
                 </div>
                 <p className="text-xs text-[#4A5565] mt-2 text-center" style={{ fontFamily: 'Segoe UI' }}>
                   Organization Logo
+                  {selectedLogo && (
+                    <span className="block text-[#f97316] mt-1">
+                      New image selected
+                    </span>
+                  )}
                 </p>
               </div>
               
@@ -562,6 +673,27 @@ const SettingsPage = () => {
                     aria-label="Website"
                   />
                 </div>
+
+                {isEditing && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#0A0A0A] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="text-xs w-full px-3 py-2 border border-[#E5E7EB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent bg-white text-[#101828]"
+                      style={{ fontFamily: 'Segoe UI' }}
+                      aria-label="Password"
+                      placeholder="Enter password to save changes"
+                    />
+                    <p className="text-xs text-[#4A5565] mt-1" style={{ fontFamily: 'Segoe UI' }}>
+                      Password is required to save profile changes
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
