@@ -109,14 +109,155 @@ export interface DashboardDoctorReferralData {
   };
 }
 
+export interface DashboardDiagnosticsData {
+  overview: {
+    testsCompleted: number;
+    testsCompletedChange: number;
+    pendingTests: number;
+    avgTestTime: number;
+    totalRevenue: number;
+    revenueChange: number;
+  };
+  charts: {
+    testTypesDistribution: Array<{
+      type: string;
+      count: number;
+    }>;
+    hearingLossDistribution: Array<{
+      type: string;
+      count: number;
+    }>;
+  };
+  metrics: {
+    totalAppointments: number;
+    completionRate: number;
+    avgRevenuePerTest: number;
+  };
+}
+
+export interface DashboardBillingsData {
+  overview: {
+    totalRevenue: number;
+    revenueChange: number;
+    dailyAverage: number;
+    perPatientRevenue: number;
+    uniquePatients: number;
+  };
+  collection: {
+    collectionRate: number;
+    collectionChange: number;
+    collectedAmount: number;
+    outstandingAmount: number;
+    sameDayRate: number;
+    avgDaysToCollect: number;
+    advancePayments: number;
+  };
+  transactions: {
+    totalInvoices: number;
+    avgInvoice: number;
+    gstCollected: number;
+    discountRate: number;
+    commissionPaid: number;
+    totalDiscount: number;
+  };
+  charts: {
+    revenueTrend: Array<{
+      month: string;
+      amount: number;
+    }>;
+    serviceBreakdown: Array<{
+      service: string;
+      amount: number;
+      percentage: number;
+    }>;
+    paymentMethods: Array<{
+      method: string;
+      amount: number;
+      count: number;
+      percentage: number;
+    }>;
+    ageDistribution: Array<{
+      ageGroup: string;
+      count: number;
+      percentage: number;
+    }>;
+    collectionTimeline: {
+      sameDay: number;
+      within7Days: number;
+      within30Days: number;
+      avgDaysToCollect: number;
+    };
+  };
+  metrics: {
+    totalTransactions: number;
+    avgTransactionAmount: number;
+    digitalPaymentPercentage: number;
+    seniorPatientPercentage: number;
+  };
+}
+
+export interface DashboardInventoryData {
+  overview: {
+    totalInventoryValue: number;
+    totalSkus: number;
+    lowStockItems: number;
+    outOfStockItems: number;
+    expiringSoonItems: number;
+    activeItems: number;
+  };
+  charts: {
+    stockStatus: Array<{
+      status: string;
+      count: number;
+      percentage: number;
+    }>;
+    stockTrend: Array<{
+      category: string;
+      monthlyData: Array<{
+        month: string;
+        value: number;
+      }>;
+    }>;
+    bestSellingBrands: Array<{
+      brand: string;
+      quantity: number;
+    }>;
+    stockoutAnalysis: Array<{
+      item: string;
+      daysOutOfStock: number;
+      impact: string;
+    }>;
+  };
+  branchSummary: Array<{
+    branchName: string;
+    totalItems: number;
+    lowStockItems: number;
+    outOfStockItems: number;
+    totalValue: number;
+  }>;
+  categorySummary: Array<{
+    category: string;
+    totalItems: number;
+    totalValue: number;
+    lowStockItems: number;
+    outOfStockItems: number;
+  }>;
+  metrics: {
+    averageStockValue: number;
+    inventoryTurnover: number;
+    reorderAlerts: number;
+    criticalItems: number;
+  };
+}
+
 export interface DashboardResponse {
   status: string;
   data: {
     appointments?: DashboardAppointmentsData;
     doctorReferral?: DashboardDoctorReferralData;
-    diagnostics?: any;
-    billings?: any;
-    inventory?: any;
+    diagnostics?: DashboardDiagnosticsData;
+    billings?: DashboardBillingsData;
+    inventory?: DashboardInventoryData;
   };
 }
 
@@ -135,6 +276,8 @@ export class DashboardService {
 
       const sectionsParam = sections.join(',');
       const url = `${API_BASE_URL}/dashboard?sections=${sectionsParam}&startDate=${startDate}&endDate=${endDate}`;
+      
+      console.log('Dashboard API URL:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -172,6 +315,36 @@ export class DashboardService {
       return response.data.doctorReferral || null;
     } catch (error) {
       console.error('Error fetching doctor referral data:', error);
+      return null;
+    }
+  }
+
+  static async getDiagnosticsData(startDate: string, endDate: string): Promise<DashboardDiagnosticsData | null> {
+    try {
+      const response = await this.getDashboardData(['diagnostics'], startDate, endDate);
+      return response.data.diagnostics || null;
+    } catch (error) {
+      console.error('Error fetching diagnostics data:', error);
+      return null;
+    }
+  }
+
+  static async getBillingsData(startDate: string, endDate: string): Promise<DashboardBillingsData | null> {
+    try {
+      const response = await this.getDashboardData(['billings'], startDate, endDate);
+      return response.data.billings || null;
+    } catch (error) {
+      console.error('Error fetching billings data:', error);
+      return null;
+    }
+  }
+
+  static async getInventoryData(startDate: string, endDate: string): Promise<DashboardInventoryData | null> {
+    try {
+      const response = await this.getDashboardData(['inventory'], startDate, endDate);
+      return response.data.inventory || null;
+    } catch (error) {
+      console.error('Error fetching inventory data:', error);
       return null;
     }
   }
