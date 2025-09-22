@@ -10,6 +10,7 @@ import InvoiceService from '@/services/invoiceService';
 import HospitalService from '@/services/hospitalService';
 import PatientService from '@/services/patientService';
 import DiagnosticsService from '@/services/diagnosticsService';
+import PaymentService from '@/services/paymentService';
 import { CreateInvoiceData, InvoiceScreening, Patient } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -35,6 +36,18 @@ export default function B2BInvoicePage() {
   const [hospitalPatients, setHospitalPatients] = useState<Patient[]>([]);
   const [diagnosticOptions, setDiagnosticOptions] = useState<{ value: string; label: string; price: number }[]>([]);
   const [fetchingPatients, setFetchingPatients] = useState(false);
+
+  // Payment Details States for B2B (only partial payment)
+  const [paymentDetails, setPaymentDetails] = useState<Array<{
+    id: string;
+    paymentDate: string;
+    method: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '';
+    amount: number;
+    transactionId?: string;
+    receivedBy?: string;
+    description?: string;
+    notes?: string;
+  }>>([]);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -185,6 +198,35 @@ export default function B2BInvoicePage() {
     return calculateTaxableAmount() + tax.total;
   };
 
+  // Payment Details Helper Functions for B2B
+  const addPaymentDetail = () => {
+    const newPayment = {
+      id: Date.now().toString(),
+      paymentDate: new Date().toISOString().split('T')[0],
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      amount: 0,
+      transactionId: '',
+      receivedBy: '',
+      description: '',
+      notes: ''
+    };
+    setPaymentDetails([...paymentDetails, newPayment]);
+  };
+
+  const removePaymentDetail = (id: string) => {
+    setPaymentDetails(paymentDetails.filter(payment => payment.id !== id));
+  };
+
+  const updatePaymentDetail = (id: string, field: string, value: any) => {
+    setPaymentDetails(paymentDetails.map(payment => 
+      payment.id === id ? { ...payment, [field]: value } : payment
+    ));
+  };
+
+  const calculateTotalPaymentDetails = () => {
+    return paymentDetails.reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
   if (authLoading) {
     return (
       <MainLayout>
@@ -223,6 +265,14 @@ export default function B2BInvoicePage() {
       }
     }
 
+    // Validate payment details if any are added
+    for (const payment of paymentDetails) {
+      if (!payment.paymentDate || !payment.method || payment.amount <= 0) {
+        alert('Please fill in all required payment fields (date, method, amount)');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       
@@ -244,6 +294,34 @@ export default function B2BInvoicePage() {
 
       const response = await InvoiceService.createInvoice(invoiceData);
       console.log('Invoice created successfully:', response);
+
+      // Create payment records if any payment details are added
+      if (paymentDetails.length > 0) {
+        try {
+          for (const payment of paymentDetails) {
+            if (payment.method && payment.amount > 0) {
+              const paymentData = {
+                paymentDate: payment.paymentDate,
+                patientName: primaryContact, // Use primary contact as patient name for B2B
+                amount: payment.amount,
+                method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+                status: 'Completed' as const,
+                transactionId: payment.transactionId || '',
+                receivedBy: payment.receivedBy || '',
+                paymentType: 'Advance' as const,
+                description: payment.description || `Payment for B2B Invoice ${response.data.invoiceNumber}`,
+                notes: payment.notes || ''
+              };
+              
+              await PaymentService.createPayment(paymentData);
+            }
+          }
+        } catch (paymentError) {
+          console.error('Error creating payments:', paymentError);
+          // Continue to navigate even if payment creation fails
+          alert('Invoice created successfully, but there was an error creating payment records. You can add payments manually later.');
+        }
+      }
       
       // Navigate to the new invoice detail page
       window.location.href = `/billing/invoices/${response.data.id}`;
@@ -475,6 +553,125 @@ export default function B2BInvoicePage() {
               </CardContent>
             </Card>
 
+            {/* Payment Details Section for B2B */}
+            <Card className="bg-white">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-[#101828]">
+                      Payment Details
+                    </h2>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Add partial payment details for this B2B invoice
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={addPaymentDetail}
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
+                    type="button"
+                  >
+                    + Add Payment
+                  </Button>
+                </div>
+
+                {paymentDetails.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Payment Date*</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Payment Method*</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Amount*</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Transaction ID</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Received By</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paymentDetails.map((payment) => (
+                          <tr key={payment.id} className="border-b border-gray-100">
+                            <td className="py-3 px-4">
+                              <Input
+                                type="date"
+                                value={payment.paymentDate}
+                                onChange={(e) => updatePaymentDetail(payment.id, 'paymentDate', e.target.value)}
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <select
+                                value={payment.method}
+                                onChange={(e) => updatePaymentDetail(payment.id, 'method', e.target.value)}
+                                className="w-32 px-3 py-2 border border-gray-300 rounded-md bg-white text-xs"
+                                aria-label={`Payment method for payment ${payment.id}`}
+                              >
+                                <option value="">Select Method</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Netbanking">Netbanking</option>
+                                <option value="Cheque">Cheque</option>
+                              </select>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                                <Input
+                                  type="number"
+                                  value={payment.amount || ''}
+                                  onChange={(e) => updatePaymentDetail(payment.id, 'amount', parseFloat(e.target.value) || 0)}
+                                  className="pl-8 w-24 bg-white border-gray-300"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={payment.transactionId || ''}
+                                onChange={(e) => updatePaymentDetail(payment.id, 'transactionId', e.target.value)}
+                                placeholder="Transaction ID"
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <Input
+                                value={payment.receivedBy || ''}
+                                onChange={(e) => updatePaymentDetail(payment.id, 'receivedBy', e.target.value)}
+                                placeholder="Staff name"
+                                className="w-32 bg-white border-gray-300"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => removePaymentDetail(payment.id)}
+                                className="text-red-500 hover:text-red-700"
+                                type="button"
+                                aria-label={`Remove payment detail`}
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {paymentDetails.length > 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Total Payment Amount:</span>
+                      <span className="text-lg font-semibold text-gray-900">₹{calculateTotalPaymentDetails().toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Bottom Section - Two Columns */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Invoice Settings */}
@@ -612,10 +809,22 @@ export default function B2BInvoicePage() {
                     <span className="text-xs font-medium">₹{calculateTax().total.toLocaleString()}</span>
                   </div>
                   
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Gross Total:</span>
+                    <span className="text-xs font-medium">₹{calculateFinalAmount().toLocaleString()}</span>
+                  </div>
+
+                  {paymentDetails.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Payment Amount:</span>
+                      <span className="text-xs font-medium text-green-600">-₹{calculateTotalPaymentDetails().toLocaleString()}</span>
+                    </div>
+                  )}
+                  
                   <div className="pt-3">
                     <div className="flex justify-between text-sm font-semibold">
-                      <span>Total Amount:</span>
-                      <span>₹{calculateFinalAmount().toLocaleString()}</span>
+                      <span>Final Amount:</span>
+                      <span>₹{Math.max(0, calculateFinalAmount() - calculateTotalPaymentDetails()).toLocaleString()}</span>
                     </div>
                   </div>
                     </div>

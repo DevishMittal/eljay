@@ -151,14 +151,14 @@ export const printElement = (elementId: string, title?: string) => {
 /**
  * Print invoice with proper formatting
  */
-export const printInvoice = (invoice: Invoice, options: PrintOptions = {}) => {
+export const printInvoice = (invoice: Invoice, options: PrintOptions = {}, payments: Payment[] = []) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     console.error('Could not open print window');
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice);
+  const invoiceHTML = generateInvoiceHTML(invoice, payments);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -185,14 +185,14 @@ export const printInvoice = (invoice: Invoice, options: PrintOptions = {}) => {
 /**
  * Download invoice as PDF (using browser's print to PDF)
  */
-export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {}) => {
+export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {}, payments: Payment[] = []) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     console.error('Could not open print window');
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice);
+  const invoiceHTML = generateInvoiceHTML(invoice, payments);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -227,7 +227,7 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
 /**
  * Generate HTML for invoice printing
  */
-const generateInvoiceHTML = (invoice: Invoice) => {
+const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -241,11 +241,13 @@ const generateInvoiceHTML = (invoice: Invoice) => {
       <!-- Header -->
       <div class="invoice-header">
         <div class="company-info">
-          <h1 class="company-name">Eljay Hearing Care</h1>
-          <p class="company-details">${invoice.invoiceType === 'B2C' ? 'Professional Audiology Services' : 'Corporate Hearing Screening Services'}</p>
-          <p class="company-address">123 Healthcare Avenue, Medical District</p>
-          <p class="company-address">Chennai, Tamil Nadu 600001</p>
-          <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
+          <div class="logo-and-address">
+            <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />
+            <div class="company-address-section">
+              <p class="company-address">No 75, DhanaLakshmi Avenue,</p>
+              <p class="company-address">Adyar, Chennai - 600020.</p>
+            </div>
+          </div>
         </div>
         <div class="invoice-status">
           <div class="status-badge status-${invoice.paymentStatus.toLowerCase().replace(' ', '-')}">
@@ -253,7 +255,7 @@ const generateInvoiceHTML = (invoice: Invoice) => {
           </div>
           <div class="contact-info">
             <p>Phone: +91 44 1234 5678</p>
-            <p>Email: ${invoice.invoiceType === 'B2C' ? 'info@eljayhearing.com' : 'corporate@eljayhearing.com'}</p>
+            <p>Email: info@eljayhearing.com</p>
             <p>Website: www.eljayhearing.com</p>
           </div>
         </div>
@@ -347,39 +349,72 @@ const generateInvoiceHTML = (invoice: Invoice) => {
         </table>
       </div>
 
-      <!-- Summary and Additional Info -->
+      <!-- Payment Details Section -->
+      ${payments.length > 0 ? `
+        <div class="payment-details-section">
+          <h3>Payment Details</h3>
+          <table class="payment-table">
+            <thead>
+              <tr>
+                <th>Receipt Number</th>
+                <th>Date</th>
+                <th>Payment Method</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payments.map(payment => `
+                <tr>
+                  <td>${payment.receiptNumber}</td>
+                  <td>${formatDate(payment.paymentDate)}</td>
+                  <td>
+                    <span class="payment-method-badge method-${payment.method.toLowerCase()}">${payment.method}</span>
+                  </td>
+                  <td class="text-right font-bold">₹${payment.amount.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="payment-summary">
+            <div class="payment-total">
+              <span>Total Payments Received:</span>
+              <span class="font-bold">₹${payments.reduce((total, payment) => total + payment.amount, 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Two Column Layout: Additional Info and Invoice Summary -->
       <div class="summary-section">
         <div class="additional-info">
           <h3>Additional Information</h3>
+          
+          ${invoice.warranty ? `
+            <div class="warranty-section">
+              <h4>General Warranty Information</h4>
+              <p>${invoice.warranty}</p>
+            </div>
+          ` : ''}
+          
           ${invoice.notes ? `
             <div class="notes-section">
               <h4>Notes</h4>
               <p>${invoice.notes}</p>
             </div>
           ` : ''}
-          <div class="terms-section">
-            <h4>${invoice.invoiceType === 'B2C' ? 'Terms & Conditions' : 'Corporate Terms & Conditions'}</h4>
-            <ul>
-              ${invoice.invoiceType === 'B2C' ? `
-                <li>Payment is due within 30 days of invoice date</li>
-                <li>All services provided are subject to professional terms</li>
-                <li>Warranty terms apply as per individual service agreements</li>
-                <li>For any queries, please contact us at the above details</li>
-              ` : `
+          
+          ${invoice.invoiceType === 'B2B' ? `
+            <div class="terms-section">
+              <h4>Corporate Terms & Conditions</h4>
+              <ul>
                 <li>Payment terms: Net 30 days from invoice date</li>
                 <li>All screenings conducted as per corporate agreement</li>
                 <li>Reports will be provided within 48 hours of screening</li>
                 <li>Follow-up consultations available on request</li>
                 <li>For billing queries, contact: accounts@eljayhearing.com</li>
-              `}
-            </ul>
-          </div>
-          <div class="tax-info">
-            <p>${invoice.invoiceType === 'B2C' 
-              ? '* Tax (SGST/CGST) applies only to services and accessories. Hearing aids are tax-exempt as per government regulations.'
-              : '* This invoice covers corporate hearing screening services as per the signed agreement dated 15 Jun 2025.'
-            }</p>
-          </div>
+              </ul>
+            </div>
+          ` : ''}
         </div>
 
         <div class="invoice-summary">
@@ -413,23 +448,18 @@ const generateInvoiceHTML = (invoice: Invoice) => {
               <span class="font-bold">Total Amount:</span>
               <span class="text-right font-bold">₹${invoice.totalAmount.toLocaleString()}</span>
             </div>
-            ${invoice.invoiceType === 'B2C' ? `
+            
+            ${payments.length > 0 ? `
               <div class="summary-row">
                 <span>Amount Paid:</span>
-                <span class="text-right">₹${(
-                  invoice.paymentStatus === 'Paid' ? invoice.totalAmount : 
-                  invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.45) : 0
-                ).toLocaleString()}</span>
+                <span class="text-right text-green">₹${payments.reduce((total, payment) => total + payment.amount, 0).toLocaleString()}</span>
               </div>
-              <div class="summary-row">
-                <span>Balance Due:</span>
-                <span class="text-right text-red">₹${(
-                  invoice.paymentStatus === 'Paid' ? 0 : 
-                  invoice.paymentStatus === 'Partially Paid' ? Math.floor(invoice.totalAmount * 0.55) :
-                  invoice.totalAmount
-                ).toLocaleString()}</span>
+              <div class="summary-row balance-row">
+                <span class="font-bold">Balance Due:</span>
+                <span class="text-right font-bold text-red">₹${Math.max(0, invoice.totalAmount - payments.reduce((total, payment) => total + payment.amount, 0)).toLocaleString()}</span>
               </div>
             ` : ''}
+            
             ${invoice.invoiceType === 'B2B' ? `
               <div class="payment-instructions">
                 <h5>Payment Instructions</h5>
@@ -513,19 +543,30 @@ const getInvoicePrintStyles = () => {
       border-bottom: 2px solid #333;
     }
 
-    .company-name {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 0 0 10px 0;
-      color: #1f2937;
+    .company-info {
+      flex: 1;
     }
 
-    .company-details,
-    .company-address,
-    .company-gst {
-      margin: 5px 0;
+    .logo-and-address {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .company-logo {
+      width: 80px;
+      height: auto;
+      margin-bottom: 10px;
+    }
+
+    .company-address-section {
+      margin-top: 0;
+    }
+
+    .company-address {
+      margin: 2px 0;
       color: #6b7280;
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .invoice-status {
@@ -615,6 +656,84 @@ const getInvoicePrintStyles = () => {
       color: #1f2937;
     }
 
+    .payment-details-section {
+      margin-bottom: 30px;
+    }
+
+    .payment-details-section h3 {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 15px 0;
+      color: #1f2937;
+    }
+
+    .payment-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .payment-table th,
+    .payment-table td {
+      border: 1px solid #d1d5db;
+      padding: 12px 8px;
+      text-align: left;
+    }
+
+    .payment-table th {
+      background-color: #f9fafb;
+      font-weight: bold;
+      color: #374151;
+    }
+
+    .payment-method-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .method-cash {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .method-card {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    .method-upi {
+      background-color: #f3e8ff;
+      color: #7c3aed;
+    }
+
+    .method-netbanking {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .method-cheque {
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+
+    .payment-summary {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #eff6ff;
+      border-radius: 6px;
+    }
+
+    .payment-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      color: #1e40af;
+    }
+
     .services-table {
       width: 100%;
       border-collapse: collapse;
@@ -665,8 +784,32 @@ const getInvoicePrintStyles = () => {
       color: #dc2626;
     }
 
+    .text-green {
+      color: #059669;
+    }
+
     .font-bold {
       font-weight: bold;
+    }
+
+    .warranty-section,
+    .notes-section {
+      margin-bottom: 20px;
+    }
+
+    .warranty-section h4,
+    .notes-section h4 {
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+
+    .balance-row {
+      border-top: 2px solid #d1d5db;
+      padding-top: 12px;
+      margin-top: 15px;
+      font-size: 16px;
     }
 
     .summary-section {
