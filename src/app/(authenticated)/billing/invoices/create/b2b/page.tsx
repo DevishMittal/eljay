@@ -47,7 +47,19 @@ export default function B2BInvoicePage() {
     receivedBy?: string;
     description?: string;
     notes?: string;
-  }>>([]);
+  }>>([
+    // Initialize with one default payment row for B2B
+    {
+      id: 'default-1',
+      paymentDate: new Date().toISOString().split('T')[0],
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      amount: 0,
+      transactionId: '',
+      receivedBy: '',
+      description: '',
+      notes: ''
+    }
+  ]);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -265,11 +277,18 @@ export default function B2BInvoicePage() {
       }
     }
 
-    // Validate payment details if any are added
-    for (const payment of paymentDetails) {
-      if (!payment.paymentDate || !payment.method || payment.amount <= 0) {
-        alert('Please fill in all required payment fields (date, method, amount)');
-        return;
+    // Validate payment details if any are added (filter out empty default rows)
+    const validPayments = paymentDetails.filter(payment => 
+      payment.paymentDate && payment.method && payment.amount > 0
+    );
+    
+    // Only validate if there are actual payment entries
+    if (validPayments.length > 0) {
+      for (const payment of validPayments) {
+        if (!payment.paymentDate || !payment.method || payment.amount <= 0) {
+          alert('Please fill in all required payment fields (date, method, amount)');
+          return;
+        }
       }
     }
 
@@ -295,26 +314,24 @@ export default function B2BInvoicePage() {
       const response = await InvoiceService.createInvoice(invoiceData);
       console.log('Invoice created successfully:', response);
 
-      // Create payment records if any payment details are added
-      if (paymentDetails.length > 0) {
+      // Create payment records if any valid payment details are added
+      if (validPayments.length > 0) {
         try {
-          for (const payment of paymentDetails) {
-            if (payment.method && payment.amount > 0) {
-              const paymentData = {
-                paymentDate: payment.paymentDate,
-                patientName: primaryContact, // Use primary contact as patient name for B2B
-                amount: payment.amount,
-                method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
-                status: 'Completed' as const,
-                transactionId: payment.transactionId || '',
-                receivedBy: payment.receivedBy || '',
-                paymentType: 'Advance' as const,
-                description: payment.description || `Payment for B2B Invoice ${response.data.invoiceNumber}`,
-                notes: payment.notes || ''
-              };
-              
-              await PaymentService.createPayment(paymentData);
-            }
+          for (const payment of validPayments) {
+            const paymentData = {
+              paymentDate: payment.paymentDate,
+              patientName: primaryContact, // Use primary contact as patient name for B2B
+              amount: payment.amount,
+              method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+              status: 'Completed' as const,
+              transactionId: payment.transactionId || '',
+              receivedBy: payment.receivedBy || '',
+              paymentType: 'Advance' as const,
+              description: payment.description || `Payment for B2B Invoice ${response.data.invoiceNumber}`,
+              notes: payment.notes || ''
+            };
+            
+            await PaymentService.createPayment(paymentData);
           }
         } catch (paymentError) {
           console.error('Error creating payments:', paymentError);
@@ -574,7 +591,7 @@ export default function B2BInvoicePage() {
                   </Button>
                 </div>
 
-                {paymentDetails.length > 0 && (
+                {/* Always show payment table since we have at least one default row */}
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -659,16 +676,14 @@ export default function B2BInvoicePage() {
                       </tbody>
                     </table>
                   </div>
-                )}
 
-                {paymentDetails.length > 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">Total Payment Amount:</span>
-                      <span className="text-lg font-semibold text-gray-900">₹{calculateTotalPaymentDetails().toLocaleString()}</span>
-                    </div>
+                {/* Always show payment summary since we have at least one default row */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Total Payment Amount:</span>
+                    <span className="text-lg font-semibold text-gray-900">₹{calculateTotalPaymentDetails().toLocaleString()}</span>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
 

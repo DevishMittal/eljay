@@ -56,7 +56,19 @@ export default function B2CInvoicePage() {
     receivedBy?: string;
     description?: string;
     notes?: string;
-  }>>([]);
+  }>>([
+    // Initialize with one default payment row for partial payment
+    {
+      id: 'default-1',
+      paymentDate: new Date().toISOString().split('T')[0],
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      amount: 0,
+      transactionId: '',
+      receivedBy: '',
+      description: '',
+      notes: ''
+    }
+  ]);
 
   // Payment status options
   const paymentStatusOptions = [
@@ -348,12 +360,17 @@ export default function B2CInvoicePage() {
 
     // Validate payment details if partial payment is selected
     if (paymentOption === 'partial') {
-      if (paymentDetails.length === 0) {
-        alert('Please add at least one payment detail for partial payment');
+      // Filter out empty payment rows
+      const validPayments = paymentDetails.filter(payment => 
+        payment.paymentDate && payment.method && payment.amount > 0
+      );
+      
+      if (validPayments.length === 0) {
+        alert('Please fill in at least one payment detail for partial payment');
         return;
       }
       
-      for (const payment of paymentDetails) {
+      for (const payment of validPayments) {
         if (!payment.paymentDate || !payment.method || payment.amount <= 0) {
           alert('Please fill in all required payment fields (date, method, amount)');
           return;
@@ -398,8 +415,13 @@ export default function B2CInvoicePage() {
       // Create payment records if partial payment is selected
       if (paymentOption === 'partial' && paymentDetails.length > 0) {
         try {
-          for (const payment of paymentDetails) {
-            if (payment.method && payment.amount > 0 && selectedPatient) {
+          // Filter out empty payment rows
+          const validPayments = paymentDetails.filter(payment => 
+            payment.paymentDate && payment.method && payment.amount > 0
+          );
+          
+          for (const payment of validPayments) {
+            if (selectedPatient) {
               const paymentData = {
                 paymentDate: payment.paymentDate,
                 patientName: selectedPatient.full_name,
@@ -771,7 +793,13 @@ export default function B2CInvoicePage() {
                         name="paymentOption"
                         value="full"
                         checked={paymentOption === 'full'}
-                        onChange={(e) => setPaymentOption(e.target.value as 'full' | 'partial')}
+                        onChange={(e) => {
+                          setPaymentOption(e.target.value as 'full' | 'partial');
+                          // Clear payment details when switching to full payment
+                          if (e.target.value === 'full') {
+                            setPaymentDetails([]);
+                          }
+                        }}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
                       <span className="text-sm text-gray-700">Full Payment</span>
@@ -782,7 +810,22 @@ export default function B2CInvoicePage() {
                         name="paymentOption"
                         value="partial"
                         checked={paymentOption === 'partial'}
-                        onChange={(e) => setPaymentOption(e.target.value as 'full' | 'partial')}
+                        onChange={(e) => {
+                          setPaymentOption(e.target.value as 'full' | 'partial');
+                          // Initialize with one payment row when switching to partial payment
+                          if (e.target.value === 'partial' && paymentDetails.length === 0) {
+                            setPaymentDetails([{
+                              id: Date.now().toString(),
+                              paymentDate: new Date().toISOString().split('T')[0],
+                              method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+                              amount: 0,
+                              transactionId: '',
+                              receivedBy: '',
+                              description: '',
+                              notes: ''
+                            }]);
+                          }
+                        }}
                         className="mr-2 text-orange-600 focus:ring-orange-500"
                       />
                       <span className="text-sm text-gray-700">Partial Payment</span>
