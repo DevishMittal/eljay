@@ -112,10 +112,29 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               className="flex items-center space-x-1 hover:bg-gray-50 rounded-lg p-2 transition-colors"
             >
               {/* Profile Avatar */}
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-foreground">
-                  {organization?.name?.charAt(0) || 'E'}
-                </span>
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                {organization?.logo ? (
+                  <Image
+                    src={organization.logo}
+                    alt={`${organization.name} logo`}
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `<span class="text-xs font-medium text-foreground">${organization?.name?.charAt(0) || 'E'}</span>`;
+                      }
+                    }}
+                  />
+                ) : (
+                  <span className="text-xs font-medium text-foreground">
+                    {organization?.name?.charAt(0) || 'E'}
+                  </span>
+                )}
               </div>
               
               {/* Profile Info */}

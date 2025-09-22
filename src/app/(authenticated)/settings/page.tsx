@@ -23,7 +23,7 @@ interface Organization {
 
 const SettingsPage = () => {
   const pathname = usePathname();
-  const { token } = useAuth();
+  const { token, refreshOrganization } = useAuth();
   const [activeTab, setActiveTab] = useState(() => {
     if (pathname === '/settings') return 'profile';
     if (pathname === '/settings/diagnostics') return 'diagnostics';
@@ -150,6 +150,9 @@ const SettingsPage = () => {
       if (response.status === 'success') {
         // Update the organization state with new data
         setOrganization(response.data);
+        
+        // Refresh the AuthContext to update the navbar
+        await refreshOrganization();
         
         // Update form data to reflect the saved values
         setFormData({

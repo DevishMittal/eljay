@@ -3,10 +3,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthState, Organization } from '@/types';
 import { AuthService } from '@/services/authService';
+import { OrganizationService } from '@/services/organizationService';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshOrganization: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,10 +82,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshOrganization = async () => {
+    try {
+      const { token } = authState;
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      const response = await OrganizationService.getProfile(token);
+      
+      if (response.status === 'success') {
+        // Update the organization in state
+        setAuthState(prev => ({
+          ...prev,
+          organization: response.data
+        }));
+        
+        // Update the organization in localStorage
+        AuthService.updateOrganizationInStorage(response.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing organization:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
     logout,
+    refreshOrganization,
   };
 
   return (

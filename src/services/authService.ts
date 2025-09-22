@@ -66,4 +66,8 @@ export class AuthService {
     const { token } = this.getAuthData();
     return !!token;
   }
+
+  static updateOrganizationInStorage(organization: Organization): void {
+    localStorage.setItem('organization', JSON.stringify(organization));
+  }
 }
