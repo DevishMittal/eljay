@@ -6,6 +6,7 @@ import { InventoryItem } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
 import CustomCalendar from "@/components/ui/custom-calendar";
 import ColorSelector from "@/components/ui/color-selector";
+import TagsSelector from "@/components/ui/tags-selector";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function AddItemModal({
       formFactor: "",
       status: "Active",
       expiresAt: "",
+      tags: [] as string[],
     }),
     []
   );
@@ -117,6 +119,7 @@ export default function AddItemModal({
           expiresAt: editingItem.expiresAt
             ? editingItem.expiresAt.split("T")[0]
             : "",
+          tags: editingItem.tags || [],
         });
       } else {
         setFormData(initialFormData);
@@ -187,6 +190,7 @@ export default function AddItemModal({
         currentStock: parseInt(formData.currentStock),
         minimumStock: parseInt(formData.minimumStock),
         maximumStock: 999999, // Set a default high value since backend expects it
+        tags: formData.tags, // Keep tags as array
         ...(shouldShowFormFactor && formData.formFactor ? { formFactor: formData.formFactor } : {}),
       };
 
@@ -481,6 +485,15 @@ export default function AddItemModal({
                   placeholder="Select colors"
                   label="Color"
                   required={true}
+                />
+              </div>
+
+              <div>
+                <TagsSelector
+                  selectedTags={formData.tags}
+                  onChange={(tags) => setFormData({ ...formData, tags })}
+                  placeholder="Select tags"
+                  label="Tags"
                 />
               </div>
 

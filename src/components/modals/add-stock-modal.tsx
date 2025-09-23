@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import CustomCalendar from '@/components/ui/custom-calendar';
 import ColorSelector from '@/components/ui/color-selector';
+import TagsSelector from '@/components/ui/tags-selector';
 import { InventoryService } from '@/services/inventoryService';
 import { InventoryItem } from '@/types';
 
@@ -19,6 +20,7 @@ interface StockEntry {
   warranty: string;
   authorizedBy: string;
   color: string[];
+  tags: string[];
 }
 
 interface AddStockModalProps {
@@ -108,7 +110,8 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
       purchasePrice: '',
       warranty: '',
       authorizedBy: 'Current User',
-      color: []
+      color: [],
+      tags: []
     }
   ]);
 
@@ -124,7 +127,8 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
       purchasePrice: '',
       warranty: '',
       authorizedBy: 'Current User',
-      color: []
+      color: [],
+      tags: []
     };
     setStockEntries([...stockEntries, newEntry]);
   };
@@ -418,6 +422,15 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
                         multiSelect={true}
                         placeholder="Select colors"
                         label="Color"
+                      />
+                    </div>
+
+                    <div>
+                      <TagsSelector
+                        selectedTags={entry.tags}
+                        onChange={(tags) => updateStockEntry(entry.id, 'tags', tags)}
+                        placeholder="Select tags"
+                        label="Tags"
                       />
                     </div>
 

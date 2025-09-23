@@ -501,6 +501,12 @@ export default function InventoryPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
                     style={{ fontFamily: "Segoe UI" }}
                   >
+                    Tags
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                    style={{ fontFamily: "Segoe UI" }}
+                  >
                     {currentView === 'branch' ? 'Stock' : 'Branch Stock'}
                   </th>
                   <th
@@ -520,7 +526,7 @@ export default function InventoryPage() {
               <tbody className="bg-white divide-y divide-[#E5E7EB]">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center">
+                    <td colSpan={9} className="px-6 py-8 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
                         <span className="ml-2 text-[#4A5565]">
@@ -531,7 +537,7 @@ export default function InventoryPage() {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center">
+                    <td colSpan={9} className="px-6 py-8 text-center">
                       <div className="text-red-500">
                         <p className="font-medium">Error loading inventory</p>
                         <p className="text-sm">{error}</p>
@@ -547,7 +553,7 @@ export default function InventoryPage() {
                 ) : sortedItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="px-6 py-8 text-center text-[#4A5565]"
                     >
                       No inventory items found
@@ -652,6 +658,36 @@ export default function InventoryPage() {
                               style={{ fontFamily: "Segoe UI" }}
                             >
                               No color
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {item.tags && item.tags.length > 0 ? (
+                            item.tags.slice(0, 3).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                style={{ fontFamily: "Segoe UI" }}
+                              >
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span
+                              className="text-xs text-[#6B7280]"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              No tags
+                            </span>
+                          )}
+                          {item.tags && item.tags.length > 3 && (
+                            <span
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                              style={{ fontFamily: "Segoe UI" }}
+                            >
+                              +{item.tags.length - 3} more
                             </span>
                           )}
                         </div>
@@ -816,7 +852,7 @@ export default function InventoryPage() {
                     {/* Branch Stock Distribution Row (Network View) */}
                     {currentView === 'network' && expandedItemId === item.id && (
                       <tr>
-                        <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                        <td colSpan={9} className="px-6 py-4 bg-gray-50">
                           <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-3">
                               <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
