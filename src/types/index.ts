@@ -1322,3 +1322,115 @@ export interface UpdateHospitalData {
   address?: string;
   phoneNumber?: string;
 }
+
+// Branch types
+export interface Branch {
+  id: string;
+  name: string;
+  address: string;
+  phoneNumber: string;
+  email: string;
+  managerName: string;
+  status: 'Active' | 'Inactive' | string;
+  notes?: string;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BranchesResponse {
+  status: string;
+  data: {
+    branches: Branch[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  };
+}
+
+export interface BranchResponse {
+  status: string;
+  data: Branch;
+}
+
+export interface CreateBranchData {
+  name: string;
+  address: string;
+  phoneNumber: string;
+  email: string;
+  managerName: string;
+  status: 'Active' | 'Inactive' | string;
+  notes?: string;
+}
+
+export interface UpdateBranchData {
+  name?: string;
+  address?: string;
+  phoneNumber?: string;
+  email?: string;
+  managerName?: string;
+  status?: 'Active' | 'Inactive' | string;
+  notes?: string;
+}
+
+// Print Settings Types
+export interface PrintPageSettings {
+  paperSize: 'A4' | 'A3' | 'Letter' | 'Legal';
+  orientation: 'Portrait' | 'Landscape';
+  printerType: 'Color' | 'Black';
+  margins: {
+    top: number;
+    left: number;
+    bottom: number;
+    right: number;
+  };
+}
+
+export interface PrintHeaderSettings {
+  includeHeader: boolean;
+  headerText: string;
+  leftText: string;
+  rightText: string;
+  logo: {
+    uploaded: boolean;
+    type: 'Square' | 'Narrow' | 'Wide';
+    alignment: 'Left' | 'Centre' | 'Right';
+  };
+}
+
+export interface PrintFooterSettings {
+  topMargin: number;
+  fullWidthContent: string[];
+  leftSignature: {
+    name: string;
+    title: string;
+    organization: string;
+  };
+  rightSignature: {
+    name: string;
+    title: string;
+    organization: string;
+    date: string;
+  };
+}
+
+export interface PrintSettings {
+  b2cInvoice: {
+    pageSettings: PrintPageSettings;
+    headerSettings: PrintHeaderSettings;
+    footerSettings: PrintFooterSettings;
+  };
+  b2bInvoice: {
+    pageSettings: PrintPageSettings;
+    headerSettings: PrintHeaderSettings;
+    footerSettings: PrintFooterSettings;
+  };
+  payments: {
+    pageSettings: PrintPageSettings;
+    headerSettings: PrintHeaderSettings;
+    footerSettings: PrintFooterSettings;
+  };
+}

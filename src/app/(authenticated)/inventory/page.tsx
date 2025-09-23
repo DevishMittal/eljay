@@ -8,6 +8,8 @@ import AddStockModal from "@/components/modals/add-stock-modal";
 import ConsumeStockModal from "@/components/modals/consume-stock-modal";
 import DeleteConfirmationModal from "@/components/modals/delete-confirmation-modal";
 import { InventoryService } from "@/services/inventoryService";
+import branchService from "@/services/branchService";
+import { useAuth } from "@/contexts/AuthContext";
 import { InventoryItem as InventoryItemType } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
 import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical, Building2, Network, Trash2 } from "lucide-react";
@@ -56,6 +58,7 @@ const getExpiryColor = (expiryInfo: string) => {
 };
 
 export default function InventoryPage() {
+  const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -95,7 +98,15 @@ export default function InventoryPage() {
       const response = await InventoryService.getInventoryItemsWithView(currentView, page, limit);
       setInventoryItems(response.items);
       setPagination(response.pagination);
-      setAvailableBranches(response.availableBranches);
+      // Populate branches via branches API (fallback if inventory endpoint doesn't provide list)
+      try {
+        const branchesResp = await branchService.getBranches(1, 50, token || undefined);
+        const names = (branchesResp.data.branches || []).map(b => b.name).filter(Boolean);
+        setAvailableBranches(names);
+      } catch (e) {
+        // If branch fetch fails, keep any existing list
+        console.warn('Failed to fetch branches for filter:', e);
+      }
       
       // Initialize colors from fetched data
       const colorStrings = response.items.map(item => item.color).filter(Boolean);

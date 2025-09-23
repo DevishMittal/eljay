@@ -101,6 +101,18 @@ const DoctorsPage = () => {
       )
     },
     {
+      id: 'branches',
+      title: 'Branches',
+      href: '/settings/branches',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7.5 1.25V13.75" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M1.25 7.5H13.75" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3.75 3.75H11.25V11.25H3.75V3.75Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
       id: 'hospitals',
       title: 'Hospitals',
       href: '/settings/hospitals',

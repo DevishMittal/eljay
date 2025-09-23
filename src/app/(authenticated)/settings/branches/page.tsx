@@ -4,24 +4,31 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
-import hospitalService from '@/services/hospitalService';
+import branchService from '@/services/branchService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Hospital, CreateHospitalData } from '@/types';
+import { Branch, CreateBranchData } from '@/types';
+import CustomDropdown from '@/components/ui/custom-dropdown';
 
-const HospitalsPage = () => {
+const BranchesPage = () => {
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState('hospitals');
+  const [activeTab, setActiveTab] = useState('branches');
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreateHospitalData>({
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+
+  const [formData, setFormData] = useState<CreateBranchData>({
     name: '',
-    primaryContact: '',
     address: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    email: '',
+    managerName: '',
+    status: 'Active',
+    notes: ''
   });
 
   const tabs = [
@@ -124,24 +131,29 @@ const HospitalsPage = () => {
     }
   ];
 
-  const fetchHospitals = useCallback(async () => {
+  const fetchBranches = useCallback(async (page: number = 1, limit: number = 10) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await hospitalService.getHospitals(token || undefined);
-      setHospitals(response.data.hospitals);
+      const response = await branchService.getBranches(page, limit, token || undefined);
+      setBranches(response.data.branches);
+      setPagination({
+        page: response.data.pagination.page,
+        limit: response.data.pagination.limit,
+        total: response.data.pagination.total,
+        pages: response.data.pagination.pages
+      });
     } catch (err) {
-      setError('Failed to load hospitals');
-      console.error('Error fetching hospitals:', err);
+      setError('Failed to load branches');
+      console.error('Error fetching branches:', err);
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  // Fetch hospitals data
   useEffect(() => {
-    fetchHospitals();
-  }, [fetchHospitals]);
+    fetchBranches();
+  }, [fetchBranches]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -151,61 +163,64 @@ const HospitalsPage = () => {
     }));
   };
 
+  const handleStatusChange = (value: string) => {
+    setFormData(prev => ({ ...prev, status: value as 'Active' | 'Inactive' }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await hospitalService.createHospital(formData, token || undefined);
-      await fetchHospitals(); // Refresh the list
+      await branchService.createBranch(formData, token || undefined);
+      await fetchBranches();
       setShowAddModal(false);
-      setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
+      setFormData({ name: '', address: '', phoneNumber: '', email: '', managerName: '', status: 'Active', notes: '' });
     } catch (err) {
-      console.error('Error creating hospital:', err);
-      // You might want to show an error message to the user here
+      console.error('Error creating branch:', err);
     }
   };
 
   const handleCancel = () => {
     setShowAddModal(false);
     setShowEditModal(false);
-    setEditingHospital(null);
-    setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
+    setEditingBranch(null);
+    setFormData({ name: '', address: '', phoneNumber: '', email: '', managerName: '', status: 'Active', notes: '' });
   };
 
-  const handleEdit = (hospital: Hospital) => {
-    setEditingHospital(hospital);
+  const handleEdit = (branch: Branch) => {
+    setEditingBranch(branch);
     setFormData({
-      name: hospital.name,
-      primaryContact: hospital.primaryContact,
-      address: hospital.address,
-      phoneNumber: hospital.phoneNumber
+      name: branch.name,
+      address: branch.address,
+      phoneNumber: branch.phoneNumber,
+      email: branch.email,
+      managerName: branch.managerName,
+      status: branch.status,
+      notes: branch.notes || ''
     });
     setShowEditModal(true);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingHospital) return;
-    
+    if (!editingBranch) return;
     try {
-      await hospitalService.updateHospital(editingHospital.id, formData, token || undefined);
-      await fetchHospitals(); // Refresh the list
+      await branchService.updateBranch(editingBranch.id, formData, token || undefined);
+      await fetchBranches();
       setShowEditModal(false);
-      setEditingHospital(null);
-      setFormData({ name: '', primaryContact: '', address: '', phoneNumber: '' });
+      setEditingBranch(null);
+      setFormData({ name: '', address: '', phoneNumber: '', email: '', managerName: '', status: 'Active', notes: '' });
     } catch (err) {
-      console.error('Error updating hospital:', err);
-      // You might want to show an error message to the user here
+      console.error('Error updating branch:', err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this hospital?')) {
+    if (window.confirm('Are you sure you want to delete this branch?')) {
       try {
-        await hospitalService.deleteHospital(id, token || undefined);
-        await fetchHospitals(); // Refresh the list
+        await branchService.deleteBranch(id, token || undefined);
+        await fetchBranches();
       } catch (err) {
-        console.error('Error deleting hospital:', err);
-        // You might want to show an error message to the user here
+        console.error('Error deleting branch:', err);
       }
     }
   };
@@ -246,11 +261,11 @@ const HospitalsPage = () => {
           </div>
         </div>
 
-        {/* Hospitals Content */}
+        {/* Branches Content */}
         <div className="bg-white rounded-lg border border-border p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-s font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-              Hospitals
+              Branches
             </h2>
             <button
               onClick={() => setShowAddModal(true)}
@@ -259,35 +274,35 @@ const HospitalsPage = () => {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Hospital</span>
+              <span className="font-medium" style={{ fontFamily: 'Segoe UI' }}>Add Branch</span>
             </button>
           </div>
 
-          {/* Hospitals Table */}
+          {/* Branches Table */}
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                <span className="ml-3 text-gray-600">Loading hospitals...</span>
+                <span className="ml-3 text-gray-600">Loading branches...</span>
               </div>
             ) : error ? (
               <div className="text-center py-8">
                 <p className="text-red-600 mb-4">{error}</p>
                 <button 
-                  onClick={fetchHospitals}
+                  onClick={() => fetchBranches(pagination.page, pagination.limit)}
                   className="text-orange-600 hover:text-orange-700 underline"
                 >
                   Try again
                 </button>
               </div>
-            ) : hospitals.length === 0 ? (
+            ) : branches.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">No hospitals found</p>
+                <p className="text-gray-600 mb-4">No branches found</p>
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="text-orange-600 hover:text-orange-700 underline"
                 >
-                  Add your first hospital
+                  Add your first branch
                 </button>
               </div>
             ) : (
@@ -295,16 +310,22 @@ const HospitalsPage = () => {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Hospital Name
+                      Branch Name
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Primary Contact
+                      Manager
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                      Contact
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                       Address
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                      Phone Number
+                      Notes
                     </th>
                     <th className="text-left py-3 px-4 font-semibold text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
                       Actions
@@ -312,35 +333,47 @@ const HospitalsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {hospitals.map((hospital) => (
-                    <tr key={hospital.id} className="border-b border-border hover:bg-muted/30">
+                  {branches.map((branch) => (
+                    <tr key={branch.id} className="border-b border-border hover:bg-muted/30">
                       <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {hospital.name}
-                      </td>
-                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {hospital.primaryContact}
+                        {branch.name}
                       </td>
                       <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {hospital.address}
+                        {branch.managerName}
                       </td>
-                      <td className="py-3 px-4 text-[#101828] text-xs" style={{ fontFamily: 'Segoe UI' }}>
-                        {hospital.phoneNumber}
+                      <td className="py-3 px-4">
+                        <span className={cn(
+                          'inline-block px-3 py-1 rounded-full text-xs',
+                          branch.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                        )} style={{ fontFamily: 'Segoe UI' }}>
+                          {branch.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        <div>{branch.phoneNumber}</div>
+                        <div className="text-xs">{branch.email}</div>
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {branch.address}
+                      </td>
+                      <td className="py-3 px-4 text-[#4A5565] text-xs" style={{ fontFamily: 'Segoe UI' }}>
+                        {branch.notes || '-'}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
                           <button 
-                            onClick={() => handleEdit(hospital)}
+                            onClick={() => handleEdit(branch)}
                             className="p-1 hover:bg-muted rounded transition-colors"
-                            aria-label={`Edit ${hospital.name}`}
+                            aria-label={`Edit ${branch.name}`}
                           >
                             <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
                           <button 
-                            onClick={() => handleDelete(hospital.id)}
+                            onClick={() => handleDelete(branch.id)}
                             className="p-1 hover:bg-muted rounded transition-colors"
-                            aria-label={`Delete ${hospital.name}`}
+                            aria-label={`Delete ${branch.name}`}
                           >
                             <svg className="w-4 h-4 text-[#4A5565]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -356,13 +389,13 @@ const HospitalsPage = () => {
           </div>
         </div>
 
-        {/* Add Hospital Modal */}
+        {/* Add Branch Modal */}
         {showAddModal && (
           <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Add New Hospital</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Add New Branch</h2>
                 <button
                   onClick={handleCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -376,59 +409,42 @@ const HospitalsPage = () => {
 
               {/* Form */}
               <div className="p-6 space-y-6">
-                {/* Hospital Name */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Hospital Name
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Branch Name</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Enter hospital name..."
+                    placeholder="Enter branch name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required
                   />
                 </div>
-
-                {/* Primary Contact */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Primary Contact
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Manager Name</label>
                   <input
                     type="text"
-                    name="primaryContact"
-                    value={formData.primaryContact}
+                    name="managerName"
+                    value={formData.managerName}
                     onChange={handleInputChange}
-                    placeholder="Enter primary contact..."
+                    placeholder="Enter manager name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                    required
                   />
                 </div>
-
-                {/* Address */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Address
-                  </label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Enter address..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
-                    required
+                    placeholder="Enter email..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                   />
                 </div>
-
-                {/* Phone Number */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number</label>
                   <input
                     type="tel"
                     name="phoneNumber"
@@ -436,7 +452,38 @@ const HospitalsPage = () => {
                     onChange={handleInputChange}
                     placeholder="Enter phone number..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Address</label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Enter address..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Status</label>
+                  <CustomDropdown
+                    options={[{ value: 'Active', label: 'Active' }, { value: 'Inactive', label: 'Inactive' }]}
+                    value={formData.status}
+                    onChange={handleStatusChange}
+                    placeholder="Select status"
+                    aria-label="Select branch status"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter notes..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
                   />
                 </div>
               </div>
@@ -453,20 +500,20 @@ const HospitalsPage = () => {
                   onClick={handleSubmit}
                   className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
-                  Add Hospital
+                  Add Branch
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Edit Hospital Modal */}
-        {showEditModal && editingHospital && (
+        {/* Edit Branch Modal */}
+        {showEditModal && editingBranch && (
           <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto border-2 shadow-lg mx-4">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Edit Hospital</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Edit Branch</h2>
                 <button
                   onClick={handleCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -480,59 +527,41 @@ const HospitalsPage = () => {
 
               {/* Form */}
               <div className="p-6 space-y-6">
-                {/* Hospital Name */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Hospital Name
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Branch Name</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Enter hospital name..."
+                    placeholder="Enter branch name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                    required
                   />
                 </div>
-
-                {/* Primary Contact */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Primary Contact
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Manager Name</label>
                   <input
                     type="text"
-                    name="primaryContact"
-                    value={formData.primaryContact}
+                    name="managerName"
+                    value={formData.managerName}
                     onChange={handleInputChange}
-                    placeholder="Enter primary contact..."
+                    placeholder="Enter manager name..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                    required
                   />
                 </div>
-
-                {/* Address */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Address
-                  </label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Enter address..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
-                    required
+                    placeholder="Enter email..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                   />
                 </div>
-
-                {/* Phone Number */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number</label>
                   <input
                     type="tel"
                     name="phoneNumber"
@@ -540,7 +569,38 @@ const HospitalsPage = () => {
                     onChange={handleInputChange}
                     placeholder="Enter phone number..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
-                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Address</label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Enter address..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Status</label>
+                  <CustomDropdown
+                    options={[{ value: 'Active', label: 'Active' }, { value: 'Inactive', label: 'Inactive' }]}
+                    value={formData.status}
+                    onChange={handleStatusChange}
+                    placeholder="Select status"
+                    aria-label="Select branch status"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter notes..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
                   />
                 </div>
               </div>
@@ -557,7 +617,7 @@ const HospitalsPage = () => {
                   onClick={handleUpdate}
                   className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
-                  Update Hospital
+                  Update Branch
                 </button>
               </div>
             </div>
@@ -568,4 +628,8 @@ const HospitalsPage = () => {
   );
 };
 
-export default HospitalsPage;
+export default BranchesPage;
+
+
+
+
