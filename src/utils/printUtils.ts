@@ -1,4 +1,4 @@
-import { Invoice, Payment, Expense } from '@/types';
+import { Invoice, Payment, PrintSettings } from '@/types';
 
 /**
  * Print utility functions for invoices and other documents
@@ -10,6 +10,82 @@ export interface PrintOptions {
   includeStyles?: boolean;
   customStyles?: string;
 }
+
+/**
+ * Load print settings from localStorage
+ */
+export const getPrintSettings = (documentType: 'b2cInvoice' | 'b2bInvoice' | 'payments'): PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice'] | PrintSettings['payments'] => {
+  try {
+    // Try to load settings for all document types first
+    const savedAllSettings = localStorage.getItem('printSettings_all');
+    if (savedAllSettings) {
+      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
+      return parsedSettings[documentType];
+    }
+    
+    // If no global settings, try to load individual document type settings
+    const savedSettings = localStorage.getItem(`printSettings_${documentType}`);
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    }
+    
+    // Return default settings if nothing is saved
+    return getDefaultPrintSettings();
+  } catch (error) {
+    console.error('Error loading print settings:', error);
+    return getDefaultPrintSettings();
+  }
+};
+
+/**
+ * Get default print settings for a document type
+ */
+const getDefaultPrintSettings = () => {
+  const defaultSettings = {
+    pageSettings: {
+      paperSize: 'A4' as const,
+      orientation: 'Portrait' as const,
+      printerType: 'Color' as const,
+      margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+    },
+    headerSettings: {
+      includeHeader: true,
+      headerText: 'Hearing Centre Adyar',
+      leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
+      rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+      logo: { uploaded: true, type: 'Square' as const, alignment: 'Left' as const }
+    },
+            footerSettings: {
+              topMargin: 0.00,
+              fullWidthContent: [],
+              leftSignature: {
+                name: '',
+                title: '',
+                organization: ''
+              },
+              rightSignature: {
+                name: '',
+                title: '',
+                organization: '',
+                date: ''
+              },
+              thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
+              signatureNote: 'This is a computer-generated invoice and does not require a signature.',
+              additionalText: ''
+            }
+  };
+  
+  return defaultSettings;
+};
+
+/**
+ * Test function to verify print settings are loaded correctly
+ */
+export const testPrintSettings = (documentType: 'b2cInvoice' | 'b2bInvoice' | 'payments') => {
+  const settings = getPrintSettings(documentType);
+  console.log(`Print settings for ${documentType}:`, settings);
+  return settings;
+};
 
 /**
  * Print a specific element by ID
@@ -158,7 +234,11 @@ export const printInvoice = (invoice: Invoice, options: PrintOptions = {}, payme
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice, payments);
+  // Get document type based on invoice type
+  const documentType = invoice.invoiceType === 'B2C' ? 'b2cInvoice' : 'b2bInvoice';
+  const printSettings = getPrintSettings(documentType);
+  
+  const invoiceHTML = generateInvoiceHTML(invoice, payments, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -166,7 +246,7 @@ export const printInvoice = (invoice: Invoice, options: PrintOptions = {}, payme
       <head>
         <title>${options.title || `Invoice ${invoice.invoiceNumber}`}</title>
         <style>
-          ${getInvoicePrintStyles()}
+          ${getInvoicePrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -192,7 +272,11 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
     return;
   }
 
-  const invoiceHTML = generateInvoiceHTML(invoice, payments);
+  // Get document type based on invoice type
+  const documentType = invoice.invoiceType === 'B2C' ? 'b2cInvoice' : 'b2bInvoice';
+  const printSettings = getPrintSettings(documentType);
+  
+  const invoiceHTML = generateInvoiceHTML(invoice, payments, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -200,7 +284,7 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
       <head>
         <title>${options.title || `Invoice ${invoice.invoiceNumber}`}</title>
         <style>
-          ${getInvoicePrintStyles()}
+          ${getInvoicePrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -227,7 +311,7 @@ export const downloadInvoiceAsPDF = (invoice: Invoice, options: PrintOptions = {
 /**
  * Generate HTML for invoice printing
  */
-const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
+const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = [], printSettings?: PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice']) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -236,16 +320,21 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
     });
   };
 
+  // Use custom header settings if available
+  const headerSettings = printSettings?.headerSettings;
+  const showHeader = headerSettings?.includeHeader !== false;
+  
   return `
     <div class="invoice-container">
       <!-- Header -->
+      ${showHeader ? `
       <div class="invoice-header">
         <div class="company-info">
           <div class="logo-and-address">
-            <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />
+            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />' : ''}
             <div class="company-address-section">
-              <p class="company-address">No 75, DhanaLakshmi Avenue,</p>
-              <p class="company-address">Adyar, Chennai - 600020.</p>
+              <h2 class="company-title">${headerSettings?.headerText || 'Hearing Centre Adyar'}</h2>
+              <p class="company-address">${headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.'}</p>
             </div>
           </div>
         </div>
@@ -254,12 +343,11 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
             ${invoice.paymentStatus}
           </div>
           <div class="contact-info">
-            <p>Phone: +91 44 1234 5678</p>
-            <p>Email: info@eljayhearing.com</p>
-            <p>Website: www.eljayhearing.com</p>
+            ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
           </div>
         </div>
       </div>
+      ` : ''}
 
       <!-- Bill To and Invoice Details -->
       <div class="invoice-details">
@@ -286,7 +374,7 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
           </div>
           <div class="info-row">
             <span>Created By:</span>
-            <span class="info-value">Dr. Michael Chen</span>
+            <span class="info-value">Staff</span>
           </div>
         </div>
       </div>
@@ -474,16 +562,19 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="invoice-footer">
-        <p>${invoice.invoiceType === 'B2C' 
-          ? 'Thank you for choosing Eljay Hearing Care for your audiology needs.'
-          : 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.'
-        }</p>
-        <p>This is a computer-generated invoice and does not require a signature.</p>
-        ${invoice.invoiceType === 'B2B' ? '<p>For corporate services inquiries: corporate@eljayhearing.com | +91 44 1234 5679</p>' : ''}
-        <p>Generated on ${formatDate(invoice.createdAt)}</p>
-      </div>
+              <!-- Footer -->
+              <div class="invoice-footer" style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;">
+                ${printSettings?.footerSettings?.thankYouMessage ? `
+                  ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p>${text}</p>`).join('')}
+                ` : ''}
+                ${printSettings?.footerSettings?.signatureNote ? `
+                  ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p>${text}</p>`).join('')}
+                ` : ''}
+                ${printSettings?.footerSettings?.additionalText ? `
+                  ${printSettings.footerSettings.additionalText.split(' || ').map(text => `<p>${text}</p>`).join('')}
+                ` : ''}
+                <p>Generated on ${formatDate(invoice.createdAt)}</p>
+              </div>
     </div>
   `;
 };
@@ -491,7 +582,10 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = []) => {
 /**
  * Get CSS styles for invoice printing
  */
-const getInvoicePrintStyles = () => {
+const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice']) => {
+  const pageSettings = printSettings?.pageSettings;
+  const margins = pageSettings?.margins || { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 };
+  
   return `
     * {
       box-sizing: border-box;
@@ -500,7 +594,7 @@ const getInvoicePrintStyles = () => {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
       color: #000;
       line-height: 1.6;
       font-size: 14px;
@@ -509,7 +603,7 @@ const getInvoicePrintStyles = () => {
     @media print {
       body {
         margin: 0;
-        padding: 15px;
+        padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
       }
       
       .no-print {
@@ -895,6 +989,13 @@ const getInvoicePrintStyles = () => {
     .invoice-footer p {
       margin: 5px 0;
       font-size: 14px;
+    }
+
+    .company-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      color: #1f2937;
     }
 
     .payment-instructions {

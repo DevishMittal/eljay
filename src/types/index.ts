@@ -1415,6 +1415,9 @@ export interface PrintFooterSettings {
     organization: string;
     date: string;
   };
+  thankYouMessage: string;
+  signatureNote: string;
+  additionalText: string;
 }
 
 export interface PrintSettings {

@@ -34,18 +34,21 @@ const PrintoutPage = () => {
       },
       footerSettings: {
         topMargin: 0.00,
-        fullWidthContent: ['This is a digitally generated invoice and doesn\'t need seal and signature.'],
+        fullWidthContent: [],
         leftSignature: {
-          name: 'Dr. Sarah Johnson',
-          title: 'Senior Audiologist',
-          organization: 'Eloy Hearing Care Management'
+          name: '',
+          title: '',
+          organization: ''
         },
         rightSignature: {
-          name: 'Authorized Signatory',
-          title: 'Eloy Hearing Care Management',
-          organization: 'Eloy Hearing Care Management',
-          date: '8 Sep, 2025'
-        }
+          name: '',
+          title: '',
+          organization: '',
+          date: ''
+        },
+        thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
+        additionalText: ''
       }
     },
     b2bInvoice: {
@@ -64,18 +67,21 @@ const PrintoutPage = () => {
       },
       footerSettings: {
         topMargin: 0.00,
-        fullWidthContent: ['This is a digitally generated invoice and doesn\'t need seal and signature.'],
+        fullWidthContent: [],
         leftSignature: {
-          name: 'Dr. Sarah Johnson',
-          title: 'Senior Audiologist',
-          organization: 'Eloy Hearing Care Management'
+          name: '',
+          title: '',
+          organization: ''
         },
         rightSignature: {
-          name: 'Authorized Signatory',
-          title: 'Eloy Hearing Care Management',
-          organization: 'Eloy Hearing Care Management',
-          date: '8 Sep, 2025'
-        }
+          name: '',
+          title: '',
+          organization: '',
+          date: ''
+        },
+        thankYouMessage: 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.',
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
+        additionalText: ''
       }
     },
     payments: {
@@ -94,18 +100,21 @@ const PrintoutPage = () => {
       },
       footerSettings: {
         topMargin: 0.00,
-        fullWidthContent: ['This is a digitally generated invoice and doesn\'t need seal and signature.'],
+        fullWidthContent: [],
         leftSignature: {
-          name: 'Dr. Sarah Johnson',
-          title: 'Senior Audiologist',
-          organization: 'Eloy Hearing Care Management'
+          name: '',
+          title: '',
+          organization: ''
         },
         rightSignature: {
-          name: 'Authorized Signatory',
-          title: 'Eloy Hearing Care Management',
-          organization: 'Eloy Hearing Care Management',
-          date: '8 Sep, 2025'
-        }
+          name: '',
+          title: '',
+          organization: '',
+          date: ''
+        },
+        thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
+        additionalText: ''
       }
     }
   });
@@ -448,82 +457,6 @@ const PageSettingsComponent = ({ settings, onChange }: {
          PAGE SETUP
        </h3>
        
-       {/* Paper Size */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Paper Size</label>
-         <select 
-           value={settings.paperSize}
-           onChange={(e) => onChange({ ...settings, paperSize: e.target.value as any })}
-           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           title="Select paper size for printing"
-           aria-label="Paper size"
-         >
-           <option value="A4">A4</option>
-           <option value="A3">A3</option>
-           <option value="Letter">Letter</option>
-           <option value="Legal">Legal</option>
-         </select>
-       </div>
-
-       {/* Orientation */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Orientation</label>
-         <div className="space-y-1">
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="orientation"
-               value="Portrait"
-               checked={settings.orientation === 'Portrait'}
-               onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
-               className="mr-2"
-             />
-             Portrait
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="orientation"
-               value="Landscape"
-               checked={settings.orientation === 'Landscape'}
-               onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
-               className="mr-2"
-             />
-             Landscape
-           </label>
-         </div>
-         <p className="text-xs text-gray-500 mt-1">* Applicable only on Print Size Preview</p>
-       </div>
-
-       {/* Printer Type */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Printer Type</label>
-         <div className="space-y-1">
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="printerType"
-               value="Color"
-               checked={settings.printerType === 'Color'}
-               onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
-               className="mr-2"
-             />
-             Colour - Paper / Laser
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="printerType"
-               value="Black"
-               checked={settings.printerType === 'Black'}
-               onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
-               className="mr-2"
-             />
-             Black - Dot Matrix / Thermal printers
-           </label>
-         </div>
-       </div>
-
        {/* Margins */}
        <div>
          <label className="block text-xs font-medium text-gray-700 mb-1">Margins</label>
@@ -684,117 +617,14 @@ const HeaderSettingsComponent = ({ settings, onChange }: {
            placeholder="Enter right side text (e.g., GST, phone)"
            title="Enter text for the right side of the header"
          />
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
-       {/* Logo */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
-         <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center">
-           <div className="text-xs text-gray-500">Clinic Logo</div>
-           {settings.logo.uploaded && (
-             <div className="mt-1">
-               <span className="text-xs text-green-600">Clinic Logo Uploaded</span>
-             </div>
-           )}
-         </div>
-       </div>
-
-       {/* Logo Type */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-         <div className="space-y-1">
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoType"
-               value="Square"
-               checked={settings.logo.type === 'Square'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, type: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Square
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoType"
-               value="Narrow"
-               checked={settings.logo.type === 'Narrow'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, type: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Narrow
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoType"
-               value="Wide"
-               checked={settings.logo.type === 'Wide'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, type: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Wide
-           </label>
-         </div>
-       </div>
-
-       {/* Logo Alignment */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Alignment</label>
-         <div className="space-y-1">
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoAlignment"
-               value="Left"
-               checked={settings.logo.alignment === 'Left'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, alignment: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Left
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoAlignment"
-               value="Centre"
-               checked={settings.logo.alignment === 'Centre'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, alignment: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Centre
-           </label>
-           <label className="flex items-center text-xs">
-             <input
-               type="radio"
-               name="logoAlignment"
-               value="Right"
-               checked={settings.logo.alignment === 'Right'}
-               onChange={(e) => onChange({ 
-                 ...settings, 
-                 logo: { ...settings.logo, alignment: e.target.value as any }
-               })}
-               className="mr-2"
-             />
-             Right
-           </label>
-         </div>
+       {/* Logo Information */}
+       <div className="p-3 bg-blue-50 rounded-md">
+         <p className="text-xs text-blue-700">
+           <strong>Note:</strong> The logo will be automatically included in the header when available.
+         </p>
        </div>
     </div>
   );
@@ -825,111 +655,62 @@ const FooterSettingsComponent = ({ settings, onChange }: {
          />
        </div>
 
-       {/* Full Width Content */}
+       {/* Thank You Message */}
        <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Full Width Content</label>
-         <div className="space-y-2">
-           {settings.fullWidthContent.map((content, index) => (
-             <textarea
-               key={index}
-               value={content}
-               onChange={(e) => {
-                 const newContent = [...settings.fullWidthContent];
-                 newContent[index] = e.target.value;
-                 onChange({ ...settings, fullWidthContent: newContent });
-               }}
-               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-               rows={2}
-               placeholder="Enter footer content"
-               title="Enter content for the footer section"
-             />
-           ))}
-         </div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Thank You Message:</label>
+         <textarea
+           value={settings.thankYouMessage || ''}
+           onChange={(e) => onChange({ ...settings, thankYouMessage: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           rows={2}
+           placeholder="Thank you for choosing Eljay Hearing Care for your audiology needs."
+           title="Enter thank you message for the footer"
+         />
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
-       {/* Left Signature */}
+       {/* Signature Note */}
        <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Left Signature*</label>
-         <div className="space-y-1">
-           <input
-             type="text"
-             value={settings.leftSignature.name}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               leftSignature: { ...settings.leftSignature, name: e.target.value }
-             })}
-             placeholder="Name"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-           <input
-             type="text"
-             value={settings.leftSignature.title}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               leftSignature: { ...settings.leftSignature, title: e.target.value }
-             })}
-             placeholder="Title"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-           <input
-             type="text"
-             value={settings.leftSignature.organization}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               leftSignature: { ...settings.leftSignature, organization: e.target.value }
-             })}
-             placeholder="Organization"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-         </div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Signature Note:</label>
+         <textarea
+           value={settings.signatureNote || ''}
+           onChange={(e) => onChange({ ...settings, signatureNote: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           rows={2}
+           placeholder="This is a computer-generated invoice and does not require a signature."
+           title="Enter signature note for the footer"
+         />
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
-       {/* Right Signature */}
+       {/* Additional Footer Text */}
        <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Right Signature*</label>
-         <div className="space-y-1">
-           <input
-             type="text"
-             value={settings.rightSignature.name}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               rightSignature: { ...settings.rightSignature, name: e.target.value }
-             })}
-             placeholder="Name"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-           <input
-             type="text"
-             value={settings.rightSignature.title}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               rightSignature: { ...settings.rightSignature, title: e.target.value }
-             })}
-             placeholder="Title"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-           <input
-             type="text"
-             value={settings.rightSignature.organization}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               rightSignature: { ...settings.rightSignature, organization: e.target.value }
-             })}
-             placeholder="Organization"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-           <input
-             type="text"
-             value={settings.rightSignature.date}
-             onChange={(e) => onChange({ 
-               ...settings, 
-               rightSignature: { ...settings.rightSignature, date: e.target.value }
-             })}
-             placeholder="Date"
-             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           />
-         </div>
-         <p className="text-xs text-gray-500 mt-1">* Signature fields are not added to Emails.</p>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Additional Footer Text:</label>
+         <textarea
+           value={settings.additionalText || ''}
+           onChange={(e) => onChange({ ...settings, additionalText: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           rows={2}
+           placeholder="Additional footer information (optional)"
+           title="Enter additional footer text (optional)"
+         />
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks. Leave empty if not needed.</p>
+       </div>
+
+       {/* Footer Information */}
+       <div className="p-3 bg-blue-50 rounded-md">
+         <p className="text-xs text-blue-700">
+           <strong>Note:</strong> The footer will display:
+         </p>
+         <ul className="text-xs text-blue-600 mt-1 ml-4 list-disc">
+           <li>Your custom thank you message</li>
+           <li>Your custom signature note</li>
+           <li>Your additional footer text (if provided)</li>
+           <li>Generated date (automatically added)</li>
+         </ul>
+         <p className="text-xs text-blue-600 mt-2">
+           Use || as a separator to create line breaks within any text field.
+         </p>
        </div>
     </div>
   );
@@ -949,9 +730,9 @@ const InvoicePreview = ({ documentType, settings }: {
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center space-x-2">
-                  <img src="/logo.png" alt="Logo" className="w-12 h-12" />
+                  {settings.headerSettings.logo.uploaded && <img src="/logo.png" alt="Logo" className="w-12 h-12" />}
                   <div>
-                    <h2 className="text-lg font-bold text-orange-600">ELJAY PROFESSIONALS IN HEARING CARE SINCE 1976</h2>
+                    <h2 className="text-lg font-bold text-orange-600">{settings.headerSettings.headerText}</h2>
                     <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
                   </div>
                 </div>
@@ -961,9 +742,9 @@ const InvoicePreview = ({ documentType, settings }: {
                   Fully Paid
                 </div>
                 <div className="text-sm text-gray-600">
-                  <p>Phone: +91 44 1234 5678</p>
-                  <p>Email: info@eljayhearing.com</p>
-                  <p>Website: www.eljayhearing.com</p>
+                  {settings.headerSettings.rightText.split(' || ').map((text, index) => (
+                    <p key={index}>{text}</p>
+                  ))}
                 </div>
               </div>
             </div>
@@ -976,7 +757,7 @@ const InvoicePreview = ({ documentType, settings }: {
             <h3 className="font-semibold mb-2">Bill To</h3>
             <p className="font-medium">Robert Paterson</p>
             <p className="text-sm text-gray-600">Individual Patient</p>
-            <p className="text-sm text-gray-600">Patient ID: PAT001</p>
+            {/* <p className="text-sm text-gray-600">Patient ID: PAT001</p> */}
           </div>
           <div>
             <h3 className="font-semibold mb-2">Invoice Details</h3>
@@ -995,7 +776,7 @@ const InvoicePreview = ({ documentType, settings }: {
               </div>
               <div className="flex justify-between">
                 <span>Created By:</span>
-                <span>Dr. Michael Chen</span>
+                <span>Staff</span>
               </div>
             </div>
           </div>
@@ -1080,31 +861,30 @@ const InvoicePreview = ({ documentType, settings }: {
         </div>
 
         {/* Footer */}
-        {settings.footerSettings.fullWidthContent.length > 0 && (
-          <div className="border-t border-gray-300 pt-4 mt-6">
-            <div className="text-center text-sm text-gray-600 mb-4">
-              {settings.footerSettings.fullWidthContent.map((content, index) => (
-                <p key={index} className="mb-1">{content}</p>
+        <div className="border-t border-gray-300 pt-4 mt-6 text-center text-sm text-gray-600">
+          {settings.footerSettings.thankYouMessage && (
+            <div className="mb-2">
+              {settings.footerSettings.thankYouMessage.split(' || ').map((text, index) => (
+                <p key={index}>{text}</p>
               ))}
             </div>
-            
-            <div className="grid grid-cols-2 gap-8 mt-6">
-              <div className="text-center">
-                <div className="border-t border-gray-400 w-24 mx-auto mb-2"></div>
-                <p className="font-medium text-sm">{settings.footerSettings.leftSignature.name}</p>
-                <p className="text-xs text-gray-600">{settings.footerSettings.leftSignature.title}</p>
-                <p className="text-xs text-gray-600">{settings.footerSettings.leftSignature.organization}</p>
-              </div>
-              <div className="text-center">
-                <div className="border-t border-gray-400 w-24 mx-auto mb-2"></div>
-                <p className="font-medium text-sm">{settings.footerSettings.rightSignature.name}</p>
-                <p className="text-xs text-gray-600">{settings.footerSettings.rightSignature.title}</p>
-                <p className="text-xs text-gray-600">{settings.footerSettings.rightSignature.organization}</p>
-                <p className="text-xs text-gray-600">Date: {settings.footerSettings.rightSignature.date}</p>
-              </div>
+          )}
+          {settings.footerSettings.signatureNote && (
+            <div className="mb-2">
+              {settings.footerSettings.signatureNote.split(' || ').map((text, index) => (
+                <p key={index}>{text}</p>
+              ))}
             </div>
-          </div>
-        )}
+          )}
+          {settings.footerSettings.additionalText && (
+            <div className="mb-2">
+              {settings.footerSettings.additionalText.split(' || ').map((text, index) => (
+                <p key={index}>{text}</p>
+              ))}
+            </div>
+          )}
+          <p>Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+        </div>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import PatientPaymentService from '@/services/patientPaymentService';
 import { Invoice, OutstandingPayment, Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { printInvoice, downloadInvoiceAsPDF, printCurrentPage } from '@/utils/printUtils';
+import { printInvoice, downloadInvoiceAsPDF, printCurrentPage, getPrintSettings } from '@/utils/printUtils';
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -26,6 +26,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const [appliedAdvancePayments, setAppliedAdvancePayments] = useState<OutstandingPayment[]>([]);
   const [invoicePayments, setInvoicePayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [printSettings, setPrintSettings] = useState<any>(null);
 
   const fetchInvoicePayments = useCallback(async (patientId: string | null, invoiceNumber: string, patientName: string) => {
     try {
@@ -101,6 +102,15 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       setLoading(false);
     }
   }, [resolvedParams.id, token, fetchInvoicePayments]);
+
+  // Load print settings when invoice is loaded
+  useEffect(() => {
+    if (invoice) {
+      const documentType = invoice.invoiceType.toLowerCase() === 'b2c' ? 'b2cInvoice' : 'b2bInvoice';
+      const settings = getPrintSettings(documentType as 'b2cInvoice' | 'b2bInvoice');
+      setPrintSettings(settings);
+    }
+  }, [invoice]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -401,11 +411,11 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         <p className="text-sm md:text-base text-gray-600">
                           {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Corporate Account'}
                         </p>
-                        {invoice.invoiceType === 'B2C' && (
+                        {/* {invoice.invoiceType === 'B2C' && (
                           <p className="text-sm md:text-base text-gray-600">
                             Patient ID: PAT001
                           </p>
-                        )}
+                        )} */}
                         {invoice.invoiceType === 'B2B' && (
                           <p className="text-sm md:text-base text-gray-600">
                             Primary Contact: {invoice.patientName}
@@ -440,7 +450,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                           <span className="text-sm md:text-base text-gray-600">Created By:</span>
-                          <span className="font-medium text-sm md:text-base">Dr. Michael Chen</span>
+                          <span className="font-medium text-sm md:text-base">Staff</span>
                         </div>
                       </div>
                     </div>
@@ -850,40 +860,46 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         {viewMode === 'pdf' && (
           <Card className="bg-white max-w-4xl mx-auto">
           <CardContent className="p-8">
-            {/* PDF content will go here - using same content as invoice view for now */}
-            <div className="flex justify-between items-start mb-8">
-              <div className="flex flex-col items-start">
-                <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" className="w-20 h-auto mb-3" />
-                <div>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    No 75, DhanaLakshmi Avenue,
-                  </p>
-                  <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                    Adyar, Chennai - 600020.
-                  </p>
+            {/* Dynamic Header using Print Settings */}
+            {printSettings?.headerSettings?.includeHeader && (
+              <div className="flex justify-between items-start mb-8">
+                <div className="flex flex-col items-start">
+                  {printSettings.headerSettings.logo?.uploaded && (
+                    <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" className="w-20 h-auto mb-3" />
+                  )}
+                  <div>
+                    <h2 className="text-lg font-bold text-orange-600 mb-2">
+                      {printSettings.headerSettings.headerText || 'Hearing Centre Adyar'}
+                    </h2>
+                    <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                      {printSettings.headerSettings.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={cn(
+                    "inline-block px-3 py-1 rounded-full text-sm font-medium mb-2",
+                    invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                    invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                    invoice.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-blue-100 text-blue-800'
+                  )}>
+                    {invoice.paymentStatus}
+                  </div>
+                  <div className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                    {printSettings.headerSettings.rightText?.split(' || ').map((text: string, index: number) => (
+                      <p key={index}>{text}</p>
+                    )) || (
+                      <>
+                        <p>Phone: +91 44 1234 5678</p>
+                        <p>Email: info@eljayhearing.com</p>
+                        <p>Website: www.eljayhearing.com</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className={cn(
-                  "inline-block px-3 py-1 rounded-full text-sm font-medium mb-2",
-                  invoice.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                  invoice.paymentStatus === 'Cancelled' ? 'bg-red-100 text-red-800' :
-                  invoice.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-blue-100 text-blue-800'
-                )}>
-                  {invoice.paymentStatus}
-                </div>
-                <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Phone: +91 44 1234 5678
-                </p>
-                <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Email: info@eljayhearing.com
-                </p>
-                <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                  Website: www.eljayhearing.com
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* Bill To and Invoice Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -900,11 +916,11 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
                   {invoice.invoiceType === 'B2C' ? 'Individual Patient' : 'Corporate Account'}
                 </p>
-                {invoice.invoiceType === 'B2C' && (
+                {/* {invoice.invoiceType === 'B2C' && (
                   <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
                     Patient ID: PAT001
                   </p>
-                )}
+                )} */}
                 {invoice.invoiceType === 'B2B' && (
                   <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
                     Primary Contact: {invoice.patientName}
@@ -1282,6 +1298,34 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
+
+            {/* Dynamic Footer using Print Settings */}
+            {printSettings?.footerSettings && (
+              <div className="border-t border-gray-300 pt-6 mt-8 text-center text-sm text-gray-600">
+                {printSettings.footerSettings.thankYouMessage && (
+                  <div className="mb-2">
+                    {printSettings.footerSettings.thankYouMessage.split(' || ').map((text: string, index: number) => (
+                      <p key={index}>{text}</p>
+                    ))}
+                  </div>
+                )}
+                {printSettings.footerSettings.signatureNote && (
+                  <div className="mb-2">
+                    {printSettings.footerSettings.signatureNote.split(' || ').map((text: string, index: number) => (
+                      <p key={index}>{text}</p>
+                    ))}
+                  </div>
+                )}
+                {printSettings.footerSettings.additionalText && (
+                  <div className="mb-2">
+                    {printSettings.footerSettings.additionalText.split(' || ').map((text: string, index: number) => (
+                      <p key={index}>{text}</p>
+                    ))}
+                  </div>
+                )}
+                <p>Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         )}
