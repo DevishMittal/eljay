@@ -272,51 +272,50 @@ const PrintoutPage = () => {
               Print Settings
             </h2>
             
-            {/* Document Type Tabs */}
-            <div className="flex space-x-1 mb-6">
-              {[
-                { id: 'b2cInvoice', label: 'B2C Invoice' },
-                { id: 'b2bInvoice', label: 'B2B Invoice' },
-                { id: 'payments', label: 'Payments' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedDocumentType(tab.id as any)}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-                    selectedDocumentType === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  )}
-                  style={{ fontFamily: 'Segoe UI' }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+             {/* Document Type Tabs */}
+             <div className="flex space-x-1 mb-6">
+               {[
+                 { id: 'b2cInvoice', label: 'B2C Invoice' },
+                 { id: 'b2bInvoice', label: 'B2B Invoice' }
+               ].map((tab) => (
+                 <button
+                   key={tab.id}
+                   onClick={() => setSelectedDocumentType(tab.id as any)}
+                   className={cn(
+                     'px-3 py-2 text-xs font-medium rounded-md transition-colors',
+                     selectedDocumentType === tab.id
+                       ? 'bg-orange-600 text-white'
+                       : 'bg-gray-100 text-gray-700 hover:bg-orange-100'
+                   )}
+                   style={{ fontFamily: 'Segoe UI' }}
+                 >
+                   {tab.label}
+                 </button>
+               ))}
+             </div>
 
-            {/* Sub Tabs */}
-            <div className="flex space-x-1 mb-6">
-              {[
-                { id: 'pageSettings', label: 'Page Settings' },
-                { id: 'header', label: 'Header' },
-                { id: 'footer', label: 'Footer' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedSubTab(tab.id as any)}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-                    selectedSubTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  )}
-                  style={{ fontFamily: 'Segoe UI' }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+             {/* Sub Tabs */}
+             <div className="flex space-x-1 mb-6">
+               {[
+                 { id: 'pageSettings', label: 'Page Settings' },
+                 { id: 'header', label: 'Header' },
+                 { id: 'footer', label: 'Footer' }
+               ].map((tab) => (
+                 <button
+                   key={tab.id}
+                   onClick={() => setSelectedSubTab(tab.id as any)}
+                   className={cn(
+                     'px-3 py-2 text-xs font-medium rounded-md transition-colors',
+                     selectedSubTab === tab.id
+                       ? 'bg-orange-600 text-white'
+                       : 'bg-gray-100 text-gray-700 hover:bg-orange-100'
+                   )}
+                   style={{ fontFamily: 'Segoe UI' }}
+                 >
+                   {tab.label}
+                 </button>
+               ))}
+             </div>
 
             {/* Settings Content */}
             <div className="space-y-6">
@@ -366,56 +365,60 @@ const PrintoutPage = () => {
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex space-x-3 mt-8">
-              <button 
-                onClick={() => {
-                  // Show full size preview in new window
-                  const previewWindow = window.open('', '_blank', 'width=800,height=600');
-                  if (previewWindow) {
-                    previewWindow.document.write(`
-                      <html>
-                        <head>
-                          <title>Print Preview</title>
-                          <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .preview-container { max-width: 800px; margin: 0 auto; }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="preview-container">
-                            ${document.querySelector('.invoice-preview')?.innerHTML || 'Preview not available'}
-                          </div>
-                        </body>
-                      </html>
-                    `);
-                  }
-                }}
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Show Full Size Preview
-              </button>
-              <button 
-                onClick={() => {
-                  // Save settings for current document type
-                  localStorage.setItem(`printSettings_${selectedDocumentType}`, JSON.stringify(printSettings[selectedDocumentType]));
-                  alert(`Settings saved for ${selectedDocumentType === 'b2cInvoice' ? 'B2C Invoice' : selectedDocumentType === 'b2bInvoice' ? 'B2B Invoice' : 'Payments'}`);
-                }}
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Save
-              </button>
-              <button 
-                onClick={() => {
-                  // Save settings for all document types
-                  localStorage.setItem('printSettings_all', JSON.stringify(printSettings));
-                  alert('Settings saved for all document types');
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Save For All
-              </button>
-            </div>
+             {/* Action Buttons */}
+             <div className="flex space-x-2 mt-6">
+               <button 
+                 onClick={() => {
+                   // Show full size preview in new window
+                   const previewWindow = window.open('', '_blank', 'width=800,height=600');
+                   if (previewWindow) {
+                     previewWindow.document.write(`
+                       <html>
+                         <head>
+                           <title>Print Preview</title>
+                           <style>
+                             body { font-family: Arial, sans-serif; margin: 20px; }
+                             .preview-container { max-width: 800px; margin: 0 auto; }
+                           </style>
+                         </head>
+                         <body>
+                           <div class="preview-container">
+                             ${document.querySelector('.invoice-preview')?.innerHTML || 'Preview not available'}
+                           </div>
+                         </body>
+                       </html>
+                     `);
+                   }
+                 }}
+                 className="px-3 py-2 text-xs bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-orange-50 transition-colors"
+               >
+                 Show Full Size Preview
+               </button>
+               <button 
+                 onClick={() => {
+                   // Save settings for current document type
+                   localStorage.setItem(`printSettings_${selectedDocumentType}`, JSON.stringify(printSettings[selectedDocumentType]));
+                   alert(`Settings saved for ${selectedDocumentType === 'b2cInvoice' ? 'B2C Invoice' : 'B2B Invoice'}`);
+                 }}
+                 className="px-3 py-2 text-xs bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-orange-50 transition-colors"
+               >
+                 Save
+               </button>
+               <button 
+                 onClick={() => {
+                   // Save settings for both B2B and B2C
+                   const settingsToSave = {
+                     b2cInvoice: printSettings.b2cInvoice,
+                     b2bInvoice: printSettings.b2bInvoice
+                   };
+                   localStorage.setItem('printSettings_b2b_b2c', JSON.stringify(settingsToSave));
+                   alert('Settings saved for B2B and B2C invoices');
+                 }}
+                 className="px-3 py-2 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+               >
+                 Save For All
+               </button>
+             </div>
           </div>
 
           {/* Preview Panel */}
@@ -439,166 +442,166 @@ const PageSettingsComponent = ({ settings, onChange }: {
   settings: PrintPageSettings; 
   onChange: (settings: PrintPageSettings) => void 
 }) => {
-  return (
-    <div className="space-y-6">
-      <h3 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-        PAGE SETUP
-      </h3>
-      
-      {/* Paper Size */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Paper Size</label>
-        <select 
-          value={settings.paperSize}
-          onChange={(e) => onChange({ ...settings, paperSize: e.target.value as any })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          title="Select paper size for printing"
-          aria-label="Paper size"
-        >
-          <option value="A4">A4</option>
-          <option value="A3">A3</option>
-          <option value="Letter">Letter</option>
-          <option value="Legal">Legal</option>
-        </select>
-      </div>
+   return (
+     <div className="space-y-4">
+       <h3 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+         PAGE SETUP
+       </h3>
+       
+       {/* Paper Size */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Paper Size</label>
+         <select 
+           value={settings.paperSize}
+           onChange={(e) => onChange({ ...settings, paperSize: e.target.value as any })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           title="Select paper size for printing"
+           aria-label="Paper size"
+         >
+           <option value="A4">A4</option>
+           <option value="A3">A3</option>
+           <option value="Letter">Letter</option>
+           <option value="Legal">Legal</option>
+         </select>
+       </div>
 
-      {/* Orientation */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Orientation</label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="orientation"
-              value="Portrait"
-              checked={settings.orientation === 'Portrait'}
-              onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
-              className="mr-2"
-            />
-            Portrait
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="orientation"
-              value="Landscape"
-              checked={settings.orientation === 'Landscape'}
-              onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
-              className="mr-2"
-            />
-            Landscape
-          </label>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">* Applicable only on Print Size Preview</p>
-      </div>
+       {/* Orientation */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Orientation</label>
+         <div className="space-y-1">
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="orientation"
+               value="Portrait"
+               checked={settings.orientation === 'Portrait'}
+               onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
+               className="mr-2"
+             />
+             Portrait
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="orientation"
+               value="Landscape"
+               checked={settings.orientation === 'Landscape'}
+               onChange={(e) => onChange({ ...settings, orientation: e.target.value as any })}
+               className="mr-2"
+             />
+             Landscape
+           </label>
+         </div>
+         <p className="text-xs text-gray-500 mt-1">* Applicable only on Print Size Preview</p>
+       </div>
 
-      {/* Printer Type */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Printer Type</label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="printerType"
-              value="Color"
-              checked={settings.printerType === 'Color'}
-              onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
-              className="mr-2"
-            />
-            Colour - Paper / Laser
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="printerType"
-              value="Black"
-              checked={settings.printerType === 'Black'}
-              onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
-              className="mr-2"
-            />
-            Black - Dot Matrix / Thermal printers
-          </label>
-        </div>
-      </div>
+       {/* Printer Type */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Printer Type</label>
+         <div className="space-y-1">
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="printerType"
+               value="Color"
+               checked={settings.printerType === 'Color'}
+               onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
+               className="mr-2"
+             />
+             Colour - Paper / Laser
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="printerType"
+               value="Black"
+               checked={settings.printerType === 'Black'}
+               onChange={(e) => onChange({ ...settings, printerType: e.target.value as any })}
+               className="mr-2"
+             />
+             Black - Dot Matrix / Thermal printers
+           </label>
+         </div>
+       </div>
 
-      {/* Margins */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Margins</label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Top Margin</label>
-            <select 
-              value={settings.margins.top}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                margins: { ...settings.margins, top: parseFloat(e.target.value) }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Select top margin"
-              aria-label="Top margin"
-            >
-              <option value={0.5}>0.50 inches</option>
-              <option value={1.0}>1.00 inches</option>
-              <option value={1.5}>1.50 inches</option>
-              <option value={2.0}>2.00 inches</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Left Margin</label>
-            <select 
-              value={settings.margins.left}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                margins: { ...settings.margins, left: parseFloat(e.target.value) }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Select left margin"
-              aria-label="Left margin"
-            >
-              <option value={0.25}>0.25 inches</option>
-              <option value={0.5}>0.50 inches</option>
-              <option value={0.75}>0.75 inches</option>
-              <option value={1.0}>1.00 inches</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Bottom Margin</label>
-            <select 
-              value={settings.margins.bottom}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                margins: { ...settings.margins, bottom: parseFloat(e.target.value) }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Select bottom margin"
-              aria-label="Bottom margin"
-            >
-              <option value={0.5}>0.50 inches</option>
-              <option value={1.0}>1.00 inches</option>
-              <option value={1.5}>1.50 inches</option>
-              <option value={2.0}>2.00 inches</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Right Margin</label>
-            <select 
-              value={settings.margins.right}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                margins: { ...settings.margins, right: parseFloat(e.target.value) }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Select right margin"
-              aria-label="Right margin"
-            >
-              <option value={0.25}>0.25 inches</option>
-              <option value={0.5}>0.50 inches</option>
-              <option value={0.75}>0.75 inches</option>
-              <option value={1.0}>1.00 inches</option>
-            </select>
-          </div>
-        </div>
-      </div>
+       {/* Margins */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Margins</label>
+         <div className="grid grid-cols-2 gap-2">
+           <div>
+             <label className="block text-xs text-gray-600 mb-1">Top Margin</label>
+             <select 
+               value={settings.margins.top}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 margins: { ...settings.margins, top: parseFloat(e.target.value) }
+               })}
+               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+               title="Select top margin"
+               aria-label="Top margin"
+             >
+               <option value={0.5}>0.50 inches</option>
+               <option value={1.0}>1.00 inches</option>
+               <option value={1.5}>1.50 inches</option>
+               <option value={2.0}>2.00 inches</option>
+             </select>
+           </div>
+           <div>
+             <label className="block text-xs text-gray-600 mb-1">Left Margin</label>
+             <select 
+               value={settings.margins.left}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 margins: { ...settings.margins, left: parseFloat(e.target.value) }
+               })}
+               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+               title="Select left margin"
+               aria-label="Left margin"
+             >
+               <option value={0.25}>0.25 inches</option>
+               <option value={0.5}>0.50 inches</option>
+               <option value={0.75}>0.75 inches</option>
+               <option value={1.0}>1.00 inches</option>
+             </select>
+           </div>
+           <div>
+             <label className="block text-xs text-gray-600 mb-1">Bottom Margin</label>
+             <select 
+               value={settings.margins.bottom}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 margins: { ...settings.margins, bottom: parseFloat(e.target.value) }
+               })}
+               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+               title="Select bottom margin"
+               aria-label="Bottom margin"
+             >
+               <option value={0.5}>0.50 inches</option>
+               <option value={1.0}>1.00 inches</option>
+               <option value={1.5}>1.50 inches</option>
+               <option value={2.0}>2.00 inches</option>
+             </select>
+           </div>
+           <div>
+             <label className="block text-xs text-gray-600 mb-1">Right Margin</label>
+             <select 
+               value={settings.margins.right}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 margins: { ...settings.margins, right: parseFloat(e.target.value) }
+               })}
+               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+               title="Select right margin"
+               aria-label="Right margin"
+             >
+               <option value={0.25}>0.25 inches</option>
+               <option value={0.5}>0.50 inches</option>
+               <option value={0.75}>0.75 inches</option>
+               <option value={1.0}>1.00 inches</option>
+             </select>
+           </div>
+         </div>
+       </div>
     </div>
   );
 };
@@ -608,191 +611,191 @@ const HeaderSettingsComponent = ({ settings, onChange }: {
   settings: PrintHeaderSettings; 
   onChange: (settings: PrintHeaderSettings) => void 
 }) => {
-  return (
-    <div className="space-y-6">
-      <h3 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-        CUSTOMIZE HEADER
-      </h3>
-      
-      {/* Include Header */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Include Header</label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="includeHeader"
-              value="yes"
-              checked={settings.includeHeader}
-              onChange={(e) => onChange({ ...settings, includeHeader: true })}
-              className="mr-2"
-            />
-            Yes
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="includeHeader"
-              value="no"
-              checked={!settings.includeHeader}
-              onChange={(e) => onChange({ ...settings, includeHeader: false })}
-              className="mr-2"
-            />
-            No
-          </label>
-        </div>
-      </div>
+   return (
+     <div className="space-y-4">
+       <h3 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+         CUSTOMIZE HEADER
+       </h3>
+       
+       {/* Include Header */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Include Header</label>
+         <div className="space-y-1">
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="includeHeader"
+               value="yes"
+               checked={settings.includeHeader}
+               onChange={(e) => onChange({ ...settings, includeHeader: true })}
+               className="mr-2"
+             />
+             Yes
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="includeHeader"
+               value="no"
+               checked={!settings.includeHeader}
+               onChange={(e) => onChange({ ...settings, includeHeader: false })}
+               className="mr-2"
+             />
+             No
+           </label>
+         </div>
+       </div>
 
-      {/* Header Text */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Header Text</label>
-        <input
-          type="text"
-          value={settings.headerText}
-          onChange={(e) => onChange({ ...settings, headerText: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter header text"
-          title="Enter the header text for the document"
-        />
-        <p className="text-xs text-gray-500 mt-1">Preview: {settings.headerText}</p>
-      </div>
+       {/* Header Text */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Header Text</label>
+         <input
+           type="text"
+           value={settings.headerText}
+           onChange={(e) => onChange({ ...settings, headerText: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           placeholder="Enter header text"
+           title="Enter the header text for the document"
+         />
+         <p className="text-xs text-gray-500 mt-1">Preview: {settings.headerText}</p>
+       </div>
 
-      {/* Left Text */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Left Text</label>
-        <input
-          type="text"
-          value={settings.leftText}
-          onChange={(e) => onChange({ ...settings, leftText: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter left side text (e.g., address)"
-          title="Enter text for the left side of the header"
-        />
-      </div>
+       {/* Left Text */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Left Text</label>
+         <input
+           type="text"
+           value={settings.leftText}
+           onChange={(e) => onChange({ ...settings, leftText: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           placeholder="Enter left side text (e.g., address)"
+           title="Enter text for the left side of the header"
+         />
+       </div>
 
-      {/* Right Text */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Right Text</label>
-        <input
-          type="text"
-          value={settings.rightText}
-          onChange={(e) => onChange({ ...settings, rightText: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter right side text (e.g., GST, phone)"
-          title="Enter text for the right side of the header"
-        />
-      </div>
+       {/* Right Text */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Right Text</label>
+         <input
+           type="text"
+           value={settings.rightText}
+           onChange={(e) => onChange({ ...settings, rightText: e.target.value })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           placeholder="Enter right side text (e.g., GST, phone)"
+           title="Enter text for the right side of the header"
+         />
+       </div>
 
-      {/* Logo */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-          <div className="text-sm text-gray-500">Clinic Logo</div>
-          {settings.logo.uploaded && (
-            <div className="mt-2">
-              <span className="text-xs text-green-600">Clinic Logo Uploaded</span>
-            </div>
-          )}
-        </div>
-      </div>
+       {/* Logo */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
+         <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center">
+           <div className="text-xs text-gray-500">Clinic Logo</div>
+           {settings.logo.uploaded && (
+             <div className="mt-1">
+               <span className="text-xs text-green-600">Clinic Logo Uploaded</span>
+             </div>
+           )}
+         </div>
+       </div>
 
-      {/* Logo Type */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoType"
-              value="Square"
-              checked={settings.logo.type === 'Square'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, type: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Square
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoType"
-              value="Narrow"
-              checked={settings.logo.type === 'Narrow'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, type: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Narrow
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoType"
-              value="Wide"
-              checked={settings.logo.type === 'Wide'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, type: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Wide
-          </label>
-        </div>
-      </div>
+       {/* Logo Type */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+         <div className="space-y-1">
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoType"
+               value="Square"
+               checked={settings.logo.type === 'Square'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, type: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Square
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoType"
+               value="Narrow"
+               checked={settings.logo.type === 'Narrow'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, type: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Narrow
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoType"
+               value="Wide"
+               checked={settings.logo.type === 'Wide'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, type: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Wide
+           </label>
+         </div>
+       </div>
 
-      {/* Logo Alignment */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Alignment</label>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoAlignment"
-              value="Left"
-              checked={settings.logo.alignment === 'Left'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, alignment: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Left
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoAlignment"
-              value="Centre"
-              checked={settings.logo.alignment === 'Centre'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, alignment: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Centre
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="logoAlignment"
-              value="Right"
-              checked={settings.logo.alignment === 'Right'}
-              onChange={(e) => onChange({ 
-                ...settings, 
-                logo: { ...settings.logo, alignment: e.target.value as any }
-              })}
-              className="mr-2"
-            />
-            Right
-          </label>
-        </div>
-      </div>
+       {/* Logo Alignment */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Alignment</label>
+         <div className="space-y-1">
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoAlignment"
+               value="Left"
+               checked={settings.logo.alignment === 'Left'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, alignment: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Left
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoAlignment"
+               value="Centre"
+               checked={settings.logo.alignment === 'Centre'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, alignment: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Centre
+           </label>
+           <label className="flex items-center text-xs">
+             <input
+               type="radio"
+               name="logoAlignment"
+               value="Right"
+               checked={settings.logo.alignment === 'Right'}
+               onChange={(e) => onChange({ 
+                 ...settings, 
+                 logo: { ...settings.logo, alignment: e.target.value as any }
+               })}
+               className="mr-2"
+             />
+             Right
+           </label>
+         </div>
+       </div>
     </div>
   );
 };
@@ -802,132 +805,132 @@ const FooterSettingsComponent = ({ settings, onChange }: {
   settings: PrintFooterSettings; 
   onChange: (settings: PrintFooterSettings) => void 
 }) => {
-  return (
-    <div className="space-y-6">
-      <h3 className="text-md font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
-        CUSTOMIZE FOOTER
-      </h3>
-      
-      {/* Top Margin */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Top Margin:</label>
-        <input
-          type="number"
-          step="0.01"
-          value={settings.topMargin}
-          onChange={(e) => onChange({ ...settings, topMargin: parseFloat(e.target.value) })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="0.00"
-          title="Enter top margin for footer in inches"
-        />
-      </div>
+   return (
+     <div className="space-y-4">
+       <h3 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
+         CUSTOMIZE FOOTER
+       </h3>
+       
+       {/* Top Margin */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Top Margin:</label>
+         <input
+           type="number"
+           step="0.01"
+           value={settings.topMargin}
+           onChange={(e) => onChange({ ...settings, topMargin: parseFloat(e.target.value) })}
+           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           placeholder="0.00"
+           title="Enter top margin for footer in inches"
+         />
+       </div>
 
-      {/* Full Width Content */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Full Width Content</label>
-        <div className="space-y-2">
-          {settings.fullWidthContent.map((content, index) => (
-            <textarea
-              key={index}
-              value={content}
-              onChange={(e) => {
-                const newContent = [...settings.fullWidthContent];
-                newContent[index] = e.target.value;
-                onChange({ ...settings, fullWidthContent: newContent });
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={2}
-              placeholder="Enter footer content"
-              title="Enter content for the footer section"
-            />
-          ))}
-        </div>
-      </div>
+       {/* Full Width Content */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Full Width Content</label>
+         <div className="space-y-2">
+           {settings.fullWidthContent.map((content, index) => (
+             <textarea
+               key={index}
+               value={content}
+               onChange={(e) => {
+                 const newContent = [...settings.fullWidthContent];
+                 newContent[index] = e.target.value;
+                 onChange({ ...settings, fullWidthContent: newContent });
+               }}
+               className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+               rows={2}
+               placeholder="Enter footer content"
+               title="Enter content for the footer section"
+             />
+           ))}
+         </div>
+       </div>
 
-      {/* Left Signature */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Left Signature*</label>
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={settings.leftSignature.name}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              leftSignature: { ...settings.leftSignature, name: e.target.value }
-            })}
-            placeholder="Name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            value={settings.leftSignature.title}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              leftSignature: { ...settings.leftSignature, title: e.target.value }
-            })}
-            placeholder="Title"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            value={settings.leftSignature.organization}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              leftSignature: { ...settings.leftSignature, organization: e.target.value }
-            })}
-            placeholder="Organization"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
+       {/* Left Signature */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Left Signature*</label>
+         <div className="space-y-1">
+           <input
+             type="text"
+             value={settings.leftSignature.name}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               leftSignature: { ...settings.leftSignature, name: e.target.value }
+             })}
+             placeholder="Name"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+           <input
+             type="text"
+             value={settings.leftSignature.title}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               leftSignature: { ...settings.leftSignature, title: e.target.value }
+             })}
+             placeholder="Title"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+           <input
+             type="text"
+             value={settings.leftSignature.organization}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               leftSignature: { ...settings.leftSignature, organization: e.target.value }
+             })}
+             placeholder="Organization"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+         </div>
+       </div>
 
-      {/* Right Signature */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Right Signature*</label>
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={settings.rightSignature.name}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              rightSignature: { ...settings.rightSignature, name: e.target.value }
-            })}
-            placeholder="Name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            value={settings.rightSignature.title}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              rightSignature: { ...settings.rightSignature, title: e.target.value }
-            })}
-            placeholder="Title"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            value={settings.rightSignature.organization}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              rightSignature: { ...settings.rightSignature, organization: e.target.value }
-            })}
-            placeholder="Organization"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            value={settings.rightSignature.date}
-            onChange={(e) => onChange({ 
-              ...settings, 
-              rightSignature: { ...settings.rightSignature, date: e.target.value }
-            })}
-            placeholder="Date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <p className="text-xs text-gray-500 mt-1">* Signature fields are not added to Emails.</p>
-      </div>
+       {/* Right Signature */}
+       <div>
+         <label className="block text-xs font-medium text-gray-700 mb-1">Right Signature*</label>
+         <div className="space-y-1">
+           <input
+             type="text"
+             value={settings.rightSignature.name}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               rightSignature: { ...settings.rightSignature, name: e.target.value }
+             })}
+             placeholder="Name"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+           <input
+             type="text"
+             value={settings.rightSignature.title}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               rightSignature: { ...settings.rightSignature, title: e.target.value }
+             })}
+             placeholder="Title"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+           <input
+             type="text"
+             value={settings.rightSignature.organization}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               rightSignature: { ...settings.rightSignature, organization: e.target.value }
+             })}
+             placeholder="Organization"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+           <input
+             type="text"
+             value={settings.rightSignature.date}
+             onChange={(e) => onChange({ 
+               ...settings, 
+               rightSignature: { ...settings.rightSignature, date: e.target.value }
+             })}
+             placeholder="Date"
+             className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+           />
+         </div>
+         <p className="text-xs text-gray-500 mt-1">* Signature fields are not added to Emails.</p>
+       </div>
     </div>
   );
 };
