@@ -237,7 +237,7 @@ class ExpenseService {
       'Card',
       'Credit Card',
       'Cheque',
-      'Netbanking'
+      'Bank Transfer'
     ];
   }
 }

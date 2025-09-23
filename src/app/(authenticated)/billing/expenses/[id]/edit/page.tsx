@@ -83,7 +83,7 @@ export default function EditExpensePage() {
         description,
         amount: parseFloat(expenseAmount),
         taxAmount: parseFloat(taxAmount),
-        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Netbanking',
+        paymentMethod: paymentMethod as 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer',
         vendor,
         approvedBy: approvedBy || undefined,
         remarks: remarks || undefined

@@ -72,7 +72,7 @@ export default function DoctorReferralsPage() {
     status: 'draft' | 'sent' | 'paid';
     dueDate: string;
   }>>([]);
-  const [isAddingDoctor, setIsAddingDoctor] = useState(false);
+  const [, setIsAddingDoctor] = useState(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +81,14 @@ export default function DoctorReferralsPage() {
   const [availableDoctors, setAvailableDoctors] = useState<Array<{id: string, name: string}>>([]);
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
+  
+  // Selection states for commission statements
+  const [selectedStatements, setSelectedStatements] = useState<Set<string>>(new Set());
+  const [selectAllStatements, setSelectAllStatements] = useState(false);
+  
+  // Selection states for referrals
+  const [selectedReferrals, setSelectedReferrals] = useState<Set<string>>(new Set());
+  const [selectAllReferrals, setSelectAllReferrals] = useState(false);
   
   const { token } = useAuth();
 
@@ -168,6 +176,74 @@ export default function DoctorReferralsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Handle commission statement selection
+  const handleStatementSelect = (statementId: string) => {
+    const newSelected = new Set(selectedStatements);
+    if (newSelected.has(statementId)) {
+      newSelected.delete(statementId);
+    } else {
+      newSelected.add(statementId);
+    }
+    setSelectedStatements(newSelected);
+    setSelectAllStatements(newSelected.size === commissionStatementsData.length && commissionStatementsData.length > 0);
+  };
+
+  // Handle select all commission statements
+  const handleSelectAllStatements = () => {
+    if (selectAllStatements) {
+      setSelectedStatements(new Set());
+      setSelectAllStatements(false);
+    } else {
+      const allStatementIds = new Set(commissionStatementsData.map(statement => statement.id));
+      setSelectedStatements(allStatementIds);
+      setSelectAllStatements(true);
+    }
+  };
+
+  // Handle referral selection
+  const handleReferralSelect = (referralId: string) => {
+    const newSelected = new Set(selectedReferrals);
+    if (newSelected.has(referralId)) {
+      newSelected.delete(referralId);
+    } else {
+      newSelected.add(referralId);
+    }
+    setSelectedReferrals(newSelected);
+    setSelectAllReferrals(newSelected.size === filteredReferralData.length && filteredReferralData.length > 0);
+  };
+
+  // Handle select all referrals
+  const handleSelectAllReferrals = () => {
+    if (selectAllReferrals) {
+      setSelectedReferrals(new Set());
+      setSelectAllReferrals(false);
+    } else {
+      const allReferralIds = new Set(filteredReferralData.map(referral => referral.id));
+      setSelectedReferrals(allReferralIds);
+      setSelectAllReferrals(true);
+    }
+  };
+
+  // Handle export functionality for statements
+  const handleExportStatements = () => {
+    if (selectedStatements.size === 0) {
+      alert('Please select statements to export');
+      return;
+    }
+    console.log('Exporting selected statements:', Array.from(selectedStatements));
+    // TODO: Implement CSV/Excel export functionality
+  };
+
+  // Handle export functionality for referrals
+  const handleExportReferrals = () => {
+    if (selectedReferrals.size === 0) {
+      alert('Please select referrals to export');
+      return;
+    }
+    console.log('Exporting selected referrals:', Array.from(selectedReferrals));
+    // TODO: Implement CSV/Excel export functionality
+  };
 
   // Handle adding new doctor
   const handleAddDoctor = async (doctorData: CreateDoctorData) => {
@@ -388,7 +464,7 @@ export default function DoctorReferralsPage() {
   const referralData = referrals.map((referral, index) => {
     const createdDate = new Date(referral.createdAt || new Date());
     return {
-      id: referral.id,
+      id: referral.id || `referral-${index}`,
       date: createdDate.toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
@@ -396,7 +472,7 @@ export default function DoctorReferralsPage() {
       }),
       patient: { 
         name: referral.sourceName, 
-        id: `REF${(referral.id || '000').slice(-3).toUpperCase()}` 
+        id: `REF${(referral.id || `000${index}`).slice(-3).toUpperCase()}` 
       },
       doctor: referral.type === 'doctor' ? referral.sourceName : 'N/A',
       type: referral.type,
@@ -742,6 +818,27 @@ export default function DoctorReferralsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    {selectedReferrals.size > 0 && (
+                      <button
+                        onClick={handleExportReferrals}
+                        className="flex items-center gap-2 px-4 py-1.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 text-sm transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        Export ({selectedReferrals.size})
+                      </button>
+                    )}
                     <div className="relative w-64">
                       <svg
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -866,6 +963,15 @@ export default function DoctorReferralsPage() {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={selectAllReferrals}
+                              onChange={handleSelectAllReferrals}
+                              className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              aria-label="Select all referrals"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -879,13 +985,22 @@ export default function DoctorReferralsPage() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                           <tr>
-                            <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                               Loading referrals...
                             </td>
                           </tr>
                         ) : filteredReferralData.length > 0 ? (
                           filteredReferralData.map((referral) => (
                             <tr key={referral.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedReferrals.has(referral.id)}
+                                  onChange={() => handleReferralSelect(referral.id)}
+                                  className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                  aria-label={`Select referral ${referral.id}`}
+                                />
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{referral.date}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div>
@@ -927,7 +1042,7 @@ export default function DoctorReferralsPage() {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={8} className="px-6 py-4 text-center text-xs text-gray-500">
+                            <td colSpan={9} className="px-6 py-4 text-center text-xs text-gray-500">
                               No referrals found
                             </td>
                           </tr>
@@ -990,6 +1105,29 @@ export default function DoctorReferralsPage() {
                     <h2 className="text-sm" style={{ color: '#101828' }}>Commission Statements</h2>
                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{commissionStatementsData.length}</span>
                   </div>
+                  <div className="flex gap-2">
+                    {selectedStatements.size > 0 && (
+                      <button
+                        onClick={handleExportStatements}
+                        className="flex items-center gap-2 px-4 py-1.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 text-sm transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        Export ({selectedStatements.size})
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Commission Statements Table */}
@@ -998,6 +1136,15 @@ export default function DoctorReferralsPage() {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={selectAllStatements}
+                              onChange={handleSelectAllStatements}
+                              className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              aria-label="Select all commission statements"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
@@ -1011,6 +1158,15 @@ export default function DoctorReferralsPage() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {commissionStatementsData.map((statement) => (
                           <tr key={statement.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedStatements.has(statement.id)}
+                                onChange={() => handleStatementSelect(statement.id)}
+                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                aria-label={`Select statement ${statement.id}`}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs font-medium" style={{ color: '#101828' }}>{statement.doctor}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.period}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.referrals}</td>

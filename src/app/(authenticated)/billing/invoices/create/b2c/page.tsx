@@ -50,7 +50,7 @@ export default function B2CInvoicePage() {
   const [paymentDetails, setPaymentDetails] = useState<Array<{
     id: string;
     paymentDate: string;
-    method: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '';
+    method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '';
     amount: number;
     transactionId?: string;
     receivedBy?: string;
@@ -61,7 +61,7 @@ export default function B2CInvoicePage() {
     {
       id: 'default-1',
       paymentDate: new Date().toISOString().split('T')[0],
-      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '',
       amount: 0,
       transactionId: '',
       receivedBy: '',
@@ -134,7 +134,9 @@ export default function B2CInvoicePage() {
     try {
       setLoadingPatients(true);
       const response = await patientService.getPatients(1, 100, token || undefined);
-      setPatients(response.patients);
+      // Filter to only show B2C patients
+      const b2cPatients = response.patients.filter(patient => patient.type === 'B2C');
+      setPatients(b2cPatients);
     } catch (error) {
       console.error('Error loading patients:', error);
     } finally {
@@ -296,7 +298,7 @@ export default function B2CInvoicePage() {
     const newPayment = {
       id: Date.now().toString(),
       paymentDate: new Date().toISOString().split('T')[0],
-      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '',
       amount: 0,
       transactionId: '',
       receivedBy: '',
@@ -427,7 +429,7 @@ export default function B2CInvoicePage() {
                 patientName: selectedPatient.full_name,
                 patientId: selectedPatient.id,
                 amount: payment.amount,
-                method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+                method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
                 status: 'Completed' as const,
                 transactionId: payment.transactionId || '',
                 receivedBy: payment.receivedBy || '',
@@ -817,7 +819,7 @@ export default function B2CInvoicePage() {
                             setPaymentDetails([{
                               id: Date.now().toString(),
                               paymentDate: new Date().toISOString().split('T')[0],
-                              method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+                              method: '' as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '',
                               amount: 0,
                               transactionId: '',
                               receivedBy: '',
@@ -884,7 +886,7 @@ export default function B2CInvoicePage() {
                                     <option value="Cash">Cash</option>
                                     <option value="Card">Card</option>
                                     <option value="UPI">UPI</option>
-                                    <option value="Netbanking">Netbanking</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
                                     <option value="Cheque">Cheque</option>
                                   </select>
                                 </td>

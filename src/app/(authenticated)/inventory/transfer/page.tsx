@@ -145,6 +145,8 @@ export default function InventoryTransferPage() {
   const [transfers, setTransfers] = useState<InventoryTransfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTransfers, setSelectedTransfers] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
   // Fetch transfers on component mount
   useEffect(() => {
@@ -186,6 +188,40 @@ export default function InventoryTransferPage() {
     }
   };
 
+  // Handle individual transfer selection
+  const handleTransferSelect = (transferId: string) => {
+    const newSelected = new Set(selectedTransfers);
+    if (newSelected.has(transferId)) {
+      newSelected.delete(transferId);
+    } else {
+      newSelected.add(transferId);
+    }
+    setSelectedTransfers(newSelected);
+    setSelectAll(newSelected.size === filteredTransfers.length && filteredTransfers.length > 0);
+  };
+
+  // Handle select all functionality
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedTransfers(new Set());
+      setSelectAll(false);
+    } else {
+      const allTransferIds = new Set(filteredTransfers.map(transfer => transfer.id));
+      setSelectedTransfers(allTransferIds);
+      setSelectAll(true);
+    }
+  };
+
+  // Handle export functionality (placeholder for now)
+  const handleExportSelected = () => {
+    if (selectedTransfers.size === 0) {
+      alert('Please select transfers to export');
+      return;
+    }
+    console.log('Exporting selected transfers:', Array.from(selectedTransfers));
+    // TODO: Implement CSV/Excel export functionality
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -203,27 +239,51 @@ export default function InventoryTransferPage() {
             </p>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={() => setShowCreateTransferModal(true)}
-            className="flex items-center gap-2 px-6 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm font-medium"
-            style={{ fontFamily: "Segoe UI" }}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            {selectedTransfers.size > 0 && (
+              <button
+                onClick={handleExportSelected}
+                className="flex items-center gap-2 px-4 py-1.5 border border-[#E5E7EB] bg-white text-[#4A5565] rounded-lg hover:bg-[#F9FAFB] text-sm transition-colors"
+                style={{ fontFamily: "Segoe UI" }}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Export ({selectedTransfers.size})
+              </button>
+            )}
+            <button
+              onClick={() => setShowCreateTransferModal(true)}
+              className="flex items-center gap-2 px-6 py-1.5 bg-primary text-white rounded-lg hover:bg-[#ea580c] transition-colors text-sm font-medium"
+              style={{ fontFamily: "Segoe UI" }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            Create Transfer
-          </button>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Create Transfer
+            </button>
+          </div>
         </div>
 
         {/* Search and Filter Bar */}
@@ -303,6 +363,18 @@ export default function InventoryTransferPage() {
                       className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
                       style={{ fontFamily: "Segoe UI" }}
                     >
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        aria-label="Select all transfers"
+                      />
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider"
+                      style={{ fontFamily: "Segoe UI" }}
+                    >
                       Transfer ID
                     </th>
                     <th
@@ -367,6 +439,15 @@ export default function InventoryTransferPage() {
                       key={transfer.id}
                       className="hover:bg-[#F9FAFB] transition-colors"
                     >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedTransfers.has(transfer.id)}
+                          onChange={() => handleTransferSelect(transfer.id)}
+                          className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          aria-label={`Select transfer ${transfer.id}`}
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           <div

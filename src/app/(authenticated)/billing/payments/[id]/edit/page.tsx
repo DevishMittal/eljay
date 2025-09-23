@@ -111,7 +111,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
         patientName,
         patientId,
         amount: parseFloat(amount),
-        method: method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+        method: method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
         status: status as 'Pending' | 'Completed' | 'Failed' | 'Cancelled',
         transactionId: transactionId || undefined,
         receivedBy: receivedBy || undefined,
@@ -345,7 +345,7 @@ export default function EditPaymentPage({ params }: { params: Promise<{ id: stri
                       { value: 'Cash', label: 'Cash' },
                       { value: 'Card', label: 'Card' },
                       { value: 'UPI', label: 'UPI' },
-                      { value: 'Netbanking', label: 'Netbanking' },
+                      { value: 'Bank Transfer', label: 'Bank Transfer' },
                       { value: 'Cheque', label: 'Cheque' }
                     ]}
                     value={method}

@@ -1039,7 +1039,7 @@ export interface Payment {
   patientName: string;
   patientId?: string | null; // Required for advance payments
   amount: number;
-  method: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque';
+  method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
   status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
   transactionId?: string | null;
   receivedBy?: string | null;
@@ -1057,7 +1057,7 @@ export interface CreatePaymentData {
   patientName: string;
   patientId?: string; // Required for advance payments
   amount: number;
-  method: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque';
+  method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
   status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
   transactionId?: string;
   receivedBy?: string;
@@ -1069,7 +1069,7 @@ export interface CreatePaymentData {
 export interface UpdatePaymentData {
   paymentDate?: string;
   amount?: number;
-  method?: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque';
+  method?: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque';
   status?: 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
   transactionId?: string;
   receivedBy?: string;
@@ -1137,7 +1137,7 @@ export interface Expense {
   amount: number;
   taxAmount: number;
   totalAmount: number;
-  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Netbanking';
+  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor: string;
   approvedBy: string | null;
   remarks?: string;
@@ -1151,7 +1151,7 @@ export interface CreateExpenseData {
   description: string;
   amount: number;
   taxAmount: number;
-  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Netbanking';
+  paymentMethod: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor: string;
   remarks?: string;
 }
@@ -1162,7 +1162,7 @@ export interface UpdateExpenseData {
   description?: string;
   amount?: number;
   taxAmount?: number;
-  paymentMethod?: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Netbanking';
+  paymentMethod?: 'Cash' | 'Card' | 'Credit Card' | 'Cheque' | 'Bank Transfer';
   vendor?: string;
   approvedBy?: string;
   remarks?: string;

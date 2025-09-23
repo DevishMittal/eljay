@@ -67,7 +67,7 @@ export default function RecordPaymentPage() {
     }
 
     // Validate transaction ID for specific payment methods
-    const requiresTransactionId = ['Cheque', 'Netbanking', 'Card'].includes(method);
+    const requiresTransactionId = ['Cheque', 'Bank Transfer', 'Card'].includes(method);
     if (requiresTransactionId && !transactionId) {
       const fieldName = method === 'Cheque' ? 'Cheque Number' : 
                        method === 'Card' ? 'Card Last 4 Digits' : 'Transaction ID';
@@ -84,7 +84,7 @@ export default function RecordPaymentPage() {
         patientName,
         patientId,
         amount: parseFloat(amount),
-        method: method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+        method: method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
         status: status as 'Pending' | 'Completed' | 'Failed' | 'Cancelled',
         transactionId: transactionId || undefined,
         receivedBy: receivedBy || undefined,
@@ -277,7 +277,7 @@ export default function RecordPaymentPage() {
                       { value: 'Cash', label: 'Cash' },
                       { value: 'Card', label: 'Card' },
                       { value: 'UPI', label: 'UPI' },
-                      { value: 'Netbanking', label: 'Netbanking' },
+                      { value: 'Bank Transfer', label: 'Bank Transfer' },
                       { value: 'Cheque', label: 'Cheque' }
                     ]}
                     value={method}
@@ -311,7 +311,7 @@ export default function RecordPaymentPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {method === 'Cheque' ? 'Cheque Number' : 
                      method === 'Card' ? 'Card Last 4 Digits' : 'Transaction ID'}
-                    {['Cheque', 'Netbanking', 'Card'].includes(method) ? ' *' : ''}
+                    {['Cheque', 'Bank Transfer', 'Card'].includes(method) ? ' *' : ''}
                   </label>
                   <Input
                     value={transactionId || ''}
@@ -319,11 +319,11 @@ export default function RecordPaymentPage() {
                     placeholder={
                       method === 'Cheque' ? 'Enter cheque number' :
                       method === 'Card' ? 'Enter last 4 digits of card' :
-                      method === 'Netbanking' ? 'Enter transaction ID' :
+                      method === 'Bank Transfer' ? 'Enter transaction ID' :
                       'Enter transaction ID (optional)'
                     }
                     className="bg-white border-gray-300"
-                    required={['Cheque', 'Netbanking', 'Card'].includes(method)}
+                    required={['Cheque', 'Bank Transfer', 'Card'].includes(method)}
                   />
                 </div>
 

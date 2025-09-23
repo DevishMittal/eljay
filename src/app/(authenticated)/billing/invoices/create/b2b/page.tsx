@@ -41,7 +41,7 @@ export default function B2BInvoicePage() {
   const [paymentDetails, setPaymentDetails] = useState<Array<{
     id: string;
     paymentDate: string;
-    method: 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '';
+    method: 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '';
     amount: number;
     transactionId?: string;
     receivedBy?: string;
@@ -52,7 +52,7 @@ export default function B2BInvoicePage() {
     {
       id: 'default-1',
       paymentDate: new Date().toISOString().split('T')[0],
-      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '',
       amount: 0,
       transactionId: '',
       receivedBy: '',
@@ -215,7 +215,7 @@ export default function B2BInvoicePage() {
     const newPayment = {
       id: Date.now().toString(),
       paymentDate: new Date().toISOString().split('T')[0],
-      method: '' as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque' | '',
+      method: '' as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque' | '',
       amount: 0,
       transactionId: '',
       receivedBy: '',
@@ -322,11 +322,11 @@ export default function B2BInvoicePage() {
               paymentDate: payment.paymentDate,
               patientName: primaryContact, // Use primary contact as patient name for B2B
               amount: payment.amount,
-              method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Netbanking' | 'Cheque',
+              method: payment.method as 'Cash' | 'Card' | 'UPI' | 'Bank Transfer' | 'Cheque',
               status: 'Completed' as const,
               transactionId: payment.transactionId || '',
               receivedBy: payment.receivedBy || '',
-              paymentType: 'Advance' as const,
+              paymentType: 'Full' as const, // Use 'Full' for B2B payments since they don't require patientId
               description: payment.description || `Payment for B2B Invoice ${response.data.invoiceNumber}`,
               notes: payment.notes || ''
             };
@@ -626,7 +626,7 @@ export default function B2BInvoicePage() {
                                 <option value="Cash">Cash</option>
                                 <option value="Card">Card</option>
                                 <option value="UPI">UPI</option>
-                                <option value="Netbanking">Netbanking</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
                                 <option value="Cheque">Cheque</option>
                               </select>
                             </td>

@@ -140,7 +140,7 @@ const generateExpenseReportHTML = (expense: Expense, options: PrintOptions = {})
         return 'method-credit-card';
       case 'Cheque':
         return 'method-cheque';
-      case 'Netbanking':
+      case 'Bank Transfer':
         return 'method-bank';
       default:
         return 'method-default';

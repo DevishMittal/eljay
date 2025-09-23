@@ -103,7 +103,7 @@ export default function ExpenseDetailsPage() {
         return 'bg-indigo-100 text-indigo-800';
       case 'Cheque':
         return 'bg-orange-100 text-orange-800';
-      case 'Netbanking':
+      case 'Bank Transfer':
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';

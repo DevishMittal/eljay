@@ -424,7 +424,7 @@ export default function DashboardPage() {
     { name: 'Cash', amount: 163800, percentage: 45, color: '#3B82F6' },
     { name: 'Card', amount: 127400, percentage: 35, color: '#10B981' },
     { name: 'UPI', amount: 54600, percentage: 15, color: '#F59E0B' },
-    { name: 'Netbanking', amount: 18200, percentage: 5, color: '#8B5CF6' }
+    { name: 'Bank Transfer', amount: 18200, percentage: 5, color: '#8B5CF6' }
   ];
 
   const customerAgeData = [
