@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { cn } from '@/utils';
 
 interface CustomCalendarProps {
@@ -10,7 +10,6 @@ interface CustomCalendarProps {
   maxDate?: Date;
   disabledDates?: Date[];
   className?: string;
-  showToday?: boolean;
 }
 
 const CustomCalendar: React.FC<CustomCalendarProps> = ({
@@ -20,19 +19,24 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
   maxDate,
   disabledDates = [],
   className = "",
-  showToday = true,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
     return value || new Date();
   });
 
-  const today = new Date();
-  
-  // Get first day of the month and calculate calendar grid
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-  const startDate = new Date(firstDayOfMonth);
-  startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
+  // Dropdown state management
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const monthDropdownRef = useRef<HTMLDivElement>(null);
+  const yearDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Calculate calendar grid start date
+  const startDate = useMemo(() => {
+    const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const date = new Date(firstDayOfMonth);
+    date.setDate(date.getDate() - firstDayOfMonth.getDay());
+    return date;
+  }, [currentMonth]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -40,6 +44,26 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
   ];
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Generate year range (1925 to 2035)
+  const yearRange = Array.from({ length: 111 }, (_, i) => 1925 + i);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(event.target as Node)) {
+        setShowMonthDropdown(false);
+      }
+      if (yearDropdownRef.current && !yearDropdownRef.current.contains(event.target as Node)) {
+        setShowYearDropdown(false);
+      }
+    };
+
+    if (showMonthDropdown || showYearDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMonthDropdown, showYearDropdown]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -63,16 +87,25 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  const goToPreviousYear = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear() - 1, prev.getMonth(), 1));
+  // Dropdown selection handlers
+  const handleMonthSelect = (monthIndex: number) => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), monthIndex, 1));
+    setShowMonthDropdown(false);
   };
 
-  const goToNextYear = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear() + 1, prev.getMonth(), 1));
+  const handleYearSelect = (year: number) => {
+    setCurrentMonth(prev => new Date(year, prev.getMonth(), 1));
+    setShowYearDropdown(false);
   };
 
-  const goToToday = () => {
-    setCurrentMonth(new Date());
+  const toggleMonthDropdown = () => {
+    setShowMonthDropdown(prev => !prev);
+    setShowYearDropdown(false);
+  };
+
+  const toggleYearDropdown = () => {
+    setShowYearDropdown(prev => !prev);
+    setShowMonthDropdown(false);
   };
 
   // Date validation functions
@@ -89,9 +122,6 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
     );
   };
 
-  const isToday = (date: Date) => {
-    return date.toDateString() === today.toDateString();
-  };
 
   const isSelected = (date: Date) => {
     return value && date.toDateString() === value.toDateString();
@@ -108,72 +138,111 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
   };
 
   return (
-    <div className={cn("bg-white border border-gray-200 rounded-lg shadow-sm p-4", className)}>
+    <div className={cn("bg-white border border-gray-200 rounded-lg shadow-sm p-3", className)}>
       {/* Header with navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={goToPreviousYear}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-            title="Previous year"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={goToPreviousMonth}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-            title="Previous month"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        {/* Left side - Previous month */}
+        <button
+          onClick={goToPreviousMonth}
+          className="p-1 hover:bg-gray-100 rounded transition-colors"
+          title="Previous month"
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-        <div className="flex items-center space-x-2">
-          <h2 className="text-xs font-semibold text-gray-900">
-            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-          </h2>
-          {showToday && (
+        {/* Center - Month/Year dropdowns */}
+        <div className="flex items-center space-x-1">
+          {/* Month Dropdown */}
+          <div className="relative" ref={monthDropdownRef}>
             <button
-              onClick={goToToday}
-              className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+              onClick={toggleMonthDropdown}
+              className="px-2 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center space-x-1"
             >
-              Today
+              <span>{monthNames[currentMonth.getMonth()]}</span>
+              <svg 
+                className={cn("w-3 h-3 transition-transform", showMonthDropdown && "rotate-180")} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          )}
+            
+            {showMonthDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                {monthNames.map((month, index) => (
+                  <button
+                    key={month}
+                    onClick={() => handleMonthSelect(index)}
+                    className={cn(
+                      "w-full px-3 py-2 text-xs text-left hover:bg-gray-100 transition-colors first:rounded-t-lg last:rounded-b-lg",
+                      index === currentMonth.getMonth() && "bg-orange-100 text-orange-700 font-semibold"
+                    )}
+                  >
+                    {month}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="relative" ref={yearDropdownRef}>
+            <button
+              onClick={toggleYearDropdown}
+              className="px-2 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center space-x-1"
+            >
+              <span>{currentMonth.getFullYear()}</span>
+              <svg 
+                className={cn("w-3 h-3 transition-transform", showYearDropdown && "rotate-180")} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showYearDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                {yearRange.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => handleYearSelect(year)}
+                    className={cn(
+                      "w-full px-3 py-2 text-xs text-left hover:bg-gray-100 transition-colors first:rounded-t-lg last:rounded-b-lg",
+                      year === currentMonth.getFullYear() && "bg-orange-100 text-orange-700 font-semibold"
+                    )}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={goToNextMonth}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-            title="Next month"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <button
-            onClick={goToNextYear}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-            title="Next year"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
+        {/* Right side - Next month */}
+        <button
+          onClick={goToNextMonth}
+          className="p-1 hover:bg-gray-100 rounded transition-colors"
+          title="Next month"
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {dayNames.map((day) => (
           <div
             key={day}
-            className="h-8 flex items-center justify-center text-xs font-medium text-gray-500"
+            className="h-6 flex items-center justify-center text-xs font-medium text-gray-500"
           >
             {day}
           </div>
@@ -184,7 +253,6 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((date, index) => {
           const disabled = isDateDisabled(date);
-          const today = isToday(date);
           const selected = isSelected(date);
           const currentMonth = isCurrentMonth(date);
 
@@ -198,13 +266,10 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
                 "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50",
                 {
                   // Current month dates
-                  "text-gray-900": currentMonth && !selected && !today,
+                  "text-gray-900": currentMonth && !selected,
                   
                   // Other month dates (grayed out)
                   "text-gray-400": !currentMonth,
-                  
-                  // Today
-                  "bg-orange-100 text-orange-700 font-semibold": today && !selected,
                   
                   // Selected date
                   "bg-orange-500 text-white font-semibold hover:bg-orange-600": selected,
@@ -213,7 +278,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
                   "text-gray-300 cursor-not-allowed hover:bg-transparent": disabled,
                   
                   // Weekend styling (optional)
-                  "text-red-600": currentMonth && (date.getDay() === 0 || date.getDay() === 6) && !selected && !today && !disabled,
+                  "text-red-600": currentMonth && (date.getDay() === 0 || date.getDay() === 6) && !selected && !disabled,
                 }
               )}
             >
@@ -225,12 +290,12 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
       {/* Footer with selected date info */}
       {value && (
-        <div className="mt-4 pt-3 !border-t border-gray-200">
+        <div className="mt-3 pt-2 border-t border-gray-200">
           <p className="text-xs text-gray-600 text-center">
             Selected: <span className="font-medium text-gray-900">{value.toLocaleDateString('en-US', { 
-              weekday: 'long', 
+              weekday: 'short', 
               year: 'numeric', 
-              month: 'long', 
+              month: 'short', 
               day: 'numeric' 
             })}</span>
           </p>

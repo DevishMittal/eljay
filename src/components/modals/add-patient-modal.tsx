@@ -18,16 +18,16 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const { token } = useAuth();
   const [formData, setFormData] = useState<CreateUserData>({
     fullname: '',
-    email: '',
+    email: '', // Initialize as empty string
     countrycode: '+91',
     phoneNumber: '',
     dob: '',
     gender: 'Male',
     occupation: '',
     customerType: 'B2C',
-    alternateNumber: '',
-    hospitalName: '',
-    opipNumber: ''
+    alternateNumber: '', // Initialize as empty string
+    hospitalName: '', // Initialize as empty string
+    opipNumber: '' // Initialize as empty string
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const handleInputChange = (field: keyof CreateUserData, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value // Keep as string, don't convert to null
     }));
   };
 
@@ -43,14 +43,45 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
     e.preventDefault();
     
     if (!formData.fullname.trim() || !formData.phoneNumber.trim()) {
-      setError('Please fill in all required fields');
+      setError('Please fill in all required fields (Name and Phone Number)');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      const response = await patientService.createUser(formData, token || undefined);
+      
+      // Prepare user data, only including fields that have values
+      const userData: any = {
+        fullname: formData.fullname,
+        countrycode: formData.countrycode,
+        phoneNumber: formData.phoneNumber,
+        dob: formData.dob,
+        gender: formData.gender,
+        occupation: formData.occupation,
+        customerType: formData.customerType,
+      };
+
+      // Only include optional fields if they have values
+      if (formData.email && formData.email.trim()) {
+        userData.email = formData.email;
+      }
+      
+      if (formData.alternateNumber && formData.alternateNumber.trim()) {
+        userData.alternateNumber = formData.alternateNumber;
+      }
+
+      // Only include B2B fields when customer type is B2B and they have values
+      if (formData.customerType === 'B2B') {
+        if (formData.hospitalName && formData.hospitalName.trim()) {
+          userData.hospitalName = formData.hospitalName;
+        }
+        if (formData.opipNumber && formData.opipNumber.trim()) {
+          userData.opipNumber = formData.opipNumber;
+        }
+      }
+      
+      const response = await patientService.createUser(userData, token || undefined);
       
       if (response.status === 'success') {
         // Call the callback with the created patient
@@ -206,16 +237,15 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Email Address *
+                    Email Address (Optional)
                   </label>
                   <input
                     type="email"
-                    value={formData.email}
+                    value={formData.email || ''}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter email address"
+                    placeholder="Enter email address (optional)"
                     disabled={loading}
-                    required
                   />
                 </div>
 
@@ -290,11 +320,11 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Alternate Number
+                    Alternate Number (Optional)
                   </label>
                   <input
                     type="tel"
-                    value={formData.alternateNumber}
+                    value={formData.alternateNumber || ''}
                     onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter alternate number (optional)"

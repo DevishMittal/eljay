@@ -253,16 +253,16 @@ export interface User {
 
 export interface CreateUserData {
   fullname: string;
-  email: string;
+  email?: string | null; // Made optional and nullable
   countrycode: string;
   phoneNumber: string;
   dob: string;
   gender: string;
   occupation: string;
   customerType: string;
-  alternateNumber?: string;
-  hospitalName?: string; // For B2B patients
-  opipNumber?: string; // OP/IP/UHID number for hospital visits (mandatory for B2B)
+  alternateNumber?: string | null; // Made nullable
+  hospitalName?: string | null; // Made nullable for B2B patients
+  opipNumber?: string | null; // Made nullable for OP/IP/UHID number
 }
 
 export interface UpdateUserData {

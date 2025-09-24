@@ -343,24 +343,54 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       setError(null);
       setSuccess(null);
 
-      // Format the DOB to YYYY-MM-DD format for API
-      const formattedData = { ...editFormData };
-      if (formattedData.dob) {
-        // If it's an ISO string, extract just the date part
-        if (formattedData.dob.includes('T')) {
-          formattedData.dob = formattedData.dob.split('T')[0];
+      // Prepare update data, only including fields that have values
+      const updateData: any = {};
+
+      // Always include required fields
+      if (editFormData.fullname && editFormData.fullname.trim()) {
+        updateData.fullname = editFormData.fullname;
+      }
+      if (editFormData.phoneNumber && editFormData.phoneNumber.trim()) {
+        updateData.phoneNumber = editFormData.phoneNumber;
+      }
+      if (editFormData.dob && editFormData.dob.trim()) {
+        // Format the DOB to YYYY-MM-DD format for API
+        let formattedDob = editFormData.dob;
+        if (formattedDob.includes('T')) {
+          formattedDob = formattedDob.split('T')[0];
         }
-        // Ensure it's in YYYY-MM-DD format
-        const dobDate = new Date(formattedData.dob);
+        const dobDate = new Date(formattedDob);
         if (!isNaN(dobDate.getTime())) {
-          formattedData.dob = dobDate.toISOString().split('T')[0];
+          updateData.dob = dobDate.toISOString().split('T')[0];
         }
       }
+      if (editFormData.gender && editFormData.gender.trim()) {
+        updateData.gender = editFormData.gender;
+      }
+      if (editFormData.occupation && editFormData.occupation.trim()) {
+        updateData.occupation = editFormData.occupation;
+      }
+      if (editFormData.countrycode && editFormData.countrycode.trim()) {
+        updateData.countrycode = editFormData.countrycode;
+      }
 
-      // Note: OP/IP number is not required for saving, but affects profile completion status
-      // Profile is considered incomplete for B2B patients without OP/IP number
+      // Only include optional fields if they have values
+      if (editFormData.email && editFormData.email.trim()) {
+        updateData.email = editFormData.email;
+      }
+      if (editFormData.alternateNumber && editFormData.alternateNumber.trim()) {
+        updateData.alternateNumber = editFormData.alternateNumber;
+      }
 
-      await patientService.updateUser(patient?.id || '', formattedData, token || undefined);
+      // Only include B2B fields if they have values
+      if (editFormData.hospitalName && editFormData.hospitalName.trim()) {
+        updateData.hospitalName = editFormData.hospitalName;
+      }
+      if (editFormData.opipNumber && editFormData.opipNumber.trim()) {
+        updateData.opipNumber = editFormData.opipNumber;
+      }
+
+      await patientService.updateUser(patient?.id || '', updateData, token || undefined);
       await fetchPatient(); // Refresh patient data
       setIsEditing(false);
       setSuccess('Patient information updated successfully!');

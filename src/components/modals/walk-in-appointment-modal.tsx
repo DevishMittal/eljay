@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -427,19 +428,34 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
       // If no existing user, create one
       if (!userId) {
-        const userData = {
+        const userData: any = {
           fullname: formData.fullName,
-          email: formData.email,
           countrycode: '+91', // Default country code
           phoneNumber: formData.phoneNumber,
           dob: formData.dateOfBirth,
           gender: formData.gender,
           occupation: formData.occupation,
           customerType: formData.customerType,
-          alternateNumber: formData.alternateNumber || undefined,
-          hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined,
-          opipNumber: formData.customerType === 'B2B' ? formData.opipNumber : undefined
         };
+
+        // Only include optional fields if they have values
+        if (formData.email && formData.email.trim()) {
+          userData.email = formData.email;
+        }
+        
+        if (formData.alternateNumber && formData.alternateNumber.trim()) {
+          userData.alternateNumber = formData.alternateNumber;
+        }
+
+        // Only include B2B fields when customer type is B2B and they have values
+        if (formData.customerType === 'B2B') {
+          if (formData.hospitalName && formData.hospitalName.trim()) {
+            userData.hospitalName = formData.hospitalName;
+          }
+          if (formData.opipNumber && formData.opipNumber.trim()) {
+            userData.opipNumber = formData.opipNumber;
+          }
+        }
 
         const userResponse = await patientService.createUser(userData, token || undefined);
         userId = userResponse.data.id;
@@ -732,7 +748,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Email Address {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
+             Email Address (Optional) {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="email"
@@ -1336,7 +1352,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                   
 
                   // Calculate total duration (30 minutes per procedure as default)
-                  const totalDuration = updatedIds.reduce((sum, procId) => {
+                  const totalDuration = updatedIds.reduce((sum) => {
                     return sum + 30; // Default 30 minutes per procedure
                   }, 0);
                   setTotalProcedureDuration(totalDuration);

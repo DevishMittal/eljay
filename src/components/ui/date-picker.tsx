@@ -107,14 +107,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
     inputRef.current?.focus();
   };
 
-  const formatDisplayDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -139,11 +131,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
             "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
             disabled 
               ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" 
-              : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+              : getDateValue() 
+                ? "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
           )}
-          style={{ 
-            color: getDateValue() ? '#717182' : '#9CA3AF'
-          }}
         />
 
         {/* Calendar Icon */}
@@ -190,12 +181,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
         </div>
       )}
 
-      {/* Selected Date Display */}
-      {getDateValue() && (
-        <div className="mt-1 text-xs text-gray-500">
-          Selected: {formatDisplayDate(getDateValue()!)}
-        </div>
-      )}
     </div>
   );
 };

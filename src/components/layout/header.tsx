@@ -6,6 +6,9 @@ import Image from 'next/image';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationDropdown from '@/components/ui/notification-dropdown';
+import SearchResults from '@/components/ui/search-results';
+import { searchService, SearchResult } from '@/services/searchService';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface HeaderProps {
   className?: string;
@@ -15,11 +18,18 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const { getNotificationStats } = useNotification();
-  const { logout, organization } = useAuth();
+  const { logout, organization, token } = useAuth();
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   
   const notificationStats = getNotificationStats();
+  
+  // Debounce search query to avoid too many API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const handleLogout = async () => {
     try {
@@ -30,11 +40,44 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
     }
   };
 
-  // Close dropdown when clicking outside
+  // Search functionality
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedSearchQuery.trim()) {
+        setSearchResults([]);
+        setIsSearchDropdownOpen(false);
+        return;
+      }
+
+      setIsSearchLoading(true);
+      try {
+        // Use the search service which handles both phone lookup and general search
+        const results = await searchService.searchPatients(debouncedSearchQuery, token || undefined);
+        setSearchResults(results.data);
+        setIsSearchDropdownOpen(true);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+        setIsSearchDropdownOpen(false);
+      } finally {
+        setIsSearchLoading(false);
+      }
+    };
+
+    performSearch();
+  }, [debouncedSearchQuery, token]);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(target)) {
         setIsProfileDropdownOpen(false);
+      }
+      
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        setIsSearchDropdownOpen(false);
       }
     };
 
@@ -44,11 +87,27 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
     };
   }, []);
 
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearchInputFocus = () => {
+    if (searchResults.length > 0) {
+      setIsSearchDropdownOpen(true);
+    }
+  };
+
+  const handleSearchClose = () => {
+    setIsSearchDropdownOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   return (
     <header className={cn('w-full bg-white border-custom-b px-6 py-2', className)}>
       <div className="flex items-center justify-between">
         {/* Search Bar */}
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md" ref={searchRef}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg 
@@ -69,8 +128,17 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               type="text"
               placeholder="Search patients..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[70%] pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-xs text-[#4A5565] placeholder:text-search-placeholder"
+              onChange={handleSearchInputChange}
+              onFocus={handleSearchInputFocus}
+              className="w-[70%] pl-10 pr-4 py-2 bg-[#F9FAFB] border border-search-border rounded-lg text-xs text-[#4A5565] placeholder:text-search-placeholder focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+            
+            {/* Search Results Dropdown */}
+            <SearchResults
+              results={searchResults}
+              isLoading={isSearchLoading}
+              isVisible={isSearchDropdownOpen}
+              onClose={handleSearchClose}
             />
           </div>
         </div>
