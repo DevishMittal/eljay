@@ -87,7 +87,23 @@ class AppointmentService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to create appointment: ${response.statusText}`);
+        // Try to get the error response body
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          // If we can't parse the response, use status text
+          errorData = { message: response.statusText };
+        }
+        
+        // Create an error object that preserves the original response data
+        const error = new Error(`Failed to create appointment: ${response.statusText}`);
+        (error as any).response = {
+          data: errorData,
+          status: response.status,
+          statusText: response.statusText
+        };
+        throw error;
       }
 
       return await response.json();
