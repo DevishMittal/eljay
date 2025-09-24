@@ -57,6 +57,18 @@ const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => {
     },
     footerSettings: {
       topMargin: 0.00,
+      fullWidthContent: [],
+      leftSignature: {
+        name: '',
+        title: '',
+        organization: ''
+      },
+      rightSignature: {
+        name: '',
+        title: '',
+        organization: '',
+        date: ''
+      },
       thankYouMessage: 'Thank you for your payment to Eljay Hearing Care.',
       signatureNote: 'This is a computer-generated receipt and does not require a signature.',
       additionalText: ''
@@ -75,7 +87,7 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
   }
 
   const printSettings = getPaymentPrintSettings();
-  const paymentHTML = generatePaymentReceiptHTML(payment, options, printSettings);
+  const paymentHTML = generatePaymentReceiptHTML(payment);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -83,7 +95,7 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
       <head>
         <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
         <style>
-          ${getPaymentReceiptPrintStyles(printSettings)}
+          ${getPaymentReceiptPrintStyles()}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -109,7 +121,7 @@ export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOpti
     return;
   }
 
-  const paymentHTML = generatePaymentReceiptHTML(payment, options);
+  const paymentHTML = generatePaymentReceiptHTML(payment);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -144,7 +156,7 @@ export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOpti
 /**
  * Generate HTML for payment receipt printing
  */
-const generatePaymentReceiptHTML = (payment: Payment, options: PrintOptions = {}) => {
+const generatePaymentReceiptHTML = (payment: Payment) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
