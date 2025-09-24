@@ -1,4 +1,4 @@
-import { Expense } from '@/types';
+import { Expense, PrintSettings } from '@/types';
 
 /**
  * Print utility functions for expense reports
@@ -12,6 +12,70 @@ export interface PrintOptions {
 }
 
 /**
+ * Load print settings from localStorage for expenses
+ */
+export const getExpensePrintSettings = (): PrintSettings['expenses'] => {
+  try {
+    // Try to load settings for all document types first
+    const savedAllSettings = localStorage.getItem('printSettings_all');
+    if (savedAllSettings) {
+      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
+      return parsedSettings.expenses;
+    }
+    
+    // If no global settings, try to load individual document type settings
+    const savedSettings = localStorage.getItem('printSettings_expenses');
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    }
+    
+    // Return default settings if nothing is saved
+    return getDefaultExpensePrintSettings();
+  } catch (error) {
+    console.error('Error loading expense print settings:', error);
+    return getDefaultExpensePrintSettings();
+  }
+};
+
+/**
+ * Get default print settings for expenses
+ */
+const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => {
+  return {
+    pageSettings: {
+      paperSize: 'A4' as const,
+      orientation: 'Portrait' as const,
+      printerType: 'Color' as const,
+      margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+    },
+    headerSettings: {
+      includeHeader: true,
+      headerText: 'Hearing Centre Adyar',
+      leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
+      rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+      logo: { uploaded: true, type: 'Square' as const, alignment: 'Left' as const }
+    },
+    footerSettings: {
+      topMargin: 0.00,
+      fullWidthContent: [],
+      leftSignature: {
+        name: '',
+        title: '',
+        organization: ''
+      },
+      rightSignature: {
+        name: '',
+        title: '',
+        organization: '',
+        date: ''
+      },
+      thankYouMessage: 'Thank you for your business with Eljay Hearing Care.',
+      signatureNote: 'This is a computer-generated expense receipt and does not require a signature.'
+    }
+  };
+};
+
+/**
  * Print expense report with proper formatting
  */
 export const printExpenseReport = (expense: Expense, options: PrintOptions = {}) => {
@@ -21,7 +85,8 @@ export const printExpenseReport = (expense: Expense, options: PrintOptions = {})
     return;
   }
 
-  const expenseHTML = generateExpenseReportHTML(expense, options);
+  const printSettings = getExpensePrintSettings();
+  const expenseHTML = generateExpenseReportHTML(expense, options, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -29,7 +94,7 @@ export const printExpenseReport = (expense: Expense, options: PrintOptions = {})
       <head>
         <title>${options.title || `Expense Report ${expense.expenseNumber}`}</title>
         <style>
-          ${getExpenseReportPrintStyles()}
+          ${getExpenseReportPrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -55,7 +120,8 @@ export const downloadExpenseReportAsPDF = (expense: Expense, options: PrintOptio
     return;
   }
 
-  const expenseHTML = generateExpenseReportHTML(expense, options);
+  const printSettings = getExpensePrintSettings();
+  const expenseHTML = generateExpenseReportHTML(expense, options, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -63,7 +129,7 @@ export const downloadExpenseReportAsPDF = (expense: Expense, options: PrintOptio
       <head>
         <title>${options.title || `Expense Report ${expense.expenseNumber}`}</title>
         <style>
-          ${getExpenseReportPrintStyles()}
+          ${getExpenseReportPrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -90,7 +156,7 @@ export const downloadExpenseReportAsPDF = (expense: Expense, options: PrintOptio
 /**
  * Generate HTML for expense report printing
  */
-const generateExpenseReportHTML = (expense: Expense, options: PrintOptions = {}) => {
+const generateExpenseReportHTML = (expense: Expense, _options: PrintOptions = {}, printSettings?: PrintSettings['expenses']) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -147,25 +213,33 @@ const generateExpenseReportHTML = (expense: Expense, options: PrintOptions = {})
     }
   };
 
+  // Use custom header settings if available
+  const headerSettings = printSettings?.headerSettings;
+  const showHeader = headerSettings?.includeHeader !== false;
+  
   return `
-    <div class="expense-report-container">
+    <div class="expense-container">
       <!-- Header -->
-      <div class="expense-report-header">
+      ${showHeader ? `
+      <div class="expense-header">
         <div class="company-info">
-          <h1 class="company-name">Eljay Hearing Care</h1>
-          <p class="company-details">Professional Audiology Services</p>
-          <p class="company-address">123 Healthcare Avenue, Medical District</p>
-          <p class="company-address">Chennai, Tamil Nadu 600001</p>
-          <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
+          <div class="logo-and-address">
+            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />' : ''}
+            <div class="company-address-section">
+              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="company-address">${text}</p>`).join('')}
+            </div>
+          </div>
         </div>
         <div class="expense-status">
+          <div class="status-badge status-approved">
+            Approved
+          </div>
           <div class="contact-info">
-            <p>Phone: +91 44 1234 5678</p>
-            <p>Email: info@eljayhearing.com</p>
-            <p>Website: www.eljayhearing.com</p>
+            ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
           </div>
         </div>
       </div>
+      ` : ''}
 
       <!-- Report Title -->
       <div class="report-title">
@@ -263,10 +337,13 @@ const generateExpenseReportHTML = (expense: Expense, options: PrintOptions = {})
       </div>
 
       <!-- Footer -->
-      <div class="expense-report-footer">
-        <p>Thank you for maintaining accurate expense records for Eljay Hearing Care.</p>
-        <p>This is a computer-generated expense report and does not require a signature.</p>
-        <p>Generated on ${formatDate(expense.createdAt)}</p>
+      <div class="expense-footer" style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;">
+        ${printSettings?.footerSettings?.thankYouMessage ? `
+          ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="footer-text">${text}</p>`).join('')}
+        ` : ''}
+        ${printSettings?.footerSettings?.signatureNote ? `
+          ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="footer-text">${text} • Generated on ${formatDate(expense.createdAt)}</p>`).join('')}
+        ` : ''}
       </div>
     </div>
   `;
@@ -275,7 +352,7 @@ const generateExpenseReportHTML = (expense: Expense, options: PrintOptions = {})
 /**
  * Get CSS styles for expense report printing
  */
-const getExpenseReportPrintStyles = () => {
+const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses']) => {
   return `
     * {
       box-sizing: border-box;
@@ -313,12 +390,12 @@ const getExpenseReportPrintStyles = () => {
       }
     }
 
-    .expense-report-container {
+    .expense-container {
       max-width: 800px;
       margin: 0 auto;
     }
 
-    .expense-report-header {
+    .expense-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -327,16 +404,31 @@ const getExpenseReportPrintStyles = () => {
       border-bottom: 2px solid #333;
     }
 
-    .company-name {
-      font-size: 28px;
+    .logo-and-address {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .company-logo {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .company-address-section {
+      margin-top: 0;
+    }
+
+    .company-title {
+      font-size: 18px;
       font-weight: bold;
       margin: 0 0 10px 0;
       color: #1f2937;
     }
 
-    .company-details,
-    .company-address,
-    .company-gst {
+    .company-address {
       margin: 5px 0;
       color: #6b7280;
       font-size: 14px;
@@ -344,6 +436,20 @@ const getExpenseReportPrintStyles = () => {
 
     .expense-status {
       text-align: right;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+
+    .status-approved {
+      background-color: #dcfce7 !important;
+      color: #166534 !important;
     }
 
     .contact-info p {
@@ -619,7 +725,7 @@ const getExpenseReportPrintStyles = () => {
       color: #1e40af;
     }
 
-    .expense-report-footer {
+    .expense-footer {
       text-align: center;
       margin-top: 40px;
       padding-top: 20px;
@@ -627,9 +733,15 @@ const getExpenseReportPrintStyles = () => {
       color: #6b7280;
     }
 
-    .expense-report-footer p {
+    .expense-footer p {
       margin: 5px 0;
       font-size: 14px;
+    }
+
+    .footer-text {
+      margin: 2px 0;
+      font-size: 14px;
+      line-height: 1.2;
     }
   `;
 };

@@ -70,8 +70,7 @@ const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => {
         date: ''
       },
       thankYouMessage: 'Thank you for your payment to Eljay Hearing Care.',
-      signatureNote: 'This is a computer-generated receipt and does not require a signature.',
-      additionalText: ''
+      signatureNote: 'This is a computer-generated receipt and does not require a signature.'
     }
   };
 };
@@ -87,7 +86,7 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
   }
 
   const printSettings = getPaymentPrintSettings();
-  const paymentHTML = generatePaymentReceiptHTML(payment);
+  const paymentHTML = generatePaymentReceiptHTML(payment, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -95,7 +94,7 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
       <head>
         <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
         <style>
-          ${getPaymentReceiptPrintStyles()}
+          ${getPaymentReceiptPrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -121,7 +120,8 @@ export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOpti
     return;
   }
 
-  const paymentHTML = generatePaymentReceiptHTML(payment);
+  const printSettings = getPaymentPrintSettings();
+  const paymentHTML = generatePaymentReceiptHTML(payment, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -129,7 +129,7 @@ export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOpti
       <head>
         <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
         <style>
-          ${getPaymentReceiptPrintStyles()}
+          ${getPaymentReceiptPrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>
@@ -156,7 +156,7 @@ export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOpti
 /**
  * Generate HTML for payment receipt printing
  */
-const generatePaymentReceiptHTML = (payment: Payment) => {
+const generatePaymentReceiptHTML = (payment: Payment, printSettings?: PrintSettings['payments']) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -211,28 +211,33 @@ const generatePaymentReceiptHTML = (payment: Payment) => {
     return 'type-default';
   };
 
+  // Use custom header settings if available
+  const headerSettings = printSettings?.headerSettings;
+  const showHeader = headerSettings?.includeHeader !== false;
+  
   return `
-    <div class="payment-receipt-container">
+    <div class="payment-container">
       <!-- Header -->
-      <div class="payment-receipt-header">
+      ${showHeader ? `
+      <div class="payment-header">
         <div class="company-info">
-          <h1 class="company-name">Eljay Hearing Care</h1>
-          <p class="company-details">Professional Audiology Services</p>
-          <p class="company-address">123 Healthcare Avenue, Medical District</p>
-          <p class="company-address">Chennai, Tamil Nadu 600001</p>
-          <p class="company-gst">GST: 33ABCDE1234F1Z5</p>
+          <div class="logo-and-address">
+            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />' : ''}
+            <div class="company-address-section">
+              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="company-address">${text}</p>`).join('')}
+            </div>
+          </div>
         </div>
-        <div class="receipt-status">
+        <div class="payment-status">
           <div class="status-badge ${getStatusColor(payment.status)}">
             ${payment.status}
           </div>
           <div class="contact-info">
-            <p>Phone: +91 44 1234 5678</p>
-            <p>Email: info@eljayhearing.com</p>
-            <p>Website: www.eljayhearing.com</p>
+            ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
           </div>
         </div>
       </div>
+      ` : ''}
 
       <!-- Receipt Title -->
       <div class="receipt-title">
@@ -360,10 +365,13 @@ const generatePaymentReceiptHTML = (payment: Payment) => {
       </div>
 
       <!-- Footer -->
-      <div class="payment-receipt-footer">
-        <p>Thank you for choosing Eljay Hearing Care for your audiology needs.</p>
-        <p>This is a computer-generated receipt and does not require a signature.</p>
-        <p>Generated on ${formatDate(payment.createdAt)}</p>
+      <div class="payment-footer" style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;">
+        ${printSettings?.footerSettings?.thankYouMessage ? `
+          ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="footer-text">${text}</p>`).join('')}
+        ` : ''}
+        ${printSettings?.footerSettings?.signatureNote ? `
+          ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="footer-text">${text} • Generated on ${formatDate(payment.createdAt)}</p>`).join('')}
+        ` : ''}
       </div>
     </div>
   `;
@@ -372,7 +380,7 @@ const generatePaymentReceiptHTML = (payment: Payment) => {
 /**
  * Get CSS styles for payment receipt printing
  */
-const getPaymentReceiptPrintStyles = () => {
+const getPaymentReceiptPrintStyles = (_printSettings?: PrintSettings['payments']) => {
   return `
     * {
       box-sizing: border-box;
@@ -410,12 +418,12 @@ const getPaymentReceiptPrintStyles = () => {
       }
     }
 
-    .payment-receipt-container {
+    .payment-container {
       max-width: 800px;
       margin: 0 auto;
     }
 
-    .payment-receipt-header {
+    .payment-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -424,52 +432,67 @@ const getPaymentReceiptPrintStyles = () => {
       border-bottom: 2px solid #333;
     }
 
-    .company-name {
-      font-size: 28px;
+    .logo-and-address {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .company-logo {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .company-address-section {
+      margin-top: 0;
+    }
+
+    .company-title {
+      font-size: 18px;
       font-weight: bold;
       margin: 0 0 10px 0;
       color: #1f2937;
     }
 
-    .company-details,
-    .company-address,
-    .company-gst {
+    .company-address {
       margin: 5px 0;
       color: #6b7280;
       font-size: 14px;
     }
 
-    .receipt-status {
+    .payment-status {
       text-align: right;
     }
 
     .status-badge {
       display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
+      padding: 8px 12px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 500;
       margin-bottom: 15px;
     }
 
     .status-completed {
-      background-color: #dcfce7;
-      color: #166534;
+      background-color: #dcfce7 !important;
+      color: #166534 !important;
     }
 
     .status-pending {
-      background-color: #fef3c7;
-      color: #92400e;
+      background-color: #fef3c7 !important;
+      color: #92400e !important;
     }
 
     .status-failed {
-      background-color: #fee2e2;
-      color: #dc2626;
+      background-color: #fee2e2 !important;
+      color: #dc2626 !important;
     }
 
     .status-cancelled {
-      background-color: #f3f4f6;
-      color: #374151;
+      background-color: #f3f4f6 !important;
+      color: #374151 !important;
     }
 
     .contact-info p {
@@ -664,7 +687,7 @@ const getPaymentReceiptPrintStyles = () => {
       color: #1e40af;
     }
 
-    .payment-receipt-footer {
+    .payment-footer {
       text-align: center;
       margin-top: 40px;
       padding-top: 20px;
@@ -672,9 +695,15 @@ const getPaymentReceiptPrintStyles = () => {
       color: #6b7280;
     }
 
-    .payment-receipt-footer p {
+    .payment-footer p {
       margin: 5px 0;
       font-size: 14px;
+    }
+
+    .footer-text {
+      margin: 2px 0;
+      font-size: 14px;
+      line-height: 1.2;
     }
   `;
 };

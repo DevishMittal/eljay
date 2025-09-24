@@ -859,21 +859,28 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         {/* PDF View */}
         {viewMode === 'pdf' && (
           <Card className="bg-white max-w-4xl mx-auto">
-          <CardContent className="p-8">
+          <CardContent 
+            style={{
+              padding: `${printSettings?.pageSettings?.margins?.top * 16 || 32}px ${printSettings?.pageSettings?.margins?.right * 16 || 32}px ${printSettings?.pageSettings?.margins?.bottom * 16 || 32}px ${printSettings?.pageSettings?.margins?.left * 16 || 32}px`
+            }}
+          >
             {/* Dynamic Header using Print Settings */}
             {printSettings?.headerSettings?.includeHeader && (
               <div className="flex justify-between items-start mb-8">
                 <div className="flex flex-col items-start">
                   {printSettings.headerSettings.logo?.uploaded && (
-                    <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" className="w-20 h-auto mb-3" />
+                    <img src="/pdf-view-logo.png" alt="Eljay Hearing Care" className="w-32 h-auto mb-3" />
                   )}
                   <div>
-                    <h2 className="text-lg font-bold text-orange-600 mb-2">
-                      {printSettings.headerSettings.headerText || 'Hearing Centre Adyar'}
-                    </h2>
-                    <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
-                      {printSettings.headerSettings.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.'}
-                    </p>
+                    {printSettings.headerSettings.leftText?.split(' || ').map((text: string, index: number) => (
+                      <p key={index} className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                        {text}
+                      </p>
+                    )) || (
+                      <p className="text-[#4A5565] text-sm" style={{ fontFamily: 'Segoe UI' }}>
+                        No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -1301,29 +1308,24 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Dynamic Footer using Print Settings */}
             {printSettings?.footerSettings && (
-              <div className="border-t border-gray-300 pt-6 mt-8 text-center text-sm text-gray-600">
+              <div 
+                className="!border-t border-gray-300 pt-6 text-center text-sm text-gray-600"
+                style={{ marginTop: `${printSettings.footerSettings.topMargin * 16}px` }}
+              >
                 {printSettings.footerSettings.thankYouMessage && (
-                  <div className="mb-2">
+                  <div className="mb-1">
                     {printSettings.footerSettings.thankYouMessage.split(' || ').map((text: string, index: number) => (
-                      <p key={index}>{text}</p>
+                      <p key={index} className="leading-tight">{text}</p>
                     ))}
                   </div>
                 )}
                 {printSettings.footerSettings.signatureNote && (
-                  <div className="mb-2">
+                  <div className="mb-1">
                     {printSettings.footerSettings.signatureNote.split(' || ').map((text: string, index: number) => (
-                      <p key={index}>{text}</p>
+                      <p key={index} className="leading-tight">{text} • Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                     ))}
                   </div>
                 )}
-                {printSettings.footerSettings.additionalText && (
-                  <div className="mb-2">
-                    {printSettings.footerSettings.additionalText.split(' || ').map((text: string, index: number) => (
-                      <p key={index}>{text}</p>
-                    ))}
-                  </div>
-                )}
-                <p>Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
             )}
           </CardContent>

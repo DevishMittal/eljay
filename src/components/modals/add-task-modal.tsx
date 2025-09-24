@@ -98,8 +98,39 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
   };
 
   const handleDateChange = (date: Date) => {
-    handleInputChange('dueDate', date.toISOString().split('T')[0]);
+    // Convert Date to YYYY-MM-DD string avoiding timezone issues (same as date-picker.tsx)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    handleInputChange('dueDate', dateString);
     setShowCalendar(false);
+  };
+
+  // Calculate days until due date
+  const calculateDaysUntilDue = () => {
+    if (!formData.dueDate) return null;
+    
+    // Parse the date string manually to avoid timezone issues (same as date-picker.tsx)
+    const dateMatch = formData.dueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!dateMatch) return null;
+    
+    const [, year, month, day] = dateMatch;
+    const dueDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    const timeDiff = dueDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    if (daysDiff === 0) return 'Due today';
+    if (daysDiff === 1) return 'Due tomorrow';
+    if (daysDiff === -1) return 'Due yesterday';
+    if (daysDiff < 0) return `Overdue by ${Math.abs(daysDiff)} day${Math.abs(daysDiff) === 1 ? '' : 's'}`;
+    return `Due in ${daysDiff} day${daysDiff === 1 ? '' : 's'}`;
   };
 
   if (!isOpen) return null;
@@ -173,7 +204,16 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
                 aria-label="Select due date for task"
               >
                 <span className="text-gray-700">
-                  {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString() : 'Select date'}
+                  {formData.dueDate ? (() => {
+                    // Parse date string manually to avoid timezone issues
+                    const dateMatch = formData.dueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (dateMatch) {
+                      const [, year, month, day] = dateMatch;
+                      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                      return date.toLocaleDateString();
+                    }
+                    return 'Invalid date';
+                  })() : 'Select date'}
                 </span>
                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -182,7 +222,15 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
               {showCalendar && (
                 <div className="absolute top-full left-0 z-50 mt-1">
                   <CustomCalendar
-                    value={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                    value={formData.dueDate ? (() => {
+                      // Parse date string manually to avoid timezone issues
+                      const dateMatch = formData.dueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                      if (dateMatch) {
+                        const [, year, month, day] = dateMatch;
+                        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                      }
+                      return undefined;
+                    })() : undefined}
                     onChange={handleDateChange}
                     minDate={new Date()}
                   />
@@ -190,6 +238,12 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
               )}
               {errors.dueDate && (
                 <p className="mt-1 text-xs text-red-600">{errors.dueDate}</p>
+              )}
+              {/* Days until due calculation */}
+              {formData.dueDate && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {calculateDaysUntilDue()}
+                </p>
               )}
             </div>
             <div>

@@ -333,13 +333,12 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = [], printSe
           <div class="logo-and-address">
             ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />' : ''}
             <div class="company-address-section">
-              <h2 class="company-title">${headerSettings?.headerText || 'Hearing Centre Adyar'}</h2>
-              <p class="company-address">${headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.'}</p>
+              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="company-address">${text}</p>`).join('')}
             </div>
           </div>
         </div>
         <div class="invoice-status">
-          <div class="status-badge status-${invoice.paymentStatus.toLowerCase().replace(' ', '-')}">
+          <div class="status-badge status-${invoice.paymentStatus === 'Paid' ? 'paid' : invoice.paymentStatus === 'Pending' ? 'pending' : invoice.paymentStatus === 'Cancelled' ? 'cancelled' : invoice.paymentStatus === 'Partially Paid' ? 'partially-paid' : 'pending'}">
             ${invoice.paymentStatus}
           </div>
           <div class="contact-info">
@@ -565,15 +564,11 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = [], printSe
               <!-- Footer -->
               <div class="invoice-footer" style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;">
                 ${printSettings?.footerSettings?.thankYouMessage ? `
-                  ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p>${text}</p>`).join('')}
+                  ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="footer-text">${text}</p>`).join('')}
                 ` : ''}
                 ${printSettings?.footerSettings?.signatureNote ? `
-                  ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p>${text}</p>`).join('')}
+                  ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="footer-text">${text} • Generated on ${formatDate(invoice.createdAt)}</p>`).join('')}
                 ` : ''}
-                ${printSettings?.footerSettings?.additionalText ? `
-                  ${printSettings.footerSettings.additionalText.split(' || ').map(text => `<p>${text}</p>`).join('')}
-                ` : ''}
-                <p>Generated on ${formatDate(invoice.createdAt)}</p>
               </div>
     </div>
   `;
@@ -648,7 +643,7 @@ const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | Pri
     }
 
     .company-logo {
-      width: 80px;
+      width: 120px;
       height: auto;
       margin-bottom: 10px;
     }
@@ -669,26 +664,26 @@ const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | Pri
 
     .status-badge {
       display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
+      padding: 8px 12px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 500;
       margin-bottom: 15px;
     }
 
     .status-paid {
-      background-color: #dcfce7;
-      color: #166534;
+      background-color: #dcfce7 !important;
+      color: #166534 !important;
     }
 
     .status-pending {
-      background-color: #dbeafe;
-      color: #1e40af;
+      background-color: #dbeafe !important;
+      color: #1e40af !important;
     }
 
     .status-cancelled {
-      background-color: #fee2e2;
-      color: #dc2626;
+      background-color: #fee2e2 !important;
+      color: #dc2626 !important;
     }
 
     .contact-info p {
@@ -991,6 +986,12 @@ const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | Pri
       font-size: 14px;
     }
 
+    .footer-text {
+      margin: 2px 0;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
     .company-title {
       font-size: 18px;
       font-weight: bold;
@@ -1019,8 +1020,8 @@ const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | Pri
     }
 
     .status-partially-paid {
-      background-color: #fef3c7;
-      color: #92400e;
+      background-color: #fef3c7 !important;
+      color: #92400e !important;
     }
   `;
 };

@@ -47,8 +47,7 @@ const PrintoutPage = () => {
           date: ''
         },
         thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
-        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
-        additionalText: ''
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.'
       }
     },
     b2bInvoice: {
@@ -80,8 +79,7 @@ const PrintoutPage = () => {
           date: ''
         },
         thankYouMessage: 'Thank you for partnering with Eljay Hearing Care for your corporate wellness program.',
-        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
-        additionalText: ''
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.'
       }
     },
     payments: {
@@ -113,8 +111,7 @@ const PrintoutPage = () => {
           date: ''
         },
         thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
-        signatureNote: 'This is a computer-generated invoice and does not require a signature.',
-        additionalText: ''
+        signatureNote: 'This is a computer-generated invoice and does not require a signature.'
       }
     },
     expenses: {
@@ -146,8 +143,7 @@ const PrintoutPage = () => {
           date: ''
         },
         thankYouMessage: 'Thank you for your business with Eljay Hearing Care.',
-        signatureNote: 'This is a computer-generated expense receipt and does not require a signature.',
-        additionalText: ''
+        signatureNote: 'This is a computer-generated expense receipt and does not require a signature.'
       }
     }
   });
@@ -516,6 +512,8 @@ const PageSettingsComponent = ({ settings, onChange }: {
                title="Select top margin"
                aria-label="Top margin"
              >
+              <option value={0.0}>0.00 inches</option>
+               <option value={0.25}>0.25 inches</option>
                <option value={0.5}>0.50 inches</option>
                <option value={1.0}>1.00 inches</option>
                <option value={1.5}>1.50 inches</option>
@@ -534,6 +532,7 @@ const PageSettingsComponent = ({ settings, onChange }: {
                title="Select left margin"
                aria-label="Left margin"
              >
+               <option value={0.0}>0.00 inches</option>
                <option value={0.25}>0.25 inches</option>
                <option value={0.5}>0.50 inches</option>
                <option value={0.75}>0.75 inches</option>
@@ -552,6 +551,8 @@ const PageSettingsComponent = ({ settings, onChange }: {
                title="Select bottom margin"
                aria-label="Bottom margin"
              >
+               <option value={0.0}>0.00 inches</option>
+               <option value={0.25}>0.25 inches</option>
                <option value={0.5}>0.50 inches</option>
                <option value={1.0}>1.00 inches</option>
                <option value={1.5}>1.50 inches</option>
@@ -570,7 +571,8 @@ const PageSettingsComponent = ({ settings, onChange }: {
                title="Select right margin"
                aria-label="Right margin"
              >
-               <option value={0.25}>0.25 inches</option>
+               <option value={0.0}>0.00 inches</option>
+              <option value={0.25}>0.25 inches</option>
                <option value={0.5}>0.50 inches</option>
                <option value={0.75}>0.75 inches</option>
                <option value={1.0}>1.00 inches</option>
@@ -634,6 +636,7 @@ const HeaderSettingsComponent = ({ settings, onChange }: {
            title="Enter the header text for the document"
          />
          <p className="text-xs text-gray-500 mt-1">Preview: {settings.headerText}</p>
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
        {/* Left Text */}
@@ -647,6 +650,7 @@ const HeaderSettingsComponent = ({ settings, onChange }: {
            placeholder="Enter left side text (e.g., address)"
            title="Enter text for the left side of the header"
          />
+         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
        {/* Right Text */}
@@ -726,19 +730,6 @@ const FooterSettingsComponent = ({ settings, onChange }: {
          <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
        </div>
 
-       {/* Additional Footer Text */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Additional Footer Text:</label>
-         <textarea
-           value={settings.additionalText || ''}
-           onChange={(e) => onChange({ ...settings, additionalText: e.target.value })}
-           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           rows={2}
-           placeholder="Additional footer information (optional)"
-           title="Enter additional footer text (optional)"
-         />
-         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks. Leave empty if not needed.</p>
-       </div>
 
        {/* Footer Information */}
        <div className="p-3 bg-blue-50 rounded-md">
@@ -747,9 +738,7 @@ const FooterSettingsComponent = ({ settings, onChange }: {
          </p>
          <ul className="text-xs text-blue-600 mt-1 ml-4 list-disc">
            <li>Your custom thank you message</li>
-           <li>Your custom signature note</li>
-           <li>Your additional footer text (if provided)</li>
-           <li>Generated date (automatically added)</li>
+           <li>Your custom signature note with generated date</li>
          </ul>
          <p className="text-xs text-blue-600 mt-2">
            Use || as a separator to create line breaks within any text field.
@@ -766,17 +755,25 @@ const InvoicePreview = ({ documentType, settings }: {
 }) => {
   return (
     <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 invoice-preview">
-      <div className="bg-white p-6 rounded shadow-sm">
+      <div 
+        className="bg-white rounded shadow-sm"
+        style={{
+          padding: `${settings.pageSettings.margins.top * 16}px ${settings.pageSettings.margins.right * 16}px ${settings.pageSettings.margins.bottom * 16}px ${settings.pageSettings.margins.left * 16}px`
+        }}
+      >
         {/* Header */}
         {settings.headerSettings.includeHeader && (
           <div className="border-b-2 border-gray-300 pb-4 mb-6">
             <div className="flex justify-between items-start">
               <div>
-                <div className="flex items-center space-x-2">
-                  {settings.headerSettings.logo.uploaded && <img src="/logo.png" alt="Logo" className="w-12 h-12" />}
+                <div className="flex flex-col items-start">
+                  {settings.headerSettings.logo.uploaded && <img src="/pdf-view-logo.png" alt="Logo" className="w-20 h-20 mb-3" />}
                   <div>
-                    <h2 className="text-lg font-bold text-orange-600">{settings.headerSettings.headerText}</h2>
-                    <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
+                    {settings.headerSettings.leftText?.split(' || ').map((text, index) => (
+                      <p key={index} className="text-sm text-gray-600">{text}</p>
+                    )) || (
+                      <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1032,29 +1029,24 @@ const InvoicePreview = ({ documentType, settings }: {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-300 pt-4 mt-6 text-center text-sm text-gray-600">
+        <div 
+          className="!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
+          style={{ marginTop: `${settings.footerSettings.topMargin * 16}px` }}
+        >
           {settings.footerSettings.thankYouMessage && (
-            <div className="mb-2">
+            <div className="mb-1">
               {settings.footerSettings.thankYouMessage.split(' || ').map((text, index) => (
-                <p key={index}>{text}</p>
+                <p key={index} className="leading-tight">{text}</p>
               ))}
             </div>
           )}
           {settings.footerSettings.signatureNote && (
-            <div className="mb-2">
+            <div className="mb-1">
               {settings.footerSettings.signatureNote.split(' || ').map((text, index) => (
-                <p key={index}>{text}</p>
+                <p key={index} className="leading-tight">{text} • Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               ))}
             </div>
           )}
-          {settings.footerSettings.additionalText && (
-            <div className="mb-2">
-              {settings.footerSettings.additionalText.split(' || ').map((text, index) => (
-                <p key={index}>{text}</p>
-              ))}
-            </div>
-          )}
-          <p>Generated on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         </div>
       </div>
     </div>
