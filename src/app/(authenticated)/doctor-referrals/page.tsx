@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { Users, FileText, TrendingUp, CheckCircle, ChartPie, Filter } from 'lucide-react';
 import RupeeIcon from '@/components/ui/rupee-icon';
+import { convertToCSV, downloadCSV, formatDateTimeForExport } from '@/utils/exportUtils';
 
 export default function DoctorReferralsPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -231,8 +232,30 @@ export default function DoctorReferralsPage() {
       alert('Please select statements to export');
       return;
     }
-    console.log('Exporting selected statements:', Array.from(selectedStatements));
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected statement data
+    const selectedStatementData = commissionStatementsData.filter(statement => 
+      selectedStatements.has(statement.id)
+    );
+
+    // Prepare CSV data with all commission statement details
+    const csvData = selectedStatementData.map(statement => ({
+      'Doctor': statement.doctor || 'N/A',
+      'Period': statement.period || 'N/A',
+      'Referrals': statement.referrals || 0,
+      'Revenue': statement.revenue || '₹0',
+      'Commission': statement.commission || '₹0',
+      'Status': statement.status || 'N/A',
+      'Due Date': statement.dueDate || 'N/A'
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `commission_statements_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   // Handle export functionality for referrals
@@ -241,8 +264,36 @@ export default function DoctorReferralsPage() {
       alert('Please select referrals to export');
       return;
     }
-    console.log('Exporting selected referrals:', Array.from(selectedReferrals));
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected referral data
+    const selectedReferralData = filteredReferralData.filter(referral => 
+      selectedReferrals.has(referral.id)
+    );
+
+    // Prepare CSV data with all referral details
+    const csvData = selectedReferralData.map(referral => ({
+      'Date': referral.date || 'N/A',
+      'Source Name': referral.sourceName || 'N/A',
+      'Type': referral.type || 'N/A',
+      'Contact Number': referral.contactNumber || 'N/A',
+      'Hospital': referral.hospital || 'N/A',
+      'Specialization': referral.specialization || 'N/A',
+      'Status': referral.status || 'N/A',
+      'Patient ID': referral.patient.id || 'N/A',
+      'Patient Name': referral.patient.name || 'N/A',
+      'Doctor': referral.doctor || 'N/A',
+      'Amount': referral.amount || '₹0',
+      'Commission': referral.commission || '₹0',
+      'Created At': referral.createdAt ? formatDateTimeForExport(referral.createdAt) : 'N/A'
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `referrals_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   // Handle adding new doctor

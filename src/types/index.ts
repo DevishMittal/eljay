@@ -1436,4 +1436,9 @@ export interface PrintSettings {
     headerSettings: PrintHeaderSettings;
     footerSettings: PrintFooterSettings;
   };
+  expenses: {
+    pageSettings: PrintPageSettings;
+    headerSettings: PrintHeaderSettings;
+    footerSettings: PrintFooterSettings;
+  };
 }

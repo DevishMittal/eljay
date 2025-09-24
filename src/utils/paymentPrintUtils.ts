@@ -1,4 +1,4 @@
-import { Payment } from '@/types';
+import { Payment, PrintSettings } from '@/types';
 
 /**
  * Print utility functions for payment receipts
@@ -12,6 +12,59 @@ export interface PrintOptions {
 }
 
 /**
+ * Load print settings from localStorage for payments
+ */
+export const getPaymentPrintSettings = (): PrintSettings['payments'] => {
+  try {
+    // Try to load settings for all document types first
+    const savedAllSettings = localStorage.getItem('printSettings_all');
+    if (savedAllSettings) {
+      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
+      return parsedSettings.payments;
+    }
+    
+    // If no global settings, try to load individual document type settings
+    const savedSettings = localStorage.getItem('printSettings_payments');
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    }
+    
+    // Return default settings if nothing is saved
+    return getDefaultPaymentPrintSettings();
+  } catch (error) {
+    console.error('Error loading payment print settings:', error);
+    return getDefaultPaymentPrintSettings();
+  }
+};
+
+/**
+ * Get default print settings for payments
+ */
+const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => {
+  return {
+    pageSettings: {
+      paperSize: 'A4' as const,
+      orientation: 'Portrait' as const,
+      printerType: 'Color' as const,
+      margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+    },
+    headerSettings: {
+      includeHeader: true,
+      headerText: 'Hearing Centre Adyar',
+      leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
+      rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+      logo: { uploaded: true, type: 'Square' as const, alignment: 'Left' as const }
+    },
+    footerSettings: {
+      topMargin: 0.00,
+      thankYouMessage: 'Thank you for your payment to Eljay Hearing Care.',
+      signatureNote: 'This is a computer-generated receipt and does not require a signature.',
+      additionalText: ''
+    }
+  };
+};
+
+/**
  * Print payment receipt with proper formatting
  */
 export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}) => {
@@ -21,7 +74,8 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
     return;
   }
 
-  const paymentHTML = generatePaymentReceiptHTML(payment, options);
+  const printSettings = getPaymentPrintSettings();
+  const paymentHTML = generatePaymentReceiptHTML(payment, options, printSettings);
   
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -29,7 +83,7 @@ export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}
       <head>
         <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
         <style>
-          ${getPaymentReceiptPrintStyles()}
+          ${getPaymentReceiptPrintStyles(printSettings)}
           ${options.customStyles || ''}
         </style>
       </head>

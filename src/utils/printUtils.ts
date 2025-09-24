@@ -14,7 +14,7 @@ export interface PrintOptions {
 /**
  * Load print settings from localStorage
  */
-export const getPrintSettings = (documentType: 'b2cInvoice' | 'b2bInvoice' | 'payments'): PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice'] | PrintSettings['payments'] => {
+export const getPrintSettings = (documentType: 'b2cInvoice' | 'b2bInvoice' | 'payments' | 'expenses'): PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice'] | PrintSettings['payments'] | PrintSettings['expenses'] => {
   try {
     // Try to load settings for all document types first
     const savedAllSettings = localStorage.getItem('printSettings_all');

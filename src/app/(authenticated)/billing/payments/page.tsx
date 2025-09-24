@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from '@/utils/exportUtils';
 
 export default function PaymentsPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -123,8 +124,38 @@ export default function PaymentsPage() {
       alert('Please select payments to export');
       return;
     }
-    console.log('Exporting selected payments:', selectedPayments);
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected payment data
+    const selectedPaymentData = payments.filter(payment => 
+      selectedPayments.includes(payment.id)
+    );
+
+    // Prepare CSV data with all payment details
+    const csvData = selectedPaymentData.map(payment => ({
+      'Receipt Number': payment.receiptNumber || 'N/A',
+      'Amount': formatCurrencyForExport(payment.amount),
+      'Payment Method': payment.method || 'N/A',
+      'Payment Date': formatDateForExport(payment.paymentDate),
+      'Status': payment.status || 'N/A',
+      'Transaction ID': payment.transactionId || 'N/A',
+      'Description': payment.description || 'N/A',
+      'Total Payment': formatCurrencyForExport(payment.amount),
+      'Applied Amount': formatCurrencyForExport(payment.appliedAmount || 0),
+      'Remaining Amount': formatCurrencyForExport(payment.remainingAmount || payment.amount),
+      'Notes': payment.notes || 'N/A',
+      'Patient Name': payment.patientName || 'N/A',
+      'Received By': payment.receivedBy || 'N/A',
+      'Created Date': formatDateTimeForExport(payment.createdAt),
+      'Payment Type': payment.paymentType || 'N/A'
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `payments_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   const getStatusColor = (status: string) => {

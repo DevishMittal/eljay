@@ -9,6 +9,7 @@ import { Expense, ExpensesResponse } from '@/types';
 import { Receipt, Calculator, TrendingDown, PlusIcon } from 'lucide-react';
 import RupeeIcon from '@/components/ui/rupee-icon';
 import CustomDropdown from '@/components/ui/custom-dropdown';
+import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from '@/utils/exportUtils';
 
 export default function ExpensesPage() {
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
@@ -78,8 +79,36 @@ export default function ExpensesPage() {
       alert('Please select expenses to export');
       return;
     }
-    console.log('Exporting selected expenses:', selectedExpenses);
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected expense data
+    const selectedExpenseData = expenses.filter(expense => 
+      selectedExpenses.includes(expense.id)
+    );
+
+    // Prepare CSV data with all expense details
+    const csvData = selectedExpenseData.map(expense => ({
+      'Expense Number': expense.expenseNumber || 'N/A',
+      'Expense Date': formatDateForExport(expense.date),
+      'Category': expense.category || 'N/A',
+      'Payment Method': expense.paymentMethod || 'N/A',
+      'Description': expense.description || 'N/A',
+      'Vendor': expense.vendor || 'N/A',
+      'Expense Amount (Amount before tax)': formatCurrencyForExport(expense.amount || 0),
+      'Tax Amount (GST/Tax applied)': formatCurrencyForExport(expense.taxAmount || 0),
+      'Total Amount (Amount + Tax)': formatCurrencyForExport(expense.totalAmount || expense.amount || 0),
+      'Vendor Name': expense.vendor || 'N/A',
+      'Created Date': formatDateTimeForExport(expense.createdAt),
+      
+      'Remarks': expense.remarks || 'N/A'
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `expenses_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   const getCategoryColor = (category: string) => {

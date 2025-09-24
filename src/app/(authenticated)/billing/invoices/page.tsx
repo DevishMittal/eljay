@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { FileText, AlertCircle, CheckCircle, PlusIcon } from "lucide-react";
 import CustomDropdown from "@/components/ui/custom-dropdown";
+import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from "@/utils/exportUtils";
 
 export default function InvoicesPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
@@ -104,8 +105,46 @@ export default function InvoicesPage() {
       alert('Please select invoices to export');
       return;
     }
-    console.log('Exporting selected invoices:', selectedInvoices);
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected invoice data
+    const selectedInvoiceData = invoices.filter(invoice => 
+      selectedInvoices.includes(invoice.id)
+    );
+
+    // Prepare CSV data with all invoice details
+    const csvData = selectedInvoiceData.map(invoice => ({
+      'Invoice Number': invoice.invoiceNumber || 'N/A',
+      'Invoice Date': formatDateForExport(invoice.invoiceDate),
+      'Invoice Type': invoice.invoiceType || 'N/A',
+      'Patient Name': invoice.patientName || 'N/A',
+      'Organization Name': invoice.organizationName || 'N/A',
+      'Payment Status': invoice.paymentStatus || 'N/A',
+      'Subtotal': formatCurrencyForExport(invoice.subtotal || 0),
+      'Total Discount': formatCurrencyForExport(invoice.totalDiscount || 0),
+      'Taxable Amount': formatCurrencyForExport(invoice.taxableAmount || 0),
+      'SGST Rate (%)': `${invoice.sgstRate || 0}%`,
+      'CGST Rate (%)': `${invoice.cgstRate || 0}%`,
+      'SGST Amount': formatCurrencyForExport(invoice.sgstAmount || 0),
+      'CGST Amount': formatCurrencyForExport(invoice.cgstAmount || 0),
+      'Total Tax': formatCurrencyForExport(invoice.totalTax || 0),
+      'Total Amount': formatCurrencyForExport(invoice.totalAmount || 0),
+      'Overall Discount': formatCurrencyForExport(invoice.overallDiscount || 0),
+      'Notes': invoice.notes || 'N/A',
+      'Warranty': invoice.warranty || 'N/A',
+      'Created Date': formatDateTimeForExport(invoice.createdAt),
+      'Updated Date': formatDateTimeForExport(invoice.updatedAt),
+      'Number of Screenings': invoice.screenings?.length || 0,
+      'Number of Services': invoice.services?.length || 0,
+      'Applied Advance Payments': invoice.appliedAdvancePayments?.length || 0
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `invoices_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   const getStatusColor = (status: string) => {

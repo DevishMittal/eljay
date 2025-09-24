@@ -13,7 +13,7 @@ const PrintoutPage = () => {
   const [activeTab, setActiveTab] = useState('printout');
   
   // Print settings state
-  const [selectedDocumentType, setSelectedDocumentType] = useState<'b2cInvoice' | 'b2bInvoice' | 'payments'>('b2cInvoice');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<'b2cInvoice' | 'b2bInvoice' | 'payments' | 'expenses'>('b2cInvoice');
   const [selectedSubTab, setSelectedSubTab] = useState<'pageSettings' | 'header' | 'footer'>('pageSettings');
   
   // Default print settings
@@ -114,6 +114,39 @@ const PrintoutPage = () => {
         },
         thankYouMessage: 'Thank you for choosing Eljay Hearing Care for your audiology needs.',
         signatureNote: 'This is a computer-generated invoice and does not require a signature.',
+        additionalText: ''
+      }
+    },
+    expenses: {
+      pageSettings: {
+        paperSize: 'A4',
+        orientation: 'Portrait',
+        printerType: 'Color',
+        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+      },
+      headerSettings: {
+        includeHeader: true,
+        headerText: 'Hearing Centre Adyar',
+        leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
+        rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+        logo: { uploaded: true, type: 'Square', alignment: 'Left' }
+      },
+      footerSettings: {
+        topMargin: 0.00,
+        fullWidthContent: [],
+        leftSignature: {
+          name: '',
+          title: '',
+          organization: ''
+        },
+        rightSignature: {
+          name: '',
+          title: '',
+          organization: '',
+          date: ''
+        },
+        thankYouMessage: 'Thank you for your business with Eljay Hearing Care.',
+        signatureNote: 'This is a computer-generated expense receipt and does not require a signature.',
         additionalText: ''
       }
     }
@@ -285,7 +318,9 @@ const PrintoutPage = () => {
              <div className="flex space-x-1 mb-6">
                {[
                  { id: 'b2cInvoice', label: 'B2C Invoice' },
-                 { id: 'b2bInvoice', label: 'B2B Invoice' }
+                 { id: 'b2bInvoice', label: 'B2B Invoice' },
+                 { id: 'payments', label: 'Payments' },
+                 { id: 'expenses', label: 'Expenses' }
                ].map((tab) => (
                  <button
                    key={tab.id}
@@ -407,7 +442,13 @@ const PrintoutPage = () => {
                  onClick={() => {
                    // Save settings for current document type
                    localStorage.setItem(`printSettings_${selectedDocumentType}`, JSON.stringify(printSettings[selectedDocumentType]));
-                   alert(`Settings saved for ${selectedDocumentType === 'b2cInvoice' ? 'B2C Invoice' : 'B2B Invoice'}`);
+                   const typeLabels = {
+                     b2cInvoice: 'B2C Invoice',
+                     b2bInvoice: 'B2B Invoice', 
+                     payments: 'Payments',
+                     expenses: 'Expenses'
+                   };
+                   alert(`Settings saved for ${typeLabels[selectedDocumentType]}`);
                  }}
                  className="px-3 py-2 text-xs bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-orange-50 transition-colors"
                >
@@ -415,13 +456,15 @@ const PrintoutPage = () => {
                </button>
                <button 
                  onClick={() => {
-                   // Save settings for both B2B and B2C
+                   // Save settings for all document types
                    const settingsToSave = {
                      b2cInvoice: printSettings.b2cInvoice,
-                     b2bInvoice: printSettings.b2bInvoice
+                     b2bInvoice: printSettings.b2bInvoice,
+                     payments: printSettings.payments,
+                     expenses: printSettings.expenses
                    };
-                   localStorage.setItem('printSettings_b2b_b2c', JSON.stringify(settingsToSave));
-                   alert('Settings saved for B2B and B2C invoices');
+                   localStorage.setItem('printSettings_all', JSON.stringify(settingsToSave));
+                   alert('Settings saved for all document types');
                  }}
                  className="px-3 py-2 text-xs bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
                >
@@ -751,29 +794,55 @@ const InvoicePreview = ({ documentType, settings }: {
           </div>
         )}
 
-        {/* Invoice Details */}
+        {/* Document Details */}
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
-            <h3 className="font-semibold mb-2">Bill To</h3>
-            <p className="font-medium">Robert Paterson</p>
-            <p className="text-sm text-gray-600">Individual Patient</p>
-            {/* <p className="text-sm text-gray-600">Patient ID: PAT001</p> */}
+            <h3 className="font-semibold mb-2">
+              {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Bill To' : 
+               documentType === 'payments' ? 'Payment To' : 'Expense Details'}
+            </h3>
+            <p className="font-medium">
+              {documentType === 'b2cInvoice' ? 'Robert Paterson' :
+               documentType === 'b2bInvoice' ? 'Apollo Hospitals' :
+               documentType === 'payments' ? 'John Doe' : 'Office Supplies'}
+            </p>
+            <p className="text-sm text-gray-600">
+              {documentType === 'b2cInvoice' ? 'Individual Patient' :
+               documentType === 'b2bInvoice' ? 'Corporate Account' :
+               documentType === 'payments' ? 'Payment Recipient' : 'Business Expense'}
+            </p>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">Invoice Details</h3>
+            <h3 className="font-semibold mb-2">
+              {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Details' :
+               documentType === 'payments' ? 'Payment Details' : 'Expense Details'}
+            </h3>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span>Invoice Number:</span>
-                <span className="font-medium">EHC-2025-014</span>
+                <span>
+                  {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Number:' :
+                   documentType === 'payments' ? 'Receipt Number:' : 'Expense Number:'}
+                </span>
+                <span className="font-medium">
+                  {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'EHC-2025-014' :
+                   documentType === 'payments' ? 'PAY-2025-014' : 'EXP-2025-014'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Invoice Date:</span>
+                <span>
+                  {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Date:' :
+                   documentType === 'payments' ? 'Payment Date:' : 'Expense Date:'}
+                </span>
                 <span>22 Jun 2025</span>
               </div>
-              <div className="flex justify-between">
-                <span>Due Date:</span>
-                <span>24 Jul 2025</span>
-              </div>
+              {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') && (
+                <>
+                  <div className="flex justify-between">
+                    <span>Due Date:</span>
+                    <span>24 Jul 2025</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span>Created By:</span>
                 <span>Staff</span>
@@ -782,80 +851,182 @@ const InvoicePreview = ({ documentType, settings }: {
           </div>
         </div>
 
-        {/* Services Table */}
+        {/* Content Table */}
         <div className="mb-6">
-          <h3 className="font-semibold mb-3">Service/Item</h3>
+          <h3 className="font-semibold mb-3">
+            {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Services & Items' :
+             documentType === 'payments' ? 'Payment Details' : 'Expense Items'}
+          </h3>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-50">
                 <th className="border border-gray-300 px-3 py-2 text-left">#</th>
-                <th className="border border-gray-300 px-3 py-2 text-left">Service/Item</th>
-                <th className="border border-gray-300 px-3 py-2 text-center">Qty</th>
-                <th className="border border-gray-300 px-3 py-2 text-right">Unit Cost</th>
-                <th className="border border-gray-300 px-3 py-2 text-right">Discount</th>
-                <th className="border border-gray-300 px-3 py-2 text-right">Total</th>
+                {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
+                  <>
+                    <th className="border border-gray-300 px-3 py-2 text-left">Service/Item</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Qty</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Unit Cost</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Discount</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Total</th>
+                  </>
+                ) : documentType === 'payments' ? (
+                  <>
+                    <th className="border border-gray-300 px-3 py-2 text-left">Payment Method</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Status</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="border border-gray-300 px-3 py-2 text-left">Expense Item</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Category</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="border border-gray-300 px-3 py-2">1</td>
-                <td className="border border-gray-300 px-3 py-2">
-                  <div>
-                    <p className="font-medium">Starkey Livio AI 2400 Hearing Aid</p>
-                    <p className="text-sm text-gray-600">AI-powered hearing aid with health monitoring</p>
-                  </div>
-                </td>
-                <td className="border border-gray-300 px-3 py-2 text-center">1</td>
-                <td className="border border-gray-300 px-3 py-2 text-right">₹69,000</td>
-                <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹4,000</td>
-                <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹65,000</td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 px-3 py-2">2</td>
-                <td className="border border-gray-300 px-3 py-2">
-                  <div>
-                    <p className="font-medium">Smart Charger</p>
-                    <p className="text-sm text-gray-600">Wireless charging case with smartphone app</p>
-                  </div>
-                </td>
-                <td className="border border-gray-300 px-3 py-2 text-center">1</td>
-                <td className="border border-gray-300 px-3 py-2 text-right">₹7,000</td>
-                <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹500</td>
-                <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹6,500</td>
-              </tr>
+              {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
+                <>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">1</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Starkey Livio AI 2400 Hearing Aid</p>
+                        <p className="text-sm text-gray-600">AI-powered hearing aid with health monitoring</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">1</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">₹69,000</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹4,000</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹65,000</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">2</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Smart Charger</p>
+                        <p className="text-sm text-gray-600">Wireless charging case with smartphone app</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">1</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">₹7,000</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹500</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹6,500</td>
+                  </tr>
+                </>
+              ) : documentType === 'payments' ? (
+                <>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">1</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Payment Receipt</p>
+                        <p className="text-sm text-gray-600">Receipt #PAY-2025-014</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Completed</span>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹25,000</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
+                  </tr>
+                </>
+              ) : (
+                <>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">1</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Office Stationery</p>
+                        <p className="text-sm text-gray-600">Pens, papers, and office supplies</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Office</span>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹2,500</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
+                  </tr>
+                </>
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Invoice Summary */}
+        {/* Document Summary */}
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
-            <h3 className="font-semibold mb-2">Additional Information</h3>
-            <p className="text-sm text-gray-600">Warranty: 3 years warranty + health tracking</p>
+            <h3 className="font-semibold mb-2">
+              {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Additional Information' :
+               documentType === 'payments' ? 'Payment Notes' : 'Expense Notes'}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Warranty: 3 years warranty + health tracking' :
+               documentType === 'payments' ? 'Payment processed successfully via cash' : 'Expense approved for office operations'}
+            </p>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">Invoice Summary</h3>
+            <h3 className="font-semibold mb-2">
+              {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Summary' :
+               documentType === 'payments' ? 'Payment Summary' : 'Expense Summary'}
+            </h3>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>₹76,000</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Discount:</span>
-                <span className="text-red-600">-₹4,500</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Taxable Amount:</span>
-                <span>₹71,500</span>
-              </div>
-              <div className="flex justify-between">
-                <span>SGST (9%):</span>
-                <span>₹585</span>
-              </div>
-              <div className="flex justify-between">
-                <span>CGST (9%):</span>
-                <span>₹585</span>
-              </div>
+              {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>₹76,000</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Discount:</span>
+                    <span className="text-red-600">-₹4,500</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Taxable Amount:</span>
+                    <span>₹71,500</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>SGST (9%):</span>
+                    <span>₹585</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>CGST (9%):</span>
+                    <span>₹585</span>
+                  </div>
+                </>
+              ) : documentType === 'payments' ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Payment Amount:</span>
+                    <span>₹25,000</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span>Cash</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="text-green-600">Completed</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span>Expense Amount:</span>
+                    <span>₹2,500</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Category:</span>
+                    <span>Office Supplies</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="text-green-600">Approved</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

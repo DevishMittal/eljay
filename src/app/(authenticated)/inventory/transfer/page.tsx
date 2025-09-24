@@ -6,6 +6,7 @@ import { cn } from "@/utils";
 import CreateTransferModal from "@/components/modals/create-transfer-modal";
 import { InventoryTransferService } from "@/services/inventoryTransferService";
 import { InventoryTransfer } from "@/types";
+import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from "@/utils/exportUtils";
 
 
 const getTypeIcon = (type: string) => {
@@ -212,14 +213,47 @@ export default function InventoryTransferPage() {
     }
   };
 
-  // Handle export functionality (placeholder for now)
+  // Handle export functionality
   const handleExportSelected = () => {
     if (selectedTransfers.size === 0) {
       alert('Please select transfers to export');
       return;
     }
-    console.log('Exporting selected transfers:', Array.from(selectedTransfers));
-    // TODO: Implement CSV/Excel export functionality
+
+    // Get selected transfer data
+    const selectedTransferData = transfers.filter(transfer => 
+      selectedTransfers.has(transfer.id)
+    );
+
+    // Prepare CSV data with all transfer details
+    const csvData = selectedTransferData.map(transfer => ({
+      'Transfer ID': transfer.id || 'N/A',
+      'Transfer Type': transfer.transferType || 'N/A',
+      'From Location': transfer.fromLocation || 'N/A',
+      'To Location': transfer.toLocation || 'N/A',
+      'Tracking Number': transfer.trackingNumber || 'N/A',
+      'Shipping Cost': formatCurrencyForExport(transfer.shippingCost || 0),
+      'Status': transfer.status || 'N/A',
+      'Urgency Level': transfer.urgencyLevel || 'N/A',
+      'Transferred Date': formatDateForExport(transfer.transferredDate),
+      'Transferred By': transfer.transferredBy || 'N/A',
+      // 'Approved By': transfer.approvedBy || 'N/A',
+      // 'Approved At': transfer.approvedAt ? formatDateTimeForExport(transfer.approvedAt) : 'N/A',
+      'Additional Notes': transfer.additionalNotes || 'N/A',
+      'Created Date': formatDateTimeForExport(transfer.createdAt),
+      'Number of Items': transfer.transferItems?.length || 0,
+      'Item Details': transfer.transferItems?.map(item => 
+        `${item.inventoryItem.itemName} (Qty: ${item.quantity}, Condition: ${item.condition})`
+      ).join('; ') || 'N/A'
+    }));
+
+    // Generate CSV content
+    const csvContent = convertToCSV(csvData);
+    
+    // Download CSV file
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `inventory_transfers_export_${timestamp}.csv`;
+    downloadCSV(csvContent, filename);
   };
 
   return (
