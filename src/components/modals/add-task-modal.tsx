@@ -185,7 +185,6 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
                     value={formData.dueDate ? new Date(formData.dueDate) : undefined}
                     onChange={handleDateChange}
                     minDate={new Date()}
-                    showToday={true}
                   />
                 </div>
               )}
