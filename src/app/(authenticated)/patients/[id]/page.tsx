@@ -976,7 +976,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Patient Header */}
-          <div className="bg-white !border-b !border-l !border-gray-200 px-6 py-4 -mt-2">
+          <div className="sticky top-0 z-10 bg-white !border-b !border-l !border-gray-200 px-6 py-4 -mt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Link href="/patients" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
