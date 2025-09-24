@@ -31,7 +31,8 @@ export interface Appointment {
   time: string;
   patient: string;
   type: string;
-  duration: number; // in minutes
+  duration: number; // in minutes (appointment duration)
+  totalDuration?: number; // total duration including procedures
   color?: string;
   audiologist?: string;
   phoneNumber?: string;

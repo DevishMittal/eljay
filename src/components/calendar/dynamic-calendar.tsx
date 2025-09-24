@@ -11,7 +11,6 @@ import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
 import {
   CalendarView,
   CalendarDate,
-  TimeSlot,
   Appointment,
   getToday,
   getCalendarDate,
@@ -22,14 +21,11 @@ import {
   getDateRangeText,
   generateTimeSlots,
   getAppointmentsForDate,
-  getAppointmentsForTimeSlot,
-  isSameDay,
-  formatDate
+  getAppointmentsForTimeSlot
 } from '@/utils/calendar';
 
 interface DynamicCalendarProps {
   appointments?: Appointment[];
-  onAppointmentClick?: (appointment: Appointment) => void;
   onTimeSlotClick?: (date: Date, timeSlot: string) => void;
   onDateChange?: (date: Date) => void;
   onViewChange?: (view: CalendarView) => void;
@@ -38,7 +34,6 @@ interface DynamicCalendarProps {
 
 export default function DynamicCalendar({
   appointments = [],
-  onAppointmentClick,
   onTimeSlotClick,
   onDateChange,
   onViewChange,
@@ -58,7 +53,7 @@ export default function DynamicCalendar({
   const [isUpdatingNotes, setIsUpdatingNotes] = useState(false);
   const [notesText, setNotesText] = useState('');
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'check_in' | 'absent' | 'cancel' | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'check_in' | 'absent' | 'no_show' | null>(null);
   const [statusReason, setStatusReason] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -140,14 +135,14 @@ export default function DynamicCalendar({
   };
 
   // Handle click outside dropdown
-  const handleClickOutside = (event: React.MouseEvent) => {
+  const handleClickOutside = () => {
     if (isDropdownOpen) {
       setIsDropdownOpen(false);
     }
   };
 
   // Open status modal
-  const openStatusModal = (status: 'check_in' | 'absent' | 'cancel') => {
+  const openStatusModal = (status: 'check_in' | 'absent' | 'no_show') => {
     setSelectedStatus(status);
     setStatusReason('');
     setStatusNotes('');
@@ -156,17 +151,17 @@ export default function DynamicCalendar({
   };
 
   // Handle status update
-  const handleStatusUpdate = async (status: 'check_in' | 'absent' | 'cancel', reason?: string, notes?: string) => {
+  const handleStatusUpdate = async (status: 'check_in' | 'absent' | 'no_show', reason?: string, notes?: string) => {
     if (!selectedAppointment || !token) return;
     
     setIsUpdatingStatus(true);
     try {
       // Prepare update data based on status
       const updateData: any = { 
-        visitStatus: status === 'cancel' ? 'cancelled' : status 
+        visitStatus: status
       };
       if (reason) updateData.reason = reason;
-      if (notes) updateData.notes = notes;
+      if (notes && notes.trim() !== '') updateData.notes = notes;
       
       await appointmentService.updateAppointment(selectedAppointment.id, updateData, token);
       
@@ -174,7 +169,8 @@ export default function DynamicCalendar({
       if (appointmentSummary) {
         setAppointmentSummary({
           ...appointmentSummary,
-          visitStatus: status === 'cancel' ? 'cancelled' : status,
+          visitStatus: status,
+          reason: reason || appointmentSummary.reason,
           notes: notes || appointmentSummary.notes
         });
       }
@@ -335,7 +331,7 @@ export default function DynamicCalendar({
     switch (status) {
       case 'check_in':
         return 'bg-green-100 text-green-800';
-      case 'cancelled':
+      case 'no_show':
         return 'bg-red-100 text-red-800';
       case 'absent':
         return 'bg-orange-100 text-orange-800';
@@ -360,8 +356,8 @@ export default function DynamicCalendar({
     switch (status) {
       case 'check_in':
         return 'Checked In';
-      case 'cancelled':
-        return 'Cancelled';
+      case 'no_show':
+        return 'No Show';
       case 'absent':
         return 'Absent';
       default:
@@ -427,7 +423,13 @@ export default function DynamicCalendar({
             <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-xs text-gray-700">{appointment.time} ({appointment.duration} min)</span>
+            <span className="text-xs text-gray-700">
+              {appointment.time} 
+              {appointment.totalDuration && appointment.totalDuration !== appointment.duration ? 
+                ` (${appointment.duration} + ${appointment.totalDuration - appointment.duration} min)` : 
+                ` (${appointment.duration} min)`
+              }
+            </span>
           </div>
         </div>
 
@@ -473,7 +475,12 @@ export default function DynamicCalendar({
         <span className="font-medium truncate text-blue-900">{appointment.patient}</span>
       </div>
       <div className="truncate text-blue-800">{appointment.type}</div>
-      <div className="text-xs text-blue-600 mt-1">{appointment.duration}min</div>
+      <div className="text-xs text-blue-600 mt-1">
+        {appointment.totalDuration && appointment.totalDuration !== appointment.duration ? 
+          `${appointment.duration}+${appointment.totalDuration - appointment.duration}min` : 
+          `${appointment.duration}min`
+        }
+      </div>
       
       {/* Render tooltip */}
       {renderAppointmentTooltip(appointment)}
@@ -545,7 +552,7 @@ export default function DynamicCalendar({
                     <h3 className="font-semibold text-gray-900 text-base">
                       {appointmentSummary?.patient?.fullname || appointment.patient}
                     </h3>
-                    <p className="text-xs text-gray-500">Patient ID: PAT999</p>
+                    {/* <p className="text-xs text-gray-500">Patient ID: PAT999</p> */}
                     <p className="text-xs text-gray-600">
                       {appointmentSummary?.patient?.phoneNumber || appointment.phoneNumber || 'No contact number'}
                     </p>
@@ -644,30 +651,87 @@ export default function DynamicCalendar({
                     {appointmentSummary ? 
                       (() => {
                         const time = appointmentSummary.appointmentTime;
-                        const duration = appointmentSummary.appointmentDuration || 30;
                         
                         if (time) {
                           try {
                             const date = new Date(time);
                             if (!isNaN(date.getTime())) {
-                              const formattedTime = date.toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              });
-                              return `${formattedTime} - ${duration} minutes`;
+                              // Use UTC methods to avoid timezone conversion issues
+                              const hours = date.getUTCHours();
+                              const minutes = date.getUTCMinutes();
+                              const period = hours >= 12 ? 'PM' : 'AM';
+                              const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                              return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
                             }
                           } catch (error) {
                             console.error('Error formatting time:', error);
                           }
                         }
                         
-                        return `N/A - ${duration} minutes`;
+                        return 'N/A';
                       })() :
-                      `${appointment.time} - ${appointment.duration} minutes`
+                      appointment.time
                     }
                   </span>
                 </p>
+              </div>
+            </div>
+
+            {/* Duration Information Section */}
+            <div className="mb-4">
+              <h3 className="font-semibold text-gray-900 text-sm mb-3">Duration Information</h3>
+              <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-gray-500">Appointment Duration</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {appointment.duration || appointmentSummary?.appointmentDuration || 30} minutes
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {(appointmentSummary?.totalDuration || appointment.totalDuration) && 
+                   (() => {
+                     const totalDur = appointment.totalDuration || 
+                       (appointmentSummary?.totalDuration ? 
+                         (typeof appointmentSummary.totalDuration === 'string' ? 
+                           parseInt(appointmentSummary.totalDuration) : 
+                           appointmentSummary.totalDuration
+                         ) : 
+                         undefined
+                       );
+                     const apptDur = appointment.duration || appointmentSummary?.appointmentDuration;
+                     return totalDur && totalDur !== apptDur;
+                   })() && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-gray-500">Total Duration (with procedures)</div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {appointment.totalDuration || 
+                            (appointmentSummary?.totalDuration ? 
+                              (typeof appointmentSummary.totalDuration === 'string' ? 
+                                parseInt(appointmentSummary.totalDuration) : 
+                                appointmentSummary.totalDuration
+                              ) : 
+                              undefined
+                            )
+                          } minutes
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -761,7 +825,7 @@ export default function DynamicCalendar({
               </button>
               
               <button
-                onClick={() => openStatusModal('cancel')}
+                onClick={() => openStatusModal('no_show')}
                 disabled={isUpdatingStatus}
                 className="px-6 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer flex items-center space-x-2 text-sm font-medium disabled:opacity-50"
               >
@@ -832,7 +896,7 @@ export default function DynamicCalendar({
             <div className="p-3 bg-gray-50 border-gray-200 flex items-center justify-center">
               <span className="text-xs font-medium text-gray-600">TIME</span>
             </div>
-            {weekDays.map((day, index) => (
+            {weekDays.map((day) => (
               <div
                 key={day.date.toISOString()}
                 className={cn(
@@ -964,7 +1028,7 @@ export default function DynamicCalendar({
                               }
                             }}
                             onMouseLeave={() => setHoveredAppointment(null)}
-                            title={`${appointment.time} - ${appointment.patient}: ${appointment.type}`}
+                            title={`${appointment.time} - ${appointment.patient}: ${appointment.type} (${appointment.totalDuration && appointment.totalDuration !== appointment.duration ? `${appointment.duration}+${appointment.totalDuration - appointment.duration}min` : `${appointment.duration}min`})`}
                           >
                             {/* Use doctor-referrals.svg before patient name */}
                             <span className="inline-block align-middle mr-1">
@@ -1094,7 +1158,7 @@ export default function DynamicCalendar({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 {selectedStatus === 'absent' && 'Mark as Absent'}
-                {selectedStatus === 'cancel' && 'Cancel Appointment'}
+                {selectedStatus === 'no_show' && 'Cancel Appointment'}
               </h3>
               <button
                 onClick={() => setIsStatusModalOpen(false)}
@@ -1108,20 +1172,28 @@ export default function DynamicCalendar({
             </div>
 
             <div className="space-y-4">
-              {selectedStatus === 'cancel' && (
+              {(selectedStatus === 'no_show' || selectedStatus === 'absent') && (
                 <>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Reason <span className="text-orange-500">*</span>
+                      Reason <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={statusReason}
                       onChange={(e) => setStatusReason(e.target.value)}
                       className="text-xs w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter reason for cancellation..."
                       required
-                    />
+                      aria-label="Select reason for no show or absent"
+                    >
+                      <option value="">Select a reason</option>
+                      <option value="Patient did not arrive">Patient did not arrive</option>
+                      <option value="Patient cancelled last minute">Patient cancelled last minute</option>
+                      <option value="Patient forgot appointment">Patient forgot appointment</option>
+                      <option value="Transportation issues">Transportation issues</option>
+                      <option value="Emergency situation">Emergency situation</option>
+                      <option value="Weather conditions">Weather conditions</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </div>
 
                   <div>
@@ -1138,14 +1210,6 @@ export default function DynamicCalendar({
                   </div>
                 </>
               )}
-              
-              {selectedStatus === 'absent' && (
-                <div className="text-center py-4">
-                  <p className="text-gray-600">
-                    Are you sure you want to mark this patient as absent?
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
@@ -1157,9 +1221,9 @@ export default function DynamicCalendar({
               </button>
               <button
                 onClick={() => {
-                  // For cancel appointments, require reason
-                  if (selectedStatus === 'cancel' && !statusReason.trim()) {
-                    alert('Please provide a reason for cancellation.');
+                  // For no_show and absent, require reason
+                  if ((selectedStatus === 'no_show' || selectedStatus === 'absent') && !statusReason.trim()) {
+                    alert('Please select a reason.');
                     return;
                   }
                   
@@ -1169,6 +1233,7 @@ export default function DynamicCalendar({
                 disabled={isUpdatingStatus}
                 className={`px-4 py-2 text-xs font-medium text-white rounded-md ${
                   selectedStatus === 'absent' ? 'bg-orange-600 hover:bg-orange-700' :
+                  selectedStatus === 'no_show' ? 'bg-red-600 hover:bg-red-700' :
                   'bg-orange-600 hover:bg-orange-700'
                 } ${isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
               >

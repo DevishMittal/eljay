@@ -362,6 +362,7 @@ export interface Appointment {
   referralSource?: ReferralSource;
   appointmentDate: string;
   appointmentDuration: number;
+  totalDuration?: string; // Total duration including all procedures (as string from API)
   appointmentTime: string;
   procedures: string;
   hospitalName?: string;
@@ -411,6 +412,7 @@ export interface CreateAppointmentData {
   appointmentDate: string;
   appointmentTime: string;
   appointmentDuration: number;
+  totalDuration?: string; // Total duration including all procedures (as string)
   procedures: string;
   hospitalName?: string; // For B2B patients
   referralSource?: {

@@ -20,6 +20,7 @@ interface NewAppointment {
   patient: string;
   type: string;
   duration: number;
+  totalDuration?: number;
   audiologist: string;
   notes: string;
   phoneNumber: string;
@@ -602,6 +603,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         appointmentDate: formData.appointmentDate,
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: parseInt(formData.duration),
+        totalDuration: totalProcedureDuration > 0 ? totalProcedureDuration.toString() : formData.duration,
         procedures: formData.selectedProcedures || 'General Consultation',
         hospitalName: formData.customerType === 'B2B' ? formData.hospitalName : undefined,
         referralSource: referralSourceData
@@ -622,6 +624,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         patient: formData.fullName,
         type: formData.selectedProcedures || 'Walk-in Appointment',
         duration: parseInt(formData.duration) || 30,
+        totalDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.duration) || 30,
         audiologist: formData.selectedAudiologist,
         notes: formData.notes,
         phoneNumber: formData.phoneNumber,
@@ -1474,7 +1477,12 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                     diagnostics.find(d => d.id === id)?.name
                   ).filter(Boolean).join(', ');
                   handleInputChange('selectedProcedures', selectedNames);
-                  handleInputChange('duration', totalDuration.toString() || '30');
+                  
+                  // Update duration field to show total duration when procedures are selected
+                  if (totalDuration > 0) {
+                    handleInputChange('duration', totalDuration.toString());
+                  }
+                  // Don't reset duration when no procedures selected - keep user's manual input
                 }}
                 className={cn(
                   'p-3 rounded-lg border cursor-pointer transition-all duration-200',
@@ -1569,7 +1577,10 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
               <p><strong>Audiologist:</strong> {audiologists.find(a => a.id === formData.selectedAudiologist)?.name || formData.selectedAudiologist}</p>
               <p><strong>Date:</strong> {formData.appointmentDate ? new Date(formData.appointmentDate).toLocaleDateString('en-GB') : 'Not selected'}</p>
               <p><strong>Time:</strong> {formData.appointmentTime || 'Not selected'}</p>
-              <p><strong>Duration:</strong> {formData.duration} minutes</p>
+              <p><strong>Appointment Duration:</strong> {formData.duration} minutes</p>
+              {totalProcedureDuration > 0 && totalProcedureDuration !== parseInt(formData.duration) && (
+                <p><strong>Total Duration (with procedures):</strong> {totalProcedureDuration} minutes</p>
+              )}
               <p><strong>Referral Source:</strong> {formData.referralSource || 'Not selected'}{formData.referralSource === 'Direct' && formData.directSource ? ` (${formData.directSource})` : ''}</p>
             </div>
           </div>

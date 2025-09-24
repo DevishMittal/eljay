@@ -6,7 +6,7 @@ import TasksAnalytics from '@/components/layout/tasks-analytics';
 import DynamicCalendar from '@/components/calendar/dynamic-calendar';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { Appointment as CalendarAppointment, CalendarView } from '@/utils/calendar';
-import { Appointment, AppointmentsResponse } from '@/types';
+import { Appointment } from '@/types';
 import { appointmentService } from '@/services/appointmentService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,6 +18,7 @@ interface NewAppointment {
   patient: string;
   type: string;
   duration: number;
+  totalDuration?: number;
   audiologist: string;
   notes: string;
   phoneNumber: string;
@@ -65,6 +66,7 @@ export default function AppointmentsPage() {
           patient: appointment.user.fullname,
           type: appointment.procedures,
           duration: appointment.appointmentDuration,
+          totalDuration: appointment.totalDuration ? parseInt(appointment.totalDuration) : undefined,
           audiologist: appointment.audiologist?.name,
           phoneNumber: appointment.user.phoneNumber,
         };
@@ -119,6 +121,7 @@ export default function AppointmentsPage() {
       patient: newAppointment.patient,
       type: newAppointment.type || 'Walk-in Appointment',
       duration: newAppointment.duration,
+      totalDuration: newAppointment.totalDuration,
       audiologist: newAppointment.audiologist,
       phoneNumber: newAppointment.phoneNumber,
     };
@@ -182,7 +185,6 @@ export default function AppointmentsPage() {
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <DynamicCalendar
             appointments={appointments}
-            onAppointmentClick={handleAppointmentClick}
             onTimeSlotClick={handleTimeSlotClick}
             onDateChange={handleDateChange}
             onViewChange={handleViewChange}
