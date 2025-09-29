@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { cn } from '@/utils';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import AddTaskModal from '@/components/modals/add-task-modal';
+import EditTaskModal from '@/components/modals/edit-task-modal';
+import DeleteConfirmationModal from '@/components/modals/delete-confirmation-modal';
 import AudiologistOverview from '@/components/layout/audiologist-overview';
 import { useTask, Task } from '@/contexts/TaskContext';
 
@@ -28,6 +30,9 @@ interface TasksAnalyticsProps {
 const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmentCreated }) => {
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
+  const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedDate, setSelectedDate] = useState(0); // 0 = today, 1 = tomorrow, etc.
   
@@ -36,7 +41,8 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
     getOverdueTasks, 
     getPendingTasks, 
     getDoneTasks,
-    toggleTaskCompletion 
+    toggleTaskCompletion,
+    deleteTask
   } = useTask();
 
 
@@ -133,6 +139,34 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
 
   const handleTaskToggle = (taskId: string) => {
     toggleTaskCompletion(taskId);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsEditTaskModalOpen(true);
+  };
+
+  const handleDeleteTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsDeleteTaskModalOpen(true);
+  };
+
+  const confirmDeleteTask = () => {
+    if (selectedTask) {
+      deleteTask(selectedTask.id);
+      setIsDeleteTaskModalOpen(false);
+      setSelectedTask(null);
+    }
+  };
+
+  const closeEditModal = () => {
+    setIsEditTaskModalOpen(false);
+    setSelectedTask(null);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteTaskModalOpen(false);
+    setSelectedTask(null);
   };
 
   const currentTasks = getCurrentTasks();
@@ -370,10 +404,32 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                       }}
                     />
                     <div className="flex-1 space-y-1">
-                      <div className="flex items-center space-x-1">
-                        <span className={cn("px-1 py-0.5 text-xs rounded-full", getPriorityColor(task.priority))}>
-                          {task.priority.toLowerCase()}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <span className={cn("px-1 py-0.5 text-xs rounded-full", getPriorityColor(task.priority))}>
+                            {task.priority.toLowerCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                            aria-label={`Edit task: ${task.title}`}
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task)}
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                            aria-label={`Delete task: ${task.title}`}
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <h4 className={cn(
                         "text-xs font-medium",
@@ -421,6 +477,19 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
       <AddTaskModal 
         isOpen={isAddTaskModalOpen}
         onClose={() => setIsAddTaskModalOpen(false)}
+      />
+
+      <EditTaskModal 
+        isOpen={isEditTaskModalOpen}
+        onClose={closeEditModal}
+        task={selectedTask}
+      />
+
+      <DeleteConfirmationModal 
+        isOpen={isDeleteTaskModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteTask}
+        itemName={selectedTask?.title || ''}
       />
     </div>
   );

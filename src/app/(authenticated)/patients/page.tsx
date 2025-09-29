@@ -738,7 +738,7 @@ export default function PatientsPage() {
         </div>
 
         {/* Pagination Footer - Sticky to bottom */}
-        <div className="bg-white mt-auto !p-1  !border-t ">
+        <div className="bg-white mt-auto !p-1 !pt-2.5 !pb-2.5  !border-t ">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="text-xs" style={{ color: '#717182' }}>

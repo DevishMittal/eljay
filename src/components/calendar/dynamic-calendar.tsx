@@ -1068,7 +1068,7 @@ export default function DynamicCalendar({
       <div className="flex-shrink-0 p-4">
         <div className="flex items-center justify-between bg-white">
           {/* Title */}
-          <h1 className="text-md font-bold text-black">
+          <h1 className="text-md font-semibold text-black">
             Appointment Calendar
             {appointments.length > 0 && (
               <span className="ml-2 text-sm font-normal text-gray-500">
@@ -1106,7 +1106,7 @@ export default function DynamicCalendar({
           <div className="flex items-center space-x-2">
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-xs bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors cursor-pointer shadow-lg"
+              className="px-3 py-1 text-xs font-semibold bg-white border border-gray-300 text-black rounded-md hover:bg-gray-50 transition-colors cursor-pointer shadow"
             >
               Today
             </button>
@@ -1118,7 +1118,7 @@ export default function DynamicCalendar({
                   className={cn(
                     "px-3 py-1 text-xs rounded-md transition-colors capitalize cursor-pointer",
                     currentView === view
-                      ? "bg-white border border-gray-300 text-black shadow-lg"
+                      ? "bg-white border border-gray-300 text-black shadow font-semibold"
                       : "bg-gray-100 text-black hover:bg-gray-200"
                   )}
                 >
