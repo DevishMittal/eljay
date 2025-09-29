@@ -25,10 +25,12 @@ const StaffPage = () => {
     email: '',
     role: '',
     phoneNumber: '',
-    countrycode: '+1',
+    countrycode: '+91',
     specialization: '',
     permissions: []
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const tabs = [
     {
@@ -183,6 +185,10 @@ const StaffPage = () => {
       ...prev,
       [name]: value
     }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handlePermissionChange = (permission: string) => {
@@ -194,8 +200,38 @@ const StaffPage = () => {
     }));
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    }
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    }
+    if (formData.permissions.length === 0) {
+      newErrors.permissions = 'At least one permission must be selected';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       await staffService.createStaff(formData, token || undefined);
       await fetchStaff(); // Refresh the list
@@ -205,13 +241,14 @@ const StaffPage = () => {
         email: '',
         role: '',
         phoneNumber: '',
-        countrycode: '+1',
+        countrycode: '+91',
         specialization: '',
         permissions: []
       });
+      setErrors({});
     } catch (err) {
       console.error('Error creating staff member:', err);
-      // You might want to show an error message to the user here
+      setError('Failed to create staff member. Please try again.');
     }
   };
 
@@ -224,10 +261,11 @@ const StaffPage = () => {
       email: '',
       role: '',
       phoneNumber: '',
-      countrycode: '+1',
+      countrycode: '+91',
       specialization: '',
       permissions: []
     });
+    setErrors({});
   };
 
   const handleEdit = (staffMember: Staff) => {
@@ -489,23 +527,36 @@ const StaffPage = () => {
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Enter full name..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none text-sm ${
+                        errors.name ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       required
                     />
+                    {errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
 
-                                     <div>
-                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                       Role
-                     </label>
-                     <CustomDropdown
-                       options={roleOptions}
-                       value={formData.role}
-                       onChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
-                       placeholder="Select role"
-                       aria-label="Select staff role"
-                     />
-                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Role
+                    </label>
+                    <CustomDropdown
+                      options={roleOptions}
+                      value={formData.role}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, role: value }));
+                        if (errors.role) {
+                          setErrors(prev => ({ ...prev, role: '' }));
+                        }
+                      }}
+                      placeholder="Select role"
+                      aria-label="Select staff role"
+                    />
+                    {errors.role && (
+                      <p className="text-red-500 text-xs mt-1">{errors.role}</p>
+                    )}
+                  </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -517,9 +568,14 @@ const StaffPage = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="Enter email address..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none text-sm ${
+                        errors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       required
                     />
+                    {errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -532,23 +588,28 @@ const StaffPage = () => {
                       value={formData.phoneNumber}
                       onChange={handleInputChange}
                       placeholder="Enter phone number..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none text-sm ${
+                        errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       required
                     />
+                    {errors.phoneNumber && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+                    )}
                   </div>
 
-                                     <div>
-                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                       Country Code
-                     </label>
-                     <CustomDropdown
-                       options={countryCodeOptions}
-                       value={formData.countrycode}
-                       onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
-                       placeholder="Select country code"
-                       aria-label="Select country code"
-                     />
-                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Country Code
+                    </label>
+                    <CustomDropdown
+                      options={countryCodeOptions}
+                      value={formData.countrycode}
+                      onChange={(value) => setFormData(prev => ({ ...prev, countrycode: value }))}
+                      placeholder="Select country code"
+                      aria-label="Select country code"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -578,7 +639,12 @@ const StaffPage = () => {
                         <input
                           type="checkbox"
                           checked={formData.permissions.includes(permission)}
-                          onChange={() => handlePermissionChange(permission)}
+                          onChange={() => {
+                            handlePermissionChange(permission);
+                            if (errors.permissions) {
+                              setErrors(prev => ({ ...prev, permissions: '' }));
+                            }
+                          }}
                           className="mt-1 w-4 h-4 text-gray-600 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
                         />
                         <div>
@@ -592,6 +658,9 @@ const StaffPage = () => {
                       </label>
                     ))}
                   </div>
+                  {errors.permissions && (
+                    <p className="text-red-500 text-xs mt-1">{errors.permissions}</p>
+                  )}
                 </div>
               </div>
 
@@ -731,7 +800,12 @@ const StaffPage = () => {
                         <input
                           type="checkbox"
                           checked={formData.permissions.includes(permission)}
-                          onChange={() => handlePermissionChange(permission)}
+                          onChange={() => {
+                            handlePermissionChange(permission);
+                            if (errors.permissions) {
+                              setErrors(prev => ({ ...prev, permissions: '' }));
+                            }
+                          }}
                           className="mt-1 w-4 h-4 text-gray-600 bg-gray-100 border-gray-300 rounded focus:ring-gray-500 focus:ring-2"
                         />
                         <div>
