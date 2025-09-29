@@ -79,6 +79,11 @@ export default function AddPatientPage() {
       return;
     }
     
+    if (formData.phoneNumber.length !== 10) {
+      setError('Mobile number must be exactly 10 digits');
+      return;
+    }
+    
     if (formData.customerType === 'B2B' && !formData.hospitalName) {
       setError('Please select a hospital for B2B patients');
       return;
@@ -94,6 +99,9 @@ export default function AddPatientPage() {
     }
     if (!submitData.opipNumber?.trim()) {
       delete submitData.opipNumber;
+    }
+    if (!submitData.email?.trim()) {
+      delete submitData.email;
     }
 
     try {
@@ -451,16 +459,22 @@ export default function AddPatientPage() {
                           <input
                             type="tel"
                             value={formData.phoneNumber}
-                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                              if (value.length <= 10) {
+                                handleInputChange('phoneNumber', value);
+                              }
+                            }}
                             className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="Enter mobile number"
+                            placeholder="Enter 10-digit mobile number"
                             disabled={loading}
                             required
+                            maxLength={10}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address (Optional)</label>
                           <input
                             type="email"
                             value={formData.email || ''}
@@ -468,7 +482,6 @@ export default function AddPatientPage() {
                             className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter email address"
                             disabled={loading}
-                            required
                           />
                         </div>
 
@@ -572,10 +585,16 @@ export default function AddPatientPage() {
                           <input
                             type="tel"
                             value={formData.alternateNumber || ''}
-                            onChange={(e) => handleInputChange('alternateNumber', e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                              if (value.length <= 10) {
+                                handleInputChange('alternateNumber', value);
+                              }
+                            }}
                             className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                            placeholder="Enter alternate number (optional)"
+                            placeholder="Enter 10-digit alternate number (optional)"
                             disabled={loading}
+                            maxLength={10}
                           />
                         </div>
                       </div>

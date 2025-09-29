@@ -490,7 +490,7 @@ export default function DashboardPage() {
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#101828' }}>Dashboard</h1>
+            <h1 className="text-2xl font-semibold" style={{ color: '#101828' }}>Dashboard</h1>
                          <p className="text-sm mt-1" style={{ color: '#717182' }}>
                Welcome back! Here&apos;s what&apos;s happening at your clinic.
              </p>

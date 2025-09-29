@@ -8,6 +8,7 @@ import { patientService } from '@/services/patientService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { useAuth } from '@/contexts/AuthContext';
+import { exportPatientsToCSV } from '@/utils/patientExportUtils';
 
 
 export default function PatientsPage() {
@@ -31,6 +32,12 @@ export default function PatientsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  
+  // Selection state
+  const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
 
   const fetchPatients = useCallback(async () => {
@@ -61,12 +68,15 @@ export default function PatientsPage() {
       if (!target.closest('.relative')) {
         setShowFilters(false);
         setShowSortMenu(false);
+        setShowActionMenu(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -207,7 +217,85 @@ export default function PatientsPage() {
     setPatientStatus('');
   };
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allPatientIds = displayedPatients.map(p => p.patient_id);
+      setSelectedPatients(new Set(allPatientIds));
+    } else {
+      setSelectedPatients(new Set());
+    }
+  };
+
+  const handleSelectPatient = (patientId: string, checked: boolean) => {
+    const newSelection = new Set(selectedPatients);
+    if (checked) {
+      newSelection.add(patientId);
+    } else {
+      newSelection.delete(patientId);
+    }
+    setSelectedPatients(newSelection);
+  };
+
+  // Export handlers
+  const handleExportCSV = () => {
+    const selectedPatientData = displayedPatients.filter(p => selectedPatients.has(p.patient_id));
+    exportPatientsToCSV(selectedPatientData, {
+      filename: `patients_export_${new Date().toISOString().split('T')[0]}.csv`
+    });
+    setShowActionMenu(false);
+  };
+
+  // Mass delete handlers
+  const handleMassDelete = () => {
+    setShowDeleteWarning(true);
+    setShowActionMenu(false);
+  };
+
+  const handleConfirmMassDelete = async () => {
+    const selectedPatientData = displayedPatients.filter(p => selectedPatients.has(p.patient_id));
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Delete all selected patients
+      const deletePromises = selectedPatientData.map(patient => 
+        patientService.deleteUser(patient.patient_id, token || undefined)
+      );
+      
+      await Promise.all(deletePromises);
+      
+      // Show success message
+      setSuccess(`${selectedPatientData.length} patients deleted successfully!`);
+      setTimeout(() => setSuccess(null), 3000);
+      
+      // Clear selection and refresh the list
+      setSelectedPatients(new Set());
+      fetchPatients();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete patients. Please try again.';
+      setError(errorMessage);
+      console.error('Error deleting patients:', err);
+    } finally {
+      setLoading(false);
+      setShowDeleteWarning(false);
+    }
+  };
+
+  const handleCancelMassDelete = () => {
+    setShowDeleteWarning(false);
+  };
+
   const displayedPatients = getFilteredAndSortedPatients();
+
+  // Update select all state when selection changes
+  useEffect(() => {
+    const displayedPatientIds = displayedPatients.map(p => p.patient_id);
+    const allDisplayedSelected = displayedPatientIds.length > 0 && 
+      displayedPatientIds.every(id => selectedPatients.has(id));
+    setIsAllSelected(allDisplayedSelected);
+  }, [selectedPatients, displayedPatients]);
 
   if (loading) {
     return (
@@ -426,6 +514,50 @@ export default function PatientsPage() {
                 </svg>
               </button>
             </div>
+            {/* Bulk Actions Button */}
+            {selectedPatients.size > 0 && (
+              <div className="relative">
+                <button 
+                  onClick={() => setShowActionMenu(!showActionMenu)}
+                  className="text-xs bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-600 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                  <span>Actions ({selectedPatients.size})</span>
+                  <svg className={`w-3 h-3 transition-transform ${showActionMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showActionMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg border border-gray-200 shadow-lg z-50">
+                    <div className="py-2">
+                      <button
+                        onClick={handleExportCSV}
+                        className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Export as CSV</span>
+                      </button>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={handleMassDelete}
+                        className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Delete Selected</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <button 
               onClick={handleAddPatient}
               className="text-xs bg-orange-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-600 transition-colors"
@@ -548,6 +680,8 @@ export default function PatientsPage() {
                         className="rounded border-gray-300" 
                         aria-label="Select all patients"
                         id="select-all-patients"
+                        checked={isAllSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
                       />
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium" style={{ color: '#0A0A0A' }}>Patient</th>
@@ -575,6 +709,8 @@ export default function PatientsPage() {
                         className="rounded border-gray-300" 
                         aria-label={`Select ${patient.full_name}`}
                         id={`select-${patient.id}`}
+                        checked={selectedPatients.has(patient.patient_id)}
+                        onChange={(e) => handleSelectPatient(patient.patient_id, e.target.checked)}
                       />
                     </td>
                     <td className="px-4 py-2">
@@ -653,11 +789,24 @@ export default function PatientsPage() {
                 {displayedPatients.map((patient) => (
                   <div
                     key={patient.id}
-                    onClick={() => handlePatientClick(patient.patient_id)}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-orange-200"
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-orange-200 relative"
                   >
+                    {/* Selection checkbox for grid view */}
+                    <div className="absolute top-3 right-3" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        aria-label={`Select ${patient.full_name}`}
+                        id={`select-grid-${patient.patient_id}`}
+                        checked={selectedPatients.has(patient.patient_id)}
+                        onChange={(e) => handleSelectPatient(patient.patient_id, e.target.checked)}
+                      />
+                    </div>
                     {/* Patient Avatar and Info */}
-                    <div className="flex flex-col items-center text-center mb-4">
+                    <div 
+                      className="flex flex-col items-center text-center mb-4 cursor-pointer"
+                      onClick={() => handlePatientClick(patient.patient_id)}
+                    >
                       <div className="w-12 h-12 rounded-full flex items-center justify-center text-gray-700 font-medium text-sm mb-2" style={{ backgroundColor: '#F3F4F6' }}>
                         {getInitials(patient.full_name)}
                       </div>
@@ -744,6 +893,7 @@ export default function PatientsPage() {
               <span className="text-xs" style={{ color: '#717182' }}>
                 Showing {displayedPatients.length} of {patients.length} patients
                 {(classification || gender || patientStatus) && ' (filtered)'}
+                {selectedPatients.size > 0 && ` • ${selectedPatients.size} selected`}
               </span>
               <select 
                 className="px-2 !py-1 border border-border rounded-md text-xs" 
@@ -806,6 +956,74 @@ export default function PatientsPage() {
         onClose={handleCloseAppointmentModal}
         onAppointmentCreated={handleAppointmentCreated}
       />
+
+      {/* Mass Delete Warning Modal */}
+      {showDeleteWarning && (
+        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md border-2 shadow-lg">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Patients</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelMassDelete}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={loading}
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4">
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-3">
+                  Are you sure you want to delete <strong>{selectedPatients.size} selected patients</strong>? 
+                  This will permanently remove all patient data including:
+                </p>
+                <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                  <li>Patient profile information</li>
+                  <li>Medical records and history</li>
+                  <li>Appointment history</li>
+                  <li>Associated files and documents</li>
+                </ul>
+              </div>
+              
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={handleCancelMassDelete}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmMassDelete}
+                  disabled={loading}
+                  className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {loading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>{loading ? 'Deleting...' : 'Delete Patients'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
