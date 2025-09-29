@@ -7,7 +7,7 @@ import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
 import { staffService } from '@/services/staffService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Staff, CreateStaffData } from '@/types';
+import { Staff, CreateStaffData, UpdateStaffData } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 
 const StaffPage = () => {
@@ -150,14 +150,58 @@ const StaffPage = () => {
     { value: '+91', label: '+91 (India)' }
   ];
 
-  // Available permissions
+  // Available permissions with descriptions
   const availablePermissions = [
-    'Patient',
-    'Appointments',
-    'Diagnostics',
-    'HAT',
-    'Billing',
-    'Expense'
+    {
+      value: 'Patient Management',
+      label: 'Patient Management',
+      description: 'View and manage patient records'
+    },
+    {
+      value: 'Appointments & Calendar',
+      label: 'Appointments & Calendar', 
+      description: 'Schedule and manage appointments'
+    },
+    {
+      value: 'Diagnostics & Testing',
+      label: 'Diagnostics & Testing',
+      description: 'Perform and review diagnostic tests'
+    },
+    {
+      value: 'Inventory Management',
+      label: 'Inventory Management',
+      description: 'Manage stock and inventory items'
+    },
+    {
+      value: 'Billing & Invoicing',
+      label: 'Billing & Invoicing',
+      description: 'Create and manage invoices and payments'
+    },
+    {
+      value: 'Expense Management',
+      label: 'Expense Management',
+      description: 'Track and manage business expenses'
+    },
+    {
+      value: 'Reports & Analytics',
+      label: 'Reports & Analytics',
+      description: 'View reports and system analytics'
+    },
+    {
+      value: 'Settings & Configuration',
+      label: 'Settings & Configuration',
+      description: 'Access system settings and configuration'
+    },
+    {
+      value: 'HAT Forms & Documentation',
+      label: 'HAT Forms & Documentation',
+      description: 'Access hearing aid test forms and documentation'
+    },
+    {
+      value: 'Clinical Notes',
+      label: 'Clinical Notes',
+      description: 'Create and view clinical notes and records'
+    }
   ];
 
   // Fetch staff data
@@ -216,6 +260,8 @@ const StaffPage = () => {
     }
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Phone number must be exactly 10 digits';
     }
     if (formData.permissions.length === 0) {
       newErrors.permissions = 'At least one permission must be selected';
@@ -233,7 +279,18 @@ const StaffPage = () => {
     }
 
     try {
-      await staffService.createStaff(formData, token || undefined);
+      // Prepare data for submission - omit empty specialization
+      const submitData: CreateStaffData = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        phoneNumber: formData.phoneNumber,
+        countrycode: formData.countrycode,
+        permissions: formData.permissions,
+        ...(formData.specialization?.trim() && { specialization: formData.specialization.trim() })
+      };
+      
+      await staffService.createStaff(submitData, token || undefined);
       await fetchStaff(); // Refresh the list
       setShowAddModal(false);
       setFormData({
@@ -287,10 +344,10 @@ const StaffPage = () => {
     if (!editingStaff) return;
     
     try {
-      const updateData = {
+      const updateData: UpdateStaffData = {
         role: formData.role,
-        specialization: formData.specialization,
-        permissions: formData.permissions
+        permissions: formData.permissions,
+        ...(formData.specialization?.trim() && { specialization: formData.specialization.trim() })
       };
       await staffService.updateStaff(editingStaff.id, updateData, token || undefined);
       await fetchStaff(); // Refresh the list
@@ -301,7 +358,7 @@ const StaffPage = () => {
         email: '',
         role: '',
         phoneNumber: '',
-        countrycode: '+1',
+        countrycode: '+91',
         specialization: '',
         permissions: []
       });
@@ -586,11 +643,18 @@ const StaffPage = () => {
                       type="tel"
                       name="phoneNumber"
                       value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                      placeholder="Enter phone number..."
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData(prev => ({ ...prev, phoneNumber: value }));
+                        if (errors.phoneNumber) {
+                          setErrors(prev => ({ ...prev, phoneNumber: '' }));
+                        }
+                      }}
+                      placeholder="Enter 10-digit phone number..."
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none text-sm ${
                         errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
                       }`}
+                      maxLength={10}
                       required
                     />
                     {errors.phoneNumber && (
@@ -635,12 +699,12 @@ const StaffPage = () => {
                   
                   <div className="space-y-3">
                     {availablePermissions.map((permission) => (
-                      <label key={permission} className="flex items-start space-x-3 cursor-pointer">
+                      <label key={permission.value} className="flex items-start space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={formData.permissions.includes(permission)}
+                          checked={formData.permissions.includes(permission.value)}
                           onChange={() => {
-                            handlePermissionChange(permission);
+                            handlePermissionChange(permission.value);
                             if (errors.permissions) {
                               setErrors(prev => ({ ...prev, permissions: '' }));
                             }
@@ -649,10 +713,10 @@ const StaffPage = () => {
                         />
                         <div>
                           <span className="text-xs font-medium text-gray-900">
-                            {permission}
+                            {permission.label}
                           </span>
                           <p className="text-xs text-gray-600">
-                            Access to {permission.toLowerCase()} module
+                            {permission.description}
                           </p>
                         </div>
                       </label>
@@ -796,12 +860,12 @@ const StaffPage = () => {
                   
                   <div className="space-y-3">
                     {availablePermissions.map((permission) => (
-                      <label key={permission} className="flex items-start space-x-3 cursor-pointer">
+                      <label key={permission.value} className="flex items-start space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={formData.permissions.includes(permission)}
+                          checked={formData.permissions.includes(permission.value)}
                           onChange={() => {
-                            handlePermissionChange(permission);
+                            handlePermissionChange(permission.value);
                             if (errors.permissions) {
                               setErrors(prev => ({ ...prev, permissions: '' }));
                             }
@@ -810,10 +874,10 @@ const StaffPage = () => {
                         />
                         <div>
                           <span className="text-xs font-medium text-gray-900">
-                            {permission}
+                            {permission.label}
                           </span>
                           <p className="text-xs text-gray-600">
-                            Access to {permission.toLowerCase()} module
+                            {permission.description}
                           </p>
                         </div>
                       </label>
