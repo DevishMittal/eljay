@@ -40,6 +40,19 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (field: keyof CreateDoctorData, value: string | number) => {
+    // Handle phone number validation for exactly 10 digits
+    if (field === 'phoneNumber' || field === 'bdmContact') {
+      const numericValue = String(value).replace(/\D/g, ''); // Remove non-numeric characters
+      if (numericValue.length <= 10) {
+        setFormData(prev => ({ ...prev, [field]: numericValue }));
+        // Clear error when user starts typing
+        if (errors[field]) {
+          setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+      }
+      return;
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -195,9 +208,10 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 </label>
                 <input
                   type="tel"
-                  placeholder="e.g., +91 98765 43210"
+                  placeholder="Enter 10-digit phone number"
                   value={formData.phoneNumber}
                   onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                  maxLength={10}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
                     errors.phoneNumber ? "border-red-300" : "border-gray-300",
@@ -390,9 +404,10 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
                 </label>
                 <input
                   type="tel"
-                  placeholder="e.g., +91 87654 32109"
+                  placeholder="Enter 10-digit BDM contact"
                   value={formData.bdmContact || ''}
                   onChange={(e) => handleInputChange('bdmContact', e.target.value)}
+                  maxLength={10}
                   className={cn(
                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
                     errors.bdmContact ? "border-red-300" : "border-gray-300",

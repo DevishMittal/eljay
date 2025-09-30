@@ -18,6 +18,8 @@ const DiagnosticsPage = () => {
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addPriceInput, setAddPriceInput] = useState<string>('');
+  const [editPriceInput, setEditPriceInput] = useState<string>('');
   const [formData, setFormData] = useState<CreateDiagnosticData>({
     name: '',
     category: '',
@@ -171,6 +173,7 @@ const DiagnosticsPage = () => {
       await fetchDiagnostics(); // Refresh the list
       setShowAddModal(false);
       setFormData({ name: '', category: '', price: 0, description: '' });
+      setAddPriceInput('');
     } catch (err) {
       console.error('Error creating diagnostic:', err);
       // You might want to show an error message to the user here
@@ -182,6 +185,8 @@ const DiagnosticsPage = () => {
     setShowEditModal(false);
     setEditingDiagnostic(null);
     setFormData({ name: '', category: '', price: 0, description: '' });
+    setAddPriceInput('');
+    setEditPriceInput('');
   };
 
   const handleEdit = (diagnostic: Diagnostic) => {
@@ -192,6 +197,7 @@ const DiagnosticsPage = () => {
       price: diagnostic.price,
       description: diagnostic.description
     });
+    setEditPriceInput(String(diagnostic.price ?? ''));
     setShowEditModal(true);
   };
 
@@ -205,6 +211,7 @@ const DiagnosticsPage = () => {
       setShowEditModal(false);
       setEditingDiagnostic(null);
       setFormData({ name: '', category: '', price: 0, description: '' });
+      setEditPriceInput('');
     } catch (err) {
       console.error('Error updating diagnostic:', err);
       // You might want to show an error message to the user here
@@ -266,7 +273,10 @@ const DiagnosticsPage = () => {
               Diagnostics
             </h2>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                setAddPriceInput('');
+                setShowAddModal(true);
+              }}
               className="flex items-center space-x-2 bg-[#f97316] text-white px-4 py-2 rounded-md hover:bg-[#ea580c] transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -426,10 +436,16 @@ const DiagnosticsPage = () => {
                     Price (₹)
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
+                    value={addPriceInput}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/[^\d.]/g, '');
+                      setAddPriceInput(cleaned);
+                      const parsed = cleaned === '' ? 0 : parseFloat(cleaned);
+                      setFormData(prev => ({ ...prev, price: isNaN(parsed) ? 0 : parsed }));
+                    }}
                     placeholder="Enter price..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required
@@ -526,10 +542,16 @@ const DiagnosticsPage = () => {
                     Price (₹)
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
+                    value={editPriceInput}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/[^\d.]/g, '');
+                      setEditPriceInput(cleaned);
+                      const parsed = cleaned === '' ? 0 : parseFloat(cleaned);
+                      setFormData(prev => ({ ...prev, price: isNaN(parsed) ? 0 : parsed }));
+                    }}
                     placeholder="Enter price..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                     required

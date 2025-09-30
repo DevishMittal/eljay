@@ -176,6 +176,19 @@ const DoctorsPage = () => {
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Handle phone number validation for exactly 10 digits
+    if (name === 'phoneNumber' || name === 'bdmContact') {
+      const numericValue = value.replace(/\D/g, ''); // Remove non-numeric characters
+      if (numericValue.length <= 10) {
+        setEditFormData(prev => ({
+          ...prev,
+          [name]: numericValue
+        }));
+      }
+      return;
+    }
+    
     setEditFormData(prev => ({
       ...prev,
       [name]: name === 'commissionRate' ? parseFloat(value) || 0 : value
@@ -551,7 +564,8 @@ const DoctorsPage = () => {
                         name="phoneNumber"
                         value={editFormData.phoneNumber}
                         onChange={handleEditInputChange}
-                        placeholder="Enter phone number..."
+                        placeholder="Enter 10-digit phone number..."
+                        maxLength={10}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                         required
                       />
@@ -622,7 +636,8 @@ const DoctorsPage = () => {
                         name="bdmContact"
                         value={editFormData.bdmContact}
                         onChange={handleEditInputChange}
-                        placeholder="Enter BDM contact..."
+                        placeholder="Enter 10-digit BDM contact..."
+                        maxLength={10}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
                       />
                     </div>
