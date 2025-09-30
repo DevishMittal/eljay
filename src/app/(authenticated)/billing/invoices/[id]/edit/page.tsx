@@ -749,7 +749,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                     <span className="font-medium">₹{calculateTax().total.toLocaleString()}</span>
                   </div>
                   
-                  <div className="border-t pt-3">
+                  <div className="!border-t pt-3">
                     <div className="flex justify-between text-xs font-semibold">
                       <span>Final Amount:</span>
                       <span>₹{calculateFinalAmount().toLocaleString()}</span>

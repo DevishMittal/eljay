@@ -811,7 +811,7 @@ export default function InventoryPage() {
                                 </button>
 
                                 {/* Separator */}
-                                <div className="border-t border-gray-200 my-1"></div>
+                                <div className="!border-t border-gray-200 my-1"></div>
 
                                 {/* Add Stock */}
                                 <button
@@ -832,7 +832,7 @@ export default function InventoryPage() {
                                 </button>
 
                                 {/* Separator */}
-                                <div className="border-t border-gray-200 my-1"></div>
+                                <div className="!border-t border-gray-200 my-1"></div>
 
                                 {/* Delete Item */}
                                 <button

@@ -413,7 +413,7 @@ export default function EditExpensePage() {
                     <span className="text-gray-600">Tax Amount:</span>
                     <span className="text-gray-900">₹{parseFloat(taxAmount || '0').toLocaleString()}</span>
                   </div>
-                  <div className="border-t pt-3">
+                  <div className="!border-t pt-3">
                     <div className="flex justify-between">
                       <span className="text-lg font-semibold text-gray-900">Total Amount:</span>
                       <span className="text-lg font-semibold text-gray-900">

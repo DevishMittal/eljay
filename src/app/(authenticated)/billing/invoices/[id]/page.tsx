@@ -1239,7 +1239,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                       <span className="text-sm font-medium">₹{invoice.totalTax.toLocaleString()}</span>
                     </div>
 
-                    <div className="!border-t pt-3">
+                    <div className="!!border-t pt-3">
                       <div className="flex justify-between">
                         <span className="font-semibold text-[#101828]">Total Amount:</span>
                         <span className="font-semibold text-[#101828]">₹{invoice.totalAmount.toLocaleString()}</span>
@@ -1254,7 +1254,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             -₹{invoicePayments.reduce((total, payment) => total + payment.amount, 0).toLocaleString()}
                           </span>
                         </div>
-                        <div className="!border-t pt-3">
+                        <div className="!!border-t pt-3">
                           <div className="flex justify-between">
                             <span className="font-semibold text-green-800">Remaining Balance:</span>
                             <span className="font-semibold text-green-800">
@@ -1309,7 +1309,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             {/* Dynamic Footer using Print Settings */}
             {printSettings?.footerSettings && (
               <div 
-                className="!border-t border-gray-300 pt-6 text-center text-sm text-gray-600"
+                className="!!border-t border-gray-300 pt-6 text-center text-sm text-gray-600"
                 style={{ marginTop: `${printSettings.footerSettings.topMargin * 16}px` }}
               >
                 {printSettings.footerSettings.thankYouMessage && (

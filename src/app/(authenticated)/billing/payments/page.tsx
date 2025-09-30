@@ -640,7 +640,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
+            <div className="flex justify-between items-center mt-6 pt-4 !border-t border-gray-200 p-6">
               <p className="text-sm text-gray-600">
                 Showing 1 to {filteredAndSortedPayments.length} of {filteredAndSortedPayments.length} payments
               </p>

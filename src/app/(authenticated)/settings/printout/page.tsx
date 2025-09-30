@@ -1144,7 +1144,7 @@ const InvoicePreview = ({ documentType, settings }: {
 
         {/* Footer */}
         <div 
-          className="!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
+          className="!!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
           style={{ marginTop: `${settings.footerSettings.topMargin * 16}px` }}
         >
           {settings.footerSettings.thankYouMessage && (

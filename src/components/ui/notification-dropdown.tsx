@@ -206,7 +206,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
       {/* Footer Actions */}
       {filteredNotifications.length > 0 && (
-        <div className="flex items-center justify-between p-3 border-t border-gray-200">
+        <div className="flex items-center justify-between p-3 !border-t border-gray-200">
           <button
             onClick={handleMarkAllAsRead}
             className="text-xs text-gray-600 hover:text-gray-800 transition-colors"

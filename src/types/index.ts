@@ -554,6 +554,14 @@ export interface DiagnosticAppointmentsResponse {
   };
 }
 
+export interface ReferralSourceCreate {
+  type: 'doctor' | 'direct' | 'hear.com';
+  sourceName: string;
+  contactNumber?: string;
+  hospital?: string;
+  specialization?: string;
+}
+
 export interface CreateDiagnosticAppointmentData {
   userId: string;
   audiologistId?: string; // deprecated
@@ -565,6 +573,7 @@ export interface CreateDiagnosticAppointmentData {
   cost: number;
   status: 'planned' | 'completed' | 'cancelled';
   referralSourceId?: string;
+  referralSource?: ReferralSourceCreate;
 }
 
 // Staff types

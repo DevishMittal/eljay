@@ -24,7 +24,7 @@ const Footer: React.FC<FooterProps> = ({ className, showNewsletter = true }) => 
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={cn('bg-muted/50 border-t border-border', className)}>
+    <footer className={cn('bg-muted/50 !border-t border-border', className)}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Section */}
@@ -84,7 +84,7 @@ const Footer: React.FC<FooterProps> = ({ className, showNewsletter = true }) => 
 
         {/* Newsletter Section */}
         {showNewsletter && (
-          <div className="mt-12 pt-8 border-t border-border">
+          <div className="mt-12 pt-8 !border-t border-border">
             <div className="max-w-md">
               <h3 className="font-semibold text-foreground mb-2">
                 Stay updated with our newsletter
@@ -119,7 +119,7 @@ const Footer: React.FC<FooterProps> = ({ className, showNewsletter = true }) => 
         )}
 
         {/* Bottom Section */}
-        <div className="mt-12 pt-8 border-t border-border">
+        <div className="mt-12 pt-8 !border-t border-border">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-muted-foreground">
               © {currentYear} Eljay. All rights reserved.

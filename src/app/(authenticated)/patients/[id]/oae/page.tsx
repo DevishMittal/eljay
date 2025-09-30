@@ -800,7 +800,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
 
           {/* New/Edit Test Session Form */}
           {isEditing && (
-            <div className="border-t border-gray-200 pt-4">
+            <div className="!!border-t border-gray-200 pt-4">
               <h4 className="text-xs font-semibold text-gray-900 mb-4">
                 {editingFormId ? 'Edit Test Session' : 'New Test Session'}
               </h4>

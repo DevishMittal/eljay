@@ -421,7 +421,7 @@ export default function PatientsPage() {
                     </div>
                     
                     {(classification || gender || patientStatus) && (
-                      <div className="pt-2 border-t border-gray-200">
+                      <div className="pt-2 !border-t border-gray-200">
                         <button
                           onClick={clearFilters}
                           className="text-sm text-orange-600 hover:text-orange-700 font-medium"
@@ -542,7 +542,7 @@ export default function PatientsPage() {
                         </svg>
                         <span>Export as CSV</span>
                       </button>
-                      <div className="border-t border-gray-100 my-1"></div>
+                      <div className="!border-t border-gray-100 my-1"></div>
                       <button
                         onClick={handleMassDelete}
                         className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2"
@@ -861,7 +861,7 @@ export default function PatientsPage() {
                     </div>
                     
                     {/* Actions */}
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex justify-center">
+                    <div className="mt-4 pt-3 !border-t border-gray-100 flex justify-center">
                       <button 
                         onClick={(e) => handleDeletePatient(patient.patient_id, e)}
                         disabled={loading}
@@ -887,7 +887,7 @@ export default function PatientsPage() {
         </div>
 
         {/* Pagination Footer - Sticky to bottom */}
-        <div className="bg-white mt-auto !p-1 !pt-2.5 !pb-2.5  !border-t ">
+        <div className="bg-white mt-auto !p-1 !pt-2.5 !pb-2.5  !!border-t ">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="text-xs" style={{ color: '#717182' }}>

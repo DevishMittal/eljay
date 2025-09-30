@@ -444,7 +444,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 mt-8 pt-6 !border-t border-gray-200">
+          <div className="flex justify-end space-x-3 mt-8 pt-6 !!border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}

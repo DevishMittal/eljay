@@ -290,7 +290,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
       {/* Footer with selected date info */}
       {value && (
-        <div className="mt-3 pt-2 border-t border-gray-200">
+        <div className="mt-3 pt-2 !border-t border-gray-200">
           <p className="text-xs text-gray-600 text-center">
             Selected: <span className="font-medium text-gray-900">{value.toLocaleDateString('en-US', { 
               weekday: 'short', 

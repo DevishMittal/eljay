@@ -638,7 +638,7 @@ export default function B2CInvoicePage() {
                   ))}
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-4 pt-4 !border-t border-gray-200">
                   <div className="flex justify-between text-sm font-medium">
                     <span>Total from Outstanding Receipts:</span>
                     <span>₹{calculateTotalFromOutstandingReceipts().toLocaleString()}</span>

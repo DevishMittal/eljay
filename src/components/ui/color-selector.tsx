@@ -280,7 +280,7 @@ export default function ColorSelector({
                 <button
                   type="button"
                   onClick={handleAddSearchedColor}
-                  className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-blue-600 border-t border-gray-200"
+                  className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-blue-600 !border-t border-gray-200"
                   style={{ fontFamily: 'Segoe UI' }}
                 >
                   <Plus className="w-4 h-4" />
@@ -292,7 +292,7 @@ export default function ColorSelector({
               <button
                 type="button"
                 onClick={() => setShowColorPicker(true)}
-                className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-blue-600 border-t border-gray-200"
+                className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-blue-600 !border-t border-gray-200"
                 style={{ fontFamily: 'Segoe UI' }}
               >
                 <Palette className="w-4 h-4" />

@@ -326,7 +326,7 @@ export default function AddExpensePage() {
                     <span className="text-sm text-gray-600">Tax Amount:</span>
                     <span className="text-lg font-semibold text-gray-900">₹{parseFloat(taxAmount) || 0}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center pt-4 !border-t border-gray-200">
                     <span className="text-lg font-semibold text-gray-900">Total Amount:</span>
                     <span className="text-2xl font-bold text-blue-600">₹{calculateTotal()}</span>
                   </div>

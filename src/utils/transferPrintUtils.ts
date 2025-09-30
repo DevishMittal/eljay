@@ -86,6 +86,26 @@ export const getTransferPrintSettings = (): PrintSettings['transfers'] => {
  */
 export const saveTransferPrintSettings = (settings: PrintSettings['transfers']): void => {
   try {
+    // 1) Update global settings bucket
+    try {
+      const existingAll = localStorage.getItem('printSettings_all');
+      let allSettings: PrintSettings | null = null;
+      if (existingAll) {
+        allSettings = JSON.parse(existingAll) as PrintSettings;
+      }
+      if (allSettings) {
+        const updatedAll: PrintSettings = { ...allSettings, transfers: settings } as PrintSettings;
+        localStorage.setItem('printSettings_all', JSON.stringify(updatedAll));
+      } else {
+        const minimalAll: Partial<PrintSettings> = { transfers: settings };
+        localStorage.setItem('printSettings_all', JSON.stringify(minimalAll));
+      }
+    } catch {}
+
+    // 2) Update per-document key
+    localStorage.setItem('printSettings_transfers', JSON.stringify(settings));
+
+    // 3) Backward-compat legacy key
     localStorage.setItem('transferPrintSettings', JSON.stringify(settings));
   } catch (error) {
     console.error('Error saving transfer print settings:', error);
@@ -107,7 +127,7 @@ const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?:
       <div class="transfer-header">
         <div class="flex justify-between items-start">
           <div>
-            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
+            ${headerSettings?.logo?.uploaded ? '<div class="logo-box mb-1" style="height: 6rem; display: flex; align-items: flex-end; overflow: hidden;"><img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-full object-cover" /></div>' : ''}
             <div>
               ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
             </div>
@@ -196,7 +216,7 @@ const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?:
       <div class="grid grid-cols-2 gap-8 mb-6">
         <div>
           <h3 class="font-semibold mb-2">Transfer Notes</h3>
-          <p class="text-sm text-gray-600">${transfer.additionalNotes || 'Transfer completed successfully. Items received in good condition.'}</p>
+          <p class="text-sm text-gray-600">${transfer.additionalNotes || transfer.notes || 'Transfer completed successfully. Items received in good condition.'}</p>
         </div>
         <div>
           <h3 class="font-semibold mb-2">Transfer Summary</h3>
@@ -223,7 +243,7 @@ const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?:
 
       <!-- Footer -->
       <div 
-        class="!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
+        class="doc-footer"
         style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;"
       >
         ${printSettings?.footerSettings?.thankYouMessage ? `
@@ -244,7 +264,9 @@ const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?:
 /**
  * Get CSS styles for transfer report printing
  */
-const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers']) => {
+const getTransferReportPrintStyles = (printSettings?: PrintSettings['transfers']) => {
+  const pageSettings = printSettings?.pageSettings;
+  const margins = pageSettings?.margins || { top: 0.5, left: 0.5, bottom: 0.5, right: 0.5 };
   return `
     * {
       box-sizing: border-box;
@@ -253,7 +275,7 @@ const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers'
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
       color: #000;
       line-height: 1.6;
       font-size: 14px;
@@ -262,7 +284,7 @@ const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers'
     @media print {
       body {
         margin: 0;
-        padding: 15px;
+        padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
       }
       
       .no-print {
@@ -450,16 +472,12 @@ const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers'
       color: #16a34a;
     }
 
-    .border-t {
-      border-top-width: 1px;
-    }
-
-    .pt-4 {
-      padding-top: 1rem;
-    }
-
-    .text-center {
+    .doc-footer {
       text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #d1d5db;
+      color: #6b7280;
     }
 
     .leading-tight {

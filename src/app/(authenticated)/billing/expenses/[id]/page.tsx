@@ -284,7 +284,7 @@ export default function ExpenseDetailsPage() {
                     <span className="text-sm text-gray-600">Tax Amount (GST/Tax applied):</span>
                     <span className="text-lg font-semibold text-gray-900">₹{expense.taxAmount.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center pt-4 !border-t border-gray-200">
                     <span className="text-lg font-semibold text-gray-900">Total Amount (Amount + Tax):</span>
                     <span className="text-2xl font-bold text-blue-600">₹{expense.totalAmount.toLocaleString()}</span>
                   </div>

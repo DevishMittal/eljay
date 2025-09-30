@@ -729,7 +729,7 @@ const StaffPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <div className="flex items-center justify-end space-x-3 p-6 !border-t border-gray-200">
                 <button
                   onClick={handleCancel}
                   className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
@@ -887,7 +887,7 @@ const StaffPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <div className="flex items-center justify-end space-x-3 p-6 !border-t border-gray-200">
                 <button
                   onClick={handleCancel}
                   className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"

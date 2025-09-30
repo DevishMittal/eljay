@@ -1104,7 +1104,7 @@ export default function DoctorReferralsPage() {
                   </div>
 
                   {/* Summary Row */}
-                  <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                  <div className="bg-gray-50 px-6 py-4 !border-t border-gray-200">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>{totalReferrals} total referrals</strong></span>
@@ -1121,7 +1121,7 @@ export default function DoctorReferralsPage() {
                   </div>
 
                   {/* Pagination */}
-                  <div className="bg-white px-6 py-3 border-t border-gray-200">
+                  <div className="bg-white px-6 py-3 !border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-700">Showing 1 to {Math.min(filteredReferralData.length, 4)} of {filteredReferralData.length}</span>
@@ -1260,7 +1260,7 @@ export default function DoctorReferralsPage() {
                   </div>
 
                   {/* Total Row */}
-                  <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                  <div className="bg-gray-50 px-6 py-4 !border-t border-gray-200">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center space-x-6">
                         <span style={{ color: '#101828' }}><strong>Total</strong></span>
@@ -1275,7 +1275,7 @@ export default function DoctorReferralsPage() {
                   </div>
 
                   {/* Pagination */}
-                  <div className="bg-white px-6 py-3 border-t border-gray-200">
+                  <div className="bg-white px-6 py-3 !border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-700">Showing 1 to {commissionStatementsData.length} of {commissionStatementsData.length}</span>

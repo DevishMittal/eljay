@@ -216,7 +216,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
         </div>
         
         {/* Division Line 1 - After Header */}
-        <div className="border-t border-border"></div>
+        <div className="!border-t border-border"></div>
 
         {/* Primary Actions */}
         <div className="space-y-2 px-3 py-2">
@@ -231,14 +231,14 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
           </button>
           
           {/* Division Line 2 - After Add Walk-in Button */}
-          <div className="border-t border-border"></div>
+          <div className="!border-t border-border"></div>
           
           <div className="px-1">
             <AudiologistOverview />
           </div>
           
           {/* Division Line 3 - After Audiologist Overview */}
-          <div className="border-t border-border"></div>
+          <div className="!border-t border-border"></div>
 
           <div className="flex items-center justify-between p-2 rounded-md px-3">
             <div className="flex items-center space-x-2">
@@ -286,7 +286,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
           </div>
           
           {/* Division Line 4 - After Today/Tomorrow Navigation */}
-          <div className="border-t border-border"></div>
+          <div className="!border-t border-border"></div>
 
           {/* Visual Progress Indicators - Non-clickable */}
           <div className="space-y-2">
@@ -369,7 +369,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
         </div>
         
         {/* Division Line 5 - After Task Bars */}
-        <div className="border-t border-border"></div>
+        <div className="!border-t border-border"></div>
       </div>
 
       {/* Scrollable Tasks Section */}
@@ -454,7 +454,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
 
       {/* Add New Task Button - Fixed at Bottom */}
       {!isCollapsed && (
-        <div className="px-3 py-3 border-t border-border ">
+        <div className="px-3 py-3 !border-t border-border ">
           <button 
             onClick={() => setIsAddTaskModalOpen(true)}
             className="w-full bg-white  border border-border text-foreground py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center space-x-2 hover:bg-muted transition-colors"

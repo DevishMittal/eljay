@@ -253,7 +253,7 @@ export default function TagsSelector({
 
             {/* Selected Tags Display */}
             {selectedTags.length > 0 && (
-              <div className="p-3 border-t border-gray-200 bg-gray-50">
+              <div className="p-3 !border-t border-gray-200 bg-gray-50">
                 <div className="flex flex-wrap gap-2">
                   {selectedTags.map((tag) => (
                     <div
