@@ -5,11 +5,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
-import { Audiologist, CreateAppointmentData, User, Doctor, Hospital, Diagnostic } from '@/types';
+import { Audiologist, CreateAppointmentData, User, Doctor, Hospital, Diagnostic, Staff } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { doctorService } from '@/services/doctorService';
+import { staffService } from '@/services/staffService';
 import HospitalService from '@/services/hospitalService';
 import diagnosticsService from '@/services/diagnosticsService';
 
@@ -107,7 +108,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
   });
 
   // API data states
-  const [audiologists, setAudiologists] = useState<Audiologist[]>([]);
+  const [audiologists, setAudiologists] = useState<Array<Pick<Audiologist, 'id' | 'name' | 'isAvailable'>>>([]);
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const [existingUser, setExistingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,17 +140,21 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
     return null;
   };
 
-  // Load audiologists from API
+  // Load audiologists (from staff with role 'Audiologist')
   const loadAudiologists = useCallback(async () => {
     try {
-      const response = await appointmentService.getAvailableAudiologists(token || undefined);
-      setAudiologists(response.data);
-      // Set first audiologist as default
-      if (response.data.length > 0) {
-        setFormData(prev => ({ ...prev, selectedAudiologist: response.data[0].id }));
+      const response = await staffService.getStaff(token || undefined);
+      const onlyAudiologists = response.data.filter((s: Staff) => {
+        const role = (s.role || '').toLowerCase();
+        return role === 'audiologist' || role === 'senior audiologist';
+      });
+      const mapped = onlyAudiologists.map((s: Staff) => ({ id: s.id, name: s.name, isAvailable: true }));
+      setAudiologists(mapped);
+      if (mapped.length > 0) {
+        setFormData(prev => ({ ...prev, selectedAudiologist: mapped[0].id }));
       }
     } catch (error) {
-      console.error('Error loading audiologists:', error);
+      console.error('Error loading staff audiologists:', error);
     }
   }, [token]);
 
@@ -389,9 +394,9 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
           return 'This time slot is already booked. Please select a different time slot.';
         }
         
-        // Check for audiologist availability
+        // Check for staff (audiologist) availability
         const audiologistError = errors.find(err => 
-          err.field === 'audiologistId' || 
+          err.field === 'staffId' || 
           err.message.toLowerCase().includes('audiologist') ||
           err.message.toLowerCase().includes('not available')
         );
@@ -599,7 +604,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       // Create appointment
       const appointmentData: CreateAppointmentData = {
         userId: userId,
-        audiologistId: formData.selectedAudiologist,
+        staffId: formData.selectedAudiologist,
         appointmentDate: formData.appointmentDate,
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: parseInt(formData.duration),

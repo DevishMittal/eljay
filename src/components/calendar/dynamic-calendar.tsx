@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/utils';
 import Image from 'next/image'; // Import for using SVG as <Image>
 import { appointmentService } from '@/services/appointmentService';
+import { staffService } from '@/services/staffService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
@@ -60,6 +61,29 @@ export default function DynamicCalendar({
   const [notesUpdateSuccess, setNotesUpdateSuccess] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [staffIdToName, setStaffIdToName] = useState<Record<string, string>>({});
+
+  // Load staff (audiologists) for name resolution
+  useEffect(() => {
+    const loadStaff = async () => {
+      try {
+        const response = await staffService.getStaff(token || undefined);
+        const onlyAudiologists = (response.data || []).filter((s: any) => {
+          const role = (s.role || '').toLowerCase();
+          return role === 'audiologist' || role === 'senior audiologist';
+        });
+        const map: Record<string, string> = {};
+        onlyAudiologists.forEach((s: any) => {
+          if (s.id) map[s.id] = s.name || '';
+        });
+        setStaffIdToName(map);
+      } catch (e) {
+        // Non-blocking
+        console.error('Failed to load staff for audiologist names', e);
+      }
+    };
+    loadStaff();
+  }, [token]);
 
   // Generate time slots
   const timeSlots = useMemo(() => generateTimeSlots(8, 20, 30), []);
@@ -417,7 +441,12 @@ export default function DynamicCalendar({
             <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span className="text-xs text-gray-700">{appointment.audiologist || 'Dr. Alex Kumar'}</span>
+            <span className="text-xs text-gray-700">{
+              (appointmentSummary?.staffId && staffIdToName[appointmentSummary.staffId]) ||
+              (((appointment as any).staffId) && staffIdToName[(appointment as any).staffId]) ||
+              appointmentSummary?.audiologist?.name ||
+              appointment.audiologist || ''
+            }</span>
           </div>
           <div className="flex items-center space-x-2">
             <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -643,7 +672,12 @@ export default function DynamicCalendar({
               <div className="flex items-center justify-between text-xs">
                 <p className="text-gray-700">
                   <span className="font-medium text-gray-400 ">Audiologist:</span> <span className="font-semibold">
-                    {appointmentSummary?.audiologist?.name || appointment.audiologist || 'Dr. Alex Kumar'}
+                    {
+                      (appointmentSummary?.staffId && staffIdToName[appointmentSummary.staffId]) ||
+                      (((appointment as any).staffId) && staffIdToName[(appointment as any).staffId]) ||
+                      appointmentSummary?.audiologist?.name ||
+                      appointment.audiologist || ''
+                    }
                   </span>
                 </p>
                 <p className="text-gray-700">

@@ -7,6 +7,7 @@ import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
 import { appointmentService } from '@/services/appointmentService';
+import { staffService } from '@/services/staffService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Audiologist, Procedure, Doctor } from '@/types';
 
@@ -69,17 +70,21 @@ export default function CreateDiagnosticPlanModal({
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<string[]>([]);
   const [totalProcedureDuration, setTotalProcedureDuration] = useState(0);
 
-  // Load audiologists from API
+  // Load audiologists from staff list (role = 'Audiologist')
   const loadAudiologists = useCallback(async () => {
     try {
-      const response = await appointmentService.getAvailableAudiologists(token || undefined);
-      setAudiologists(response.data);
-      // Set first audiologist as default
-      if (response.data.length > 0) {
-        setFormData(prev => ({ ...prev, selectedAudiologist: response.data[0].id }));
+      const response = await staffService.getStaff(token || undefined);
+      const onlyAudiologists = response.data.filter((s: any) => {
+        const role = (s.role || '').toLowerCase();
+        return role === 'audiologist' || role === 'senior audiologist';
+      });
+      const mapped = onlyAudiologists.map((s: any) => ({ id: s.id, name: s.name, isAvailable: true } as unknown as Audiologist));
+      setAudiologists(mapped);
+      if (mapped.length > 0) {
+        setFormData(prev => ({ ...prev, selectedAudiologist: mapped[0].id }));
       }
     } catch (error) {
-      console.error('Error loading audiologists:', error);
+      console.error('Error loading staff audiologists:', error);
     }
   }, [token]);
 
@@ -206,7 +211,7 @@ export default function CreateDiagnosticPlanModal({
       // Create diagnostic appointment
       const appointmentData: CreateDiagnosticAppointmentData = {
         userId: patientId,
-        audiologistId: formData.selectedAudiologist,
+        staffId: formData.selectedAudiologist,
         appointmentDate: formData.appointmentDate,
         appointmentTime: appointmentService.convertTo24Hour(formData.appointmentTime),
         appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.appointmentDuration),

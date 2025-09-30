@@ -3,6 +3,7 @@ const BASE_URL = 'https://eljay-api.vizdale.com';
 export interface HATFormData {
   // Audiologist Information
   conductingAudiologist: string;
+  staffId?: string;
   
   // Assessment Information
   hearingDifficultiesPerception: 'Yes' | 'No';
@@ -80,7 +81,8 @@ export interface HATFormResponse {
     id: string;
     organizationId: string;
     userId: string;
-    audiologistId: string;
+    audiologistId: string; // deprecated: use staffId going forward
+    staffId?: string;
     status: string;
     createdAt: string;
     updatedAt: string;
@@ -111,7 +113,8 @@ export interface HATFormsListResponse {
       id: string;
       organizationId: string;
       userId: string;
-      audiologistId: string;
+      audiologistId: string; // deprecated: use staffId going forward
+      staffId?: string;
       status: string;
       createdAt: string;
       updatedAt: string;

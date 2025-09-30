@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/utils';
-import { doctorService } from '@/services/doctorService';
+import { staffService } from '@/services/staffService';
 import { Doctor } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,24 +23,17 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch audiologists data from API
-  useEffect(() => {
-    fetchAudiologists();
-    
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(() => fetchAudiologists(true), 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchAudiologists = async (isRefresh = false) => {
+  const fetchAudiologists = useCallback(async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
       setError(null);
-      const response = await doctorService.getAvailableAudiologists(token || undefined);
-      
-      // Transform API data to include stats
-      const audiologistsWithStats: AudiologistWithStats[] = response.data.map((audiologist: Doctor) => {
+      const response = await staffService.getStaff(token || undefined);
+      const staffAudiologists = response.data.filter((s: { role?: string; name: string }) => {
+        const role = (s.role || '').toLowerCase();
+        return role === 'audiologist' || role === 'senior audiologist';
+      });
+      // Transform staff to audiologist-like data with stats
+      const audiologistsWithStats: AudiologistWithStats[] = staffAudiologists.map((audiologist: { id: string; name: string; isAvailable?: boolean }) => {
         // Generate initials from name
         const initials = audiologist.name
           .split(' ')
@@ -55,9 +48,9 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
         return {
           ...audiologist,
           initials,
-          totalAppointments: 0, // API doesn't provide booked slots count
+          totalAppointments: 0,
           availableSlots
-        };
+        } as unknown as AudiologistWithStats;
       });
       
       setAudiologists(audiologistsWithStats);
@@ -67,7 +60,14 @@ const AudiologistOverview: React.FC<AudiologistOverviewProps> = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  // Fetch audiologists data from API
+  useEffect(() => {
+    fetchAudiologists();
+    const interval = setInterval(() => fetchAudiologists(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchAudiologists]);
 
   const totalAudiologists = audiologists.length;
   const totalAppointments = audiologists.reduce((sum, audiologist) => 

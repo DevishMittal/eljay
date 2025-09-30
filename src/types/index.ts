@@ -354,7 +354,8 @@ export interface UserAppointmentsResponse {
 // Appointment types
 export interface Appointment {
   id: string;
-  audiologistId: string;
+  audiologistId: string; // deprecated: use staffId going forward
+  staffId?: string;
   userId: string;
   visitStatus?: 'check_in' | 'cancelled' | 'absent' | null;
   notes?: string | null;
@@ -408,7 +409,8 @@ export interface AppointmentSummary {
 
 export interface CreateAppointmentData {
   userId: string;
-  audiologistId: string;
+  audiologistId?: string; // deprecated
+  staffId: string;
   appointmentDate: string;
   appointmentTime: string;
   appointmentDuration: number;
@@ -432,7 +434,8 @@ export interface UpdateAppointmentData {
   appointmentDate?: string;
   appointmentTime?: string;
   procedures?: string;
-  audiologistId?: string;
+  audiologistId?: string; // deprecated
+  staffId?: string;
 }
 
 export interface AppointmentsResponse {
@@ -511,7 +514,8 @@ export interface UpdateDiagnosticData {
 // Diagnostic Appointment types
 export interface DiagnosticAppointment {
   id: string;
-  audiologistId: string;
+  audiologistId: string; // deprecated
+  staffId?: string;
   userId: string;
   referralSourceId?: string;
   appointmentDate: string;
@@ -552,7 +556,8 @@ export interface DiagnosticAppointmentsResponse {
 
 export interface CreateDiagnosticAppointmentData {
   userId: string;
-  audiologistId: string;
+  audiologistId?: string; // deprecated
+  staffId: string;
   appointmentDate: string;
   appointmentTime: string;
   appointmentDuration: number;
@@ -593,13 +598,13 @@ export interface CreateStaffData {
   role: string;
   phoneNumber: string;
   countrycode: string;
-  specialization: string;
+  specialization?: string;
   permissions: string[];
 }
 
 export interface UpdateStaffData {
   role: string;
-  specialization: string;
+  specialization?: string;
   permissions: string[];
 }
 
@@ -1215,6 +1220,7 @@ export interface TransferItem {
 }
 
 export interface InventoryTransfer {
+  notes: string;
   id: string;
   organizationId: string;
   transferType: "Internal" | "Branch" | "Repair" | "External";
@@ -1438,6 +1444,11 @@ export interface PrintSettings {
     footerSettings: PrintFooterSettings;
   };
   expenses: {
+    pageSettings: PrintPageSettings;
+    headerSettings: PrintHeaderSettings;
+    footerSettings: PrintFooterSettings;
+  };
+  transfers: {
     pageSettings: PrintPageSettings;
     headerSettings: PrintHeaderSettings;
     footerSettings: PrintFooterSettings;

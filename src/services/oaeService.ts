@@ -4,7 +4,8 @@ export interface OAEForm {
   id: string;
   organizationId: string;
   userId: string;
-  audiologistId?: string;
+  audiologistId?: string; // deprecated: use staffId going forward
+  staffId?: string;
   patientName: string;
   patientId: string;
   classification: string;
@@ -66,7 +67,8 @@ export interface OAEFormResponse {
 
 export interface CreateOAEFormData {
   userId: string;
-  audiologistId?: string;
+  audiologistId?: string; // deprecated: use staffId going forward
+  staffId?: string;
   patientName: string;
   patientId: string;
   classification: string;
@@ -140,9 +142,9 @@ class OAEFormService {
   async updateOAEForm(id: string, formData: Partial<CreateOAEFormData>, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
     
-    // Remove userId and audiologistId from the update payload as per API requirement
+    // Remove userId, audiologistId, and staffId from the update payload as per API requirement
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { userId, audiologistId, ...updatePayload } = formData;
+    const { userId, audiologistId, staffId, ...updatePayload } = formData;
     
     const response = await this.makeRequest(url, {
       method: 'PUT',

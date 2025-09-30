@@ -26,7 +26,7 @@ interface FormData {
   
   // Hospital & Medical Staff
   hospitalName: string;
-  audiologistId: string;
+  staffId: string;
   
   // Test Session
   testDate: string;
@@ -63,7 +63,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
     babyMotherName: '',
     opNumber: '',
     hospitalName: 'Sunrise Hospital',
-    audiologistId: '',
+    staffId: '',
     testDate: new Date().toISOString().split('T')[0],
     testReason: 'Initial Screening',
     testResults: '',
@@ -91,9 +91,13 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
           const patientForms = allForms.filter(form => form.patientId === patientId);
           setOaeForms(patientForms);
 
-          // Fetch staff data for Staff dropdown
+          // Fetch staff data for Staff dropdown (filtered for audiologists)
           const staffResponse = await staffService.getStaff(token);
-          setStaff(staffResponse.data || []);
+          const audiologistStaff = staffResponse.data.filter((s: any) => {
+            const role = (s.role || '').toLowerCase();
+            return role === 'audiologist' || role === 'senior audiologist';
+          });
+          setStaff(audiologistStaff);
 
           // Fetch audiologists data for "Conducted By" dropdown
           const audiologistsResponse = await doctorService.getDoctors(token);
@@ -111,7 +115,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
             classification: patientResponse.patient.type || 'B2B',
             hospitalName: patientResponse.patient.hospital_name || 'Sunrise Hospital',
             opNumber: patientResponse.patient.patient_id || '',
-            audiologistId: '', // Will be set by user from staff dropdown
+            staffId: '', // Will be set by user from staff dropdown
             sessionNumber: patientForms.length + 1,
             failedAttempts: patientForms.filter(form => form.testResults === 'Fail').length
           }));
@@ -197,29 +201,9 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         failedAttempts: formData.failedAttempts
       };
 
-      // Map staff selection to audiologist ID or use the first available audiologist
-      let audiologistId = '';
-      if (formData.audiologistId && formData.audiologistId.trim() !== '') {
-        // If staff is selected, try to find a matching audiologist by name
-        const selectedStaff = staff.find(s => s.id === formData.audiologistId);
-        if (selectedStaff) {
-          // Try to find an audiologist with matching name
-          const matchingAudiologist = audiologists.find(a => 
-            a.name.toLowerCase().includes(selectedStaff.name.toLowerCase()) ||
-            selectedStaff.name.toLowerCase().includes(a.name.toLowerCase())
-          );
-          audiologistId = matchingAudiologist?.id || (audiologists[0]?.id || '');
-        }
-      }
-      
-      // If no mapping found, use the first available audiologist
-      if (!audiologistId && audiologists.length > 0) {
-        audiologistId = audiologists[0].id;
-      }
-
-      // Always include audiologistId as it's required by the API
-      if (audiologistId) {
-        formPayload.audiologistId = audiologistId;
+      // Use staffId instead of audiologistId
+      if (formData.staffId && formData.staffId.trim() !== '') {
+        formPayload.staffId = formData.staffId;
       }
 
       // Debug: Log the formatted dates
@@ -295,7 +279,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
       babyMotherName: form.babyMotherName,
       opNumber: form.opNumber,
       hospitalName: form.hospitalName,
-      audiologistId: form.audiologistId || '',
+      staffId: form.staffId || '',
       testDate: form.testDate.split('T')[0], // Convert to date input format
       testReason: form.testReason,
       testResults: form.testResults,
@@ -695,15 +679,15 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                   <UserCheck size={16} className="text-gray-400" />
                   <CustomDropdown
                     options={staffOptions}
-                    value={formData.audiologistId}
-                    onChange={(value) => handleInputChange('audiologistId', value)}
+                    value={formData.staffId}
+                    onChange={(value) => handleInputChange('staffId', value)}
                     placeholder="Select staff member"
                   />
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
                   <UserCheck size={16} className="text-gray-400" />
-                  <p className="text-xs text-gray-900">{getStaffName(formData.audiologistId)}</p>
+                  <p className="text-xs text-gray-900">{getStaffName(formData.staffId)}</p>
                 </div>
               )}
             </div>

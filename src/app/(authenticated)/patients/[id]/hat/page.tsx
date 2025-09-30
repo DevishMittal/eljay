@@ -265,7 +265,7 @@ export default function HATFormPage({
       const formDataToSave = {
         ...formData,
         userId: patient.id,
-        audiologistId: '451f0c8d-916f-422e-b12d-90fadeb8ebd0', // This should come from auth context
+        staffId: '451f0c8d-916f-422e-b12d-90fadeb8ebd0', // This should come from auth context
         // Note: hearingAidTrials is not included as it's not expected by the backend
       };
       
