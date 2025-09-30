@@ -1408,7 +1408,6 @@ export interface PrintPageSettings {
 
 export interface PrintHeaderSettings {
   includeHeader: boolean;
-  headerText: string;
   leftText: string;
   rightText: string;
   logo: {

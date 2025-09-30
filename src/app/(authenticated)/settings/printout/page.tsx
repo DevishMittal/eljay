@@ -21,11 +21,10 @@ const PrintoutPage = () => {
         paperSize: 'A4',
         orientation: 'Portrait',
         printerType: 'Color',
-        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+        margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
       },
       headerSettings: {
         includeHeader: true,
-        headerText: 'Hearing Centre Adyar',
         leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
         rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
         logo: { uploaded: true, type: 'Square', alignment: 'Left' }
@@ -53,11 +52,10 @@ const PrintoutPage = () => {
         paperSize: 'A4',
         orientation: 'Portrait',
         printerType: 'Color',
-        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+        margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
       },
       headerSettings: {
         includeHeader: true,
-        headerText: 'Hearing Centre Adyar',
         leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
         rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
         logo: { uploaded: true, type: 'Square', alignment: 'Left' }
@@ -85,11 +83,10 @@ const PrintoutPage = () => {
         paperSize: 'A4',
         orientation: 'Portrait',
         printerType: 'Color',
-        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+        margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
       },
       headerSettings: {
         includeHeader: true,
-        headerText: 'Hearing Centre Adyar',
         leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
         rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
         logo: { uploaded: true, type: 'Square', alignment: 'Left' }
@@ -117,11 +114,10 @@ const PrintoutPage = () => {
         paperSize: 'A4',
         orientation: 'Portrait',
         printerType: 'Color',
-        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+        margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
       },
       headerSettings: {
         includeHeader: true,
-        headerText: 'Hearing Centre Adyar',
         leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
         rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
         logo: { uploaded: true, type: 'Square', alignment: 'Left' }
@@ -149,11 +145,10 @@ const PrintoutPage = () => {
         paperSize: 'A4',
         orientation: 'Portrait',
         printerType: 'Color',
-        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+        margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
       },
       headerSettings: {
         includeHeader: true,
-        headerText: 'Hearing Centre Adyar',
         leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
         rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
         logo: { uploaded: true, type: 'Square', alignment: 'Left' }
@@ -570,6 +565,8 @@ const PageSettingsComponent = ({ settings, onChange }: {
                <option value={0.5}>0.50 inches</option>
                <option value={0.75}>0.75 inches</option>
                <option value={1.0}>1.00 inches</option>
+               <option value={1.5}>1.50 inches</option>
+               <option value={2.0}>2.00 inches</option>
              </select>
            </div>
            <div>
@@ -609,6 +606,8 @@ const PageSettingsComponent = ({ settings, onChange }: {
                <option value={0.5}>0.50 inches</option>
                <option value={0.75}>0.75 inches</option>
                <option value={1.0}>1.00 inches</option>
+               <option value={1.5}>1.50 inches</option>
+               <option value={2.0}>2.00 inches</option>
              </select>
            </div>
          </div>
@@ -657,20 +656,6 @@ const HeaderSettingsComponent = ({ settings, onChange }: {
          </div>
        </div>
 
-       {/* Header Text */}
-       <div>
-         <label className="block text-xs font-medium text-gray-700 mb-1">Header Text</label>
-         <input
-           type="text"
-           value={settings.headerText}
-           onChange={(e) => onChange({ ...settings, headerText: e.target.value })}
-           className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-           placeholder="Enter header text"
-           title="Enter the header text for the document"
-         />
-         <p className="text-xs text-gray-500 mt-1">Preview: {settings.headerText}</p>
-         <p className="text-xs text-gray-500 mt-1">Use || to add line breaks</p>
-       </div>
 
        {/* Left Text */}
        <div>
@@ -787,38 +772,65 @@ const InvoicePreview = ({ documentType, settings }: {
   settings: any 
 }) => {
   return (
-    <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 invoice-preview">
+    <div className="border border-gray-300 rounded-lg bg-gray-50 invoice-preview">
       <div 
         className="bg-white rounded shadow-sm"
         style={{
-          padding: `${settings.pageSettings.margins.top * 16}px ${settings.pageSettings.margins.right * 16}px ${settings.pageSettings.margins.bottom * 16}px ${settings.pageSettings.margins.left * 16}px`
+          padding: `${Math.max(settings.pageSettings.margins.top * 4, 18)}px ${Math.max(settings.pageSettings.margins.right * 4, 18)}px ${Math.max(settings.pageSettings.margins.bottom * 4, 18)}px ${Math.max(settings.pageSettings.margins.left * 4, 18)}px`
         }}
       >
         {/* Header */}
         {settings.headerSettings.includeHeader && (
-          <div className="border-b-2 border-gray-300 pb-4 mb-6">
+          <div className="!border-b border-gray-300 pb-2 mb-3">
               <div className="flex justify-between items-start">
                 <div>
                   {settings.headerSettings.logo.uploaded && (
-                    <div className="logo-box mb-1" style={{ height: '6rem', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                      <img src="/pdf-view-logo.png" alt="Logo" className="w-32 h-full object-cover" />
+                    <div className="mb-1" style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-end', 
+                      overflow: 'hidden',
+                      height: '2.5rem',
+                      // Force left edge for B2C invoice preview so logo is flush left
+                      justifyContent: (documentType === 'b2cInvoice')
+                        ? 'flex-start'
+                        : (settings.headerSettings.logo.alignment === 'Centre' ? 'center' : 
+                           settings.headerSettings.logo.alignment === 'Right' ? 'flex-end' : 'flex-start')
+                    }}>
+                      <img 
+                        src="/pdf-view-logo.png" 
+                        alt="Logo" 
+                        style={{
+                          maxHeight: '3.5rem',
+                          maxWidth: '6rem',
+                          width: 'auto',
+                          height: '100%',
+                          objectFit: 'contain'
+                        }}
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (!target.dataset.fallback) {
+                            target.src = '/pdf-view-logo.svg';
+                            target.dataset.fallback = '1';
+                          }
+                        }}
+                      />
                     </div>
                   )}
                   <div>
                   {settings.headerSettings.leftText?.split(' || ').map((text, index) => (
-                    <p key={index} className="text-sm text-gray-600">{text}</p>
+                    <p key={index} className="text-xs text-gray-600 leading-tight">{text}</p>
                   )) || (
-                    <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
+                    <p className="text-xs text-gray-600 leading-tight">{settings.headerSettings.leftText}</p>
                   )}
                 </div>
               </div>
                 <div className="text-right">
-                  <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+                  <div className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-semibold mb-1">
                     Fully Paid
                   </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs text-gray-600">
                   {settings.headerSettings.rightText.split(' || ').map((text, index) => (
-                    <p key={index}>{text}</p>
+                    <p key={index} className="leading-tight">{text}</p>
                   ))}
                 </div>
               </div>
@@ -827,20 +839,20 @@ const InvoicePreview = ({ documentType, settings }: {
         )}
 
         {/* Document Details */}
-        <div className="grid grid-cols-2 gap-8 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
-            <h3 className="font-semibold mb-2">
+            <h3 className="font-semibold mb-1 text-sm">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Bill To' : 
                documentType === 'payments' ? 'Payment To' : 
                documentType === 'expenses' ? 'Expense Details' : 'Transfer Details'}
             </h3>
-            <p className="font-medium">
+            <p className="font-medium text-xs">
               {documentType === 'b2cInvoice' ? 'Robert Paterson' :
                documentType === 'b2bInvoice' ? 'Apollo Hospitals' :
                documentType === 'payments' ? 'John Doe' : 
                documentType === 'expenses' ? 'Office Supplies' : 'Main Branch to Adyar Branch'}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs text-gray-600">
               {documentType === 'b2cInvoice' ? 'Individual Patient' :
                documentType === 'b2bInvoice' ? 'Corporate Account' :
                documentType === 'payments' ? 'Payment Recipient' : 
@@ -848,12 +860,12 @@ const InvoicePreview = ({ documentType, settings }: {
             </p>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">
+            <h3 className="font-semibold mb-1 text-sm">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Details' :
                documentType === 'payments' ? 'Payment Details' : 
                documentType === 'expenses' ? 'Expense Details' : 'Transfer Details'}
             </h3>
-            <div className="space-y-1 text-sm">
+            <div className="space-y-1 text-xs">
               <div className="flex justify-between">
                 <span>
                   {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Number:' :
@@ -903,45 +915,45 @@ const InvoicePreview = ({ documentType, settings }: {
         </div>
 
         {/* Content Table */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-3">
+        <div className="mb-3">
+          <h3 className="font-semibold mb-2 text-sm">
             {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Services & Items' :
              documentType === 'payments' ? 'Payment Details' : 
              documentType === 'expenses' ? 'Expense Items' : 'Transferred Items'}
           </h3>
-          <table className="w-full border-collapse border border-gray-300">
+          <table className="w-full border-collapse border border-gray-300 text-xs">
             <thead>
               <tr className="bg-gray-50">
-                <th className="border border-gray-300 px-3 py-2 text-left">#</th>
+                <th className="border border-gray-300 px-2 py-1 text-left">#</th>
                 {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
                   <>
-                    <th className="border border-gray-300 px-3 py-2 text-left">Service/Item</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Qty</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Unit Cost</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Discount</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Total</th>
+                    <th className="border border-gray-300 px-2 py-1 text-left">Service/Item</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Qty</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Unit Cost</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Discount</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Total</th>
                   </>
                 ) : documentType === 'payments' ? (
                   <>
-                    <th className="border border-gray-300 px-3 py-2 text-left">Payment Method</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Status</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
+                    <th className="border border-gray-300 px-2 py-1 text-left">Payment Method</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Status</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Amount</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Date</th>
                   </>
                 ) : documentType === 'expenses' ? (
                   <>
-                    <th className="border border-gray-300 px-3 py-2 text-left">Expense Item</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Category</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
+                    <th className="border border-gray-300 px-2 py-1 text-left">Expense Item</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Category</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Amount</th>
+                    <th className="border border-gray-300 px-2 py-1 text-right">Date</th>
                   </>
                 ) : (
                   <>
-                    <th className="border border-gray-300 px-3 py-2 text-left">Item Name</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Item Code</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Brand</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center">Quantity</th>
-                    <th className="border border-gray-300 px-3 py-2 text-left">Remarks</th>
+                    <th className="border border-gray-300 px-2 py-1 text-left">Item Name</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Item Code</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Brand</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Quantity</th>
+                    <th className="border border-gray-300 px-2 py-1 text-left">Remarks</th>
                   </>
                 )}
               </tr>
@@ -950,28 +962,28 @@ const InvoicePreview = ({ documentType, settings }: {
               {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
                 <>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">1</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">1</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
-                        <p className="font-medium">Starkey Livio AI 2400 Hearing Aid</p>
-                        <p className="text-sm text-gray-600">AI-powered hearing aid with health monitoring</p>
+                        <p className="font-medium text-xs">Starkey Livio AI 2400 Hearing Aid</p>
+                        <p className="text-xs text-gray-600">AI-powered hearing aid with health monitoring</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">1</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">₹69,000</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">1</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">₹69,000</td>
                     <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹4,000</td>
                     <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹65,000</td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">2</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">2</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
-                        <p className="font-medium">Smart Charger</p>
-                        <p className="text-sm text-gray-600">Wireless charging case with smartphone app</p>
+                        <p className="font-medium text-xs">Smart Charger</p>
+                        <p className="text-xs text-gray-600">Wireless charging case with smartphone app</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">1</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">₹7,000</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">1</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">₹7,000</td>
                     <td className="border border-gray-300 px-3 py-2 text-right text-red-600">-₹500</td>
                     <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹6,500</td>
                   </tr>
@@ -979,64 +991,64 @@ const InvoicePreview = ({ documentType, settings }: {
               ) : documentType === 'payments' ? (
                 <>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">1</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">1</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
-                        <p className="font-medium">Payment Receipt</p>
-                        <p className="text-sm text-gray-600">Receipt #PAY-2025-014</p>
+                        <p className="font-medium text-xs">Payment Receipt</p>
+                        <p className="text-xs text-gray-600">Receipt #PAY-2025-014</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">
+                    <td className="border border-gray-300 px-2 py-1 text-center">
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Completed</span>
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹25,000</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">22 Jun 2025</td>
                   </tr>
                 </>
               ) : documentType === 'expenses' ? (
                 <>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">1</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">1</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
                         <p className="font-medium">Office Stationery</p>
                         <p className="text-sm text-gray-600">Pens, papers, and office supplies</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">
+                    <td className="border border-gray-300 px-2 py-1 text-center">
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Office</span>
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-right font-medium">₹2,500</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">22 Jun 2025</td>
                   </tr>
                 </>
               ) : (
                 <>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">1</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">1</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
                         <p className="font-medium">Starkey Livio AI 2400</p>
                         <p className="text-sm text-gray-600">AI-powered hearing aid</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">STK-AI2400</td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">Starkey</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">STK-AI2400</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">Starkey</td>
                     <td className="border border-gray-300 px-3 py-2 text-center font-medium">2</td>
-                    <td className="border border-gray-300 px-3 py-2">For new patient fittings</td>
+                    <td className="border border-gray-300 px-2 py-1">For new patient fittings</td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2">2</td>
-                    <td className="border border-gray-300 px-3 py-2">
+                    <td className="border border-gray-300 px-2 py-1">2</td>
+                    <td className="border border-gray-300 px-2 py-1">
                       <div>
                         <p className="font-medium">Smart Charger</p>
                         <p className="text-sm text-gray-600">Wireless charging case</p>
                       </div>
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">STK-CHG01</td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">Starkey</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">STK-CHG01</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">Starkey</td>
                     <td className="border border-gray-300 px-3 py-2 text-center font-medium">1</td>
-                    <td className="border border-gray-300 px-3 py-2">Accessory for hearing aids</td>
+                    <td className="border border-gray-300 px-2 py-1">Accessory for hearing aids</td>
                   </tr>
                 </>
               )}
@@ -1045,26 +1057,26 @@ const InvoicePreview = ({ documentType, settings }: {
         </div>
 
         {/* Document Summary */}
-        <div className="grid grid-cols-2 gap-8 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
-            <h3 className="font-semibold mb-2">
+            <h3 className="font-semibold mb-1 text-sm">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Additional Information' :
                documentType === 'payments' ? 'Payment Notes' : 
                documentType === 'expenses' ? 'Expense Notes' : 'Transfer Notes'}
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs text-gray-600">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Warranty: 3 years warranty + health tracking' :
                documentType === 'payments' ? 'Payment processed successfully via cash' : 
                documentType === 'expenses' ? 'Expense approved for office operations' : 'Transfer completed successfully. Items received in good condition.'}
             </p>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">
+            <h3 className="font-semibold mb-1 text-sm">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Summary' :
                documentType === 'payments' ? 'Payment Summary' : 
                documentType === 'expenses' ? 'Expense Summary' : 'Transfer Summary'}
             </h3>
-            <div className="space-y-1 text-sm">
+            <div className="space-y-1 text-xs">
               {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
                 <>
                   <div className="flex justify-between">
@@ -1144,8 +1156,8 @@ const InvoicePreview = ({ documentType, settings }: {
 
         {/* Footer */}
         <div 
-          className="!!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
-          style={{ marginTop: `${settings.footerSettings.topMargin * 16}px` }}
+          className="!border-t border-gray-300 pt-2 text-center text-xs text-gray-600"
+          style={{ marginTop: `${Math.max(settings.footerSettings.topMargin * 4, 8)}px` }}
         >
           {settings.footerSettings.thankYouMessage && (
             <div className="mb-1">

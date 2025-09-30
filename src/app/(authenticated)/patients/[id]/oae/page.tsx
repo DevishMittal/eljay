@@ -880,12 +880,9 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                   </div>
                 </div>
               ) : (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-yellow-800">Follow-up Testing Recommended</h4>
-                        <p className="text-xs text-yellow-700">Test did not pass. Additional testing sessions should be scheduled.</p>
-                  </div>
+                <div className="">
+                 
+               
                 </div>
               )}
             </div>

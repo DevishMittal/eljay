@@ -46,11 +46,10 @@ const getDefaultPrintSettings = () => {
       paperSize: 'A4' as const,
       orientation: 'Portrait' as const,
       printerType: 'Color' as const,
-      margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+      margins: { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 }
     },
     headerSettings: {
       includeHeader: true,
-      headerText: 'Hearing Centre Adyar',
       leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
       rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
       logo: { uploaded: true, type: 'Square' as const, alignment: 'Left' as const }
@@ -579,7 +578,7 @@ const generateInvoiceHTML = (invoice: Invoice, payments: Payment[] = [], printSe
  */
 const getInvoicePrintStyles = (printSettings?: PrintSettings['b2cInvoice'] | PrintSettings['b2bInvoice']) => {
   const pageSettings = printSettings?.pageSettings;
-  const margins = pageSettings?.margins || { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 };
+  const margins = pageSettings?.margins || { top: 0.00, left: 0.00, bottom: 0.00, right: 0.00 };
   
   return `
     * {

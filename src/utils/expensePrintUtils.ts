@@ -33,7 +33,7 @@ export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => (
     paperSize: 'A4',
     orientation: 'Portrait',
     margins: {
-      top: 0.5,
+      top: 0.1,
       right: 0.5,
       bottom: 0.5,
       left: 0.5,
@@ -42,7 +42,6 @@ export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => (
   },
   headerSettings: {
     includeHeader: true,
-    headerText: 'Hearing Centre Adyar',
     logo: {
       uploaded: true,
       type: 'Square',
@@ -140,7 +139,7 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <div class="expense-header">
         <div class="flex justify-between items-start">
           <div>
-            ${headerSettings?.logo?.uploaded ? '<div class="logo-box mb-1" style="height: 6rem; display: flex; align-items: flex-end; overflow: hidden;"><img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-full object-cover" /></div>' : ''}
+            ${headerSettings?.logo?.uploaded ? '<div class="logo-box mb-1" style="height: 4rem; display: flex; align-items: center; overflow: hidden;"><img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-full object-cover" /></div>' : ''}
             <div>
               ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
             </div>
@@ -265,8 +264,12 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
  */
 const getExpenseReportPrintStyles = (printSettings?: PrintSettings['expenses']) => {
   const pageSettings = printSettings?.pageSettings;
-  const margins = pageSettings?.margins || { top: 0.5, left: 0.5, bottom: 0.5, right: 0.5 };
+  const margins = pageSettings?.margins || { top: 0.0, left: 0.0, bottom: 0.0, right: 0.0 };
   return `
+    @page {
+      margin: 2;
+    }
+
     * {
       box-sizing: border-box;
     }
