@@ -1,18 +1,77 @@
-import { Payment, PrintSettings } from '@/types';
+import { Payment } from '../types';
+import { PrintSettings } from '../types';
 
 /**
- * Print utility functions for payment receipts
+ * Format currency for display
  */
-
-export interface PrintOptions {
-  title?: string;
-  filename?: string;
-  includeStyles?: boolean;
-  customStyles?: string;
-}
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 /**
- * Load print settings from localStorage for payments
+ * Format date for display
+ */
+const formatDate = (date: string | Date): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+/**
+ * Get default payment print settings
+ */
+export const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => ({
+  pageSettings: {
+    paperSize: 'A4',
+    orientation: 'Portrait',
+    margins: {
+      top: 0.5,
+      right: 0.5,
+      bottom: 0.5,
+      left: 0.5,
+    },
+    printerType: 'Color',
+  },
+  headerSettings: {
+    includeHeader: true,
+    headerText: 'Hearing Centre Adyar',
+    logo: {
+      uploaded: true,
+      type: 'Square',
+      alignment: 'Left',
+    },
+    leftText: 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.',
+    rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+  },
+  footerSettings: {
+    topMargin: 0.5,
+    fullWidthContent: [],
+    leftSignature: {
+      name: '',
+      title: '',
+      organization: '',
+    },
+    rightSignature: {
+      name: '',
+      title: '',
+      organization: '',
+      date: '',
+    },
+    thankYouMessage: 'Thank you for your business!',
+    signatureNote: 'This is a computer generated payment receipt.',
+  },
+});
+
+/**
+ * Get payment print settings from localStorage
  */
 export const getPaymentPrintSettings = (): PrintSettings['payments'] => {
   try {
@@ -28,189 +87,27 @@ export const getPaymentPrintSettings = (): PrintSettings['payments'] => {
     if (savedSettings) {
       return JSON.parse(savedSettings);
     }
-    
-    // Return default settings if nothing is saved
-    return getDefaultPaymentPrintSettings();
   } catch (error) {
     console.error('Error loading payment print settings:', error);
+  }
     return getDefaultPaymentPrintSettings();
+};
+
+/**
+ * Save payment print settings to localStorage
+ */
+export const savePaymentPrintSettings = (settings: PrintSettings['payments']): void => {
+  try {
+    localStorage.setItem('paymentPrintSettings', JSON.stringify(settings));
+  } catch (error) {
+    console.error('Error saving payment print settings:', error);
   }
 };
 
 /**
- * Get default print settings for payments
+ * Generate HTML for payment receipt
  */
-const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => {
-  return {
-    pageSettings: {
-      paperSize: 'A4' as const,
-      orientation: 'Portrait' as const,
-      printerType: 'Color' as const,
-      margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
-    },
-    headerSettings: {
-      includeHeader: true,
-      headerText: 'Hearing Centre Adyar',
-      leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
-      rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
-      logo: { uploaded: true, type: 'Square' as const, alignment: 'Left' as const }
-    },
-    footerSettings: {
-      topMargin: 0.00,
-      fullWidthContent: [],
-      leftSignature: {
-        name: '',
-        title: '',
-        organization: ''
-      },
-      rightSignature: {
-        name: '',
-        title: '',
-        organization: '',
-        date: ''
-      },
-      thankYouMessage: 'Thank you for your payment to Eljay Hearing Care.',
-      signatureNote: 'This is a computer-generated receipt and does not require a signature.'
-    }
-  };
-};
-
-/**
- * Print payment receipt with proper formatting
- */
-export const printPaymentReceipt = (payment: Payment, options: PrintOptions = {}) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    console.error('Could not open print window');
-    return;
-  }
-
-  const printSettings = getPaymentPrintSettings();
-  const paymentHTML = generatePaymentReceiptHTML(payment, printSettings);
-  
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
-        <style>
-          ${getPaymentReceiptPrintStyles(printSettings)}
-          ${options.customStyles || ''}
-        </style>
-      </head>
-      <body>
-        ${paymentHTML}
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
-};
-
-/**
- * Download payment receipt as PDF (using browser's print to PDF)
- */
-export const downloadPaymentReceiptAsPDF = (payment: Payment, options: PrintOptions = {}) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    console.error('Could not open print window');
-    return;
-  }
-
-  const printSettings = getPaymentPrintSettings();
-  const paymentHTML = generatePaymentReceiptHTML(payment, printSettings);
-  
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${options.title || `Payment Receipt ${payment.receiptNumber}`}</title>
-        <style>
-          ${getPaymentReceiptPrintStyles(printSettings)}
-          ${options.customStyles || ''}
-        </style>
-      </head>
-      <body>
-        ${paymentHTML}
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  
-  // Wait for content to load, then trigger print dialog
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-    
-    // Close window after a delay to allow user to save PDF
-    setTimeout(() => {
-      printWindow.close();
-    }, 1000);
-  };
-};
-
-/**
- * Generate HTML for payment receipt printing
- */
-const generatePaymentReceiptHTML = (payment: Payment, printSettings?: PrintSettings['payments']) => {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'status-completed';
-      case 'Pending':
-        return 'status-pending';
-      case 'Failed':
-        return 'status-failed';
-      case 'Cancelled':
-        return 'status-cancelled';
-      default:
-        return 'status-default';
-    }
-  };
-
-  const getMethodColor = (method: string) => {
-    switch (method) {
-      case 'UPI':
-        return 'method-upi';
-      case 'Card':
-        return 'method-card';
-      case 'Cash':
-        return 'method-cash';
-      case 'Bank Transfer':
-        return 'method-bank';
-      case 'Cheque':
-        return 'method-cheque';
-      default:
-        return 'method-default';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    if (type === 'Full') {
-      return 'type-full';
-    }
-    if (type === 'Advance') {
-      return 'type-advance';
-    }
-    return 'type-default';
-  };
-
+const generatePaymentReceiptHTML = (payment: Payment, printSettings?: PrintSettings['payments']): string => {
   // Use custom header settings if available
   const headerSettings = printSettings?.headerSettings;
   const showHeader = headerSettings?.includeHeader !== false;
@@ -220,157 +117,122 @@ const generatePaymentReceiptHTML = (payment: Payment, printSettings?: PrintSetti
       <!-- Header -->
       ${showHeader ? `
       <div class="payment-header">
-        <div class="company-info">
-          <div class="logo-and-address">
-            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Eljay Hearing Care" class="company-logo" />' : ''}
-            <div class="company-address-section">
-              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="company-address">${text}</p>`).join('')}
+        <div class="flex justify-between items-start">
+          <div>
+            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
+            <div>
+              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
             </div>
           </div>
-        </div>
-        <div class="payment-status">
-          <div class="status-badge ${getStatusColor(payment.status)}">
-            ${payment.status}
-          </div>
-          <div class="contact-info">
-            ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
+          <div class="text-right">
+            <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+              ${payment.status}
+            </div>
+            <div class="text-sm text-gray-600">
+              ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
+            </div>
           </div>
         </div>
       </div>
       ` : ''}
 
-      <!-- Receipt Title -->
-      <div class="receipt-title">
-        <h2>PAYMENT RECEIPT</h2>
-        <p class="receipt-number">Receipt #${payment.receiptNumber}</p>
+      <!-- Document Details -->
+      <div class="grid grid-cols-2 gap-8 mb-6">
+        <div>
+          <h3 class="font-semibold mb-2">Payment To</h3>
+          <p class="font-medium">${payment.patientName}</p>
+          <p class="text-sm text-gray-600">Payment Recipient</p>
       </div>
-
-      <!-- Payment Details -->
-      <div class="payment-details">
-        <div class="payment-info">
-          <h3>Payment Information</h3>
-          <div class="info-grid">
-            <div class="info-row">
-              <span class="info-label">Receipt Number:</span>
-              <span class="info-value">${payment.receiptNumber}</span>
+        <div>
+          <h3 class="font-semibold mb-2">Payment Details</h3>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span>Receipt Number:</span>
+              <span class="font-medium">${payment.receiptNumber}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Payment Date:</span>
-              <span class="info-value">${formatDate(payment.paymentDate)}</span>
+            <div class="flex justify-between">
+              <span>Payment Date:</span>
+              <span>${formatDate(payment.paymentDate)}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Amount:</span>
-              <span class="info-value amount">${formatCurrency(payment.amount)}</span>
+            <div class="flex justify-between">
+              <span>Created By:</span>
+              <span>Staff</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Payment Method:</span>
-              <span class="info-value method-badge ${getMethodColor(payment.method)}">${payment.method}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Payment Type:</span>
-              <span class="info-value type-badge ${getTypeColor(payment.paymentType)}">${payment.paymentType} Payment</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Status:</span>
-              <span class="info-value status-badge ${getStatusColor(payment.status)}">${payment.status}</span>
-            </div>
-            ${payment.transactionId ? `
-              <div class="info-row">
-                <span class="info-label">Transaction ID:</span>
-                <span class="info-value">${payment.transactionId}</span>
-              </div>
-            ` : ''}
-            <div class="info-row">
-              <span class="info-label">Received By:</span>
-              <span class="info-value">${payment.receivedBy}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Created Date:</span>
-              <span class="info-value">${formatDate(payment.createdAt)}</span>
             </div>
           </div>
         </div>
 
-        <div class="patient-info">
-          <h3>Patient Information</h3>
-          <div class="info-grid">
-            <div class="info-row">
-              <span class="info-label">Patient Name:</span>
-              <span class="info-value">${payment.patientName}</span>
-            </div>
-            ${payment.patientId ? `
-              <div class="info-row">
-                <span class="info-label">Patient ID:</span>
-                <span class="info-value">${payment.patientId}</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
+      <!-- Content Table -->
+      <div class="mb-6">
+        <h3 class="font-semibold mb-3">Payment Details</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+          <thead>
+            <tr style="background-color: #f9fafb;">
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">#</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Payment Method</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Status</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Amount</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">1</td>
+              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">
+                <div>
+                  <p style="font-weight: 500; margin: 0;">Payment Receipt</p>
+                  <p style="font-size: 0.875rem; color: #4b5563; margin: 0;">Receipt #${payment.receiptNumber}</p>
+                </div>
+              </td>
+              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">
+                <span style="background-color: #dcfce7; color: #166534; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">${payment.status}</span>
+              </td>
+              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right; font-weight: 500;">${formatCurrency(payment.amount)}</td>
+              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">${formatDate(payment.paymentDate)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Payment Summary -->
-      <div class="payment-summary">
-        <h3>Payment Summary</h3>
-        <div class="summary-table">
-          <div class="summary-row">
+      <!-- Document Summary -->
+      <div class="grid grid-cols-2 gap-8 mb-6">
+        <div>
+          <h3 class="font-semibold mb-2">Payment Notes</h3>
+          <p class="text-sm text-gray-600">Payment processed successfully via ${payment.method.toLowerCase()}</p>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Payment Summary</h3>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
             <span>Payment Amount:</span>
-            <span class="text-right">${formatCurrency(payment.amount)}</span>
+              <span>${formatCurrency(payment.amount)}</span>
           </div>
-          ${payment.paymentType === 'Advance' ? `
-            <div class="summary-row">
-              <span>Applied Amount:</span>
-              <span class="text-right">${formatCurrency(payment.appliedAmount || 0)}</span>
+            <div class="flex justify-between">
+              <span>Payment Method:</span>
+              <span>${payment.method}</span>
             </div>
-            <div class="summary-row">
-              <span>Remaining Amount:</span>
-              <span class="text-right">${formatCurrency(payment.remainingAmount || payment.amount)}</span>
+            <div class="flex justify-between">
+              <span>Status:</span>
+              <span class="text-green-600">${payment.status}</span>
             </div>
-          ` : ''}
-          <div class="summary-row total-row">
-            <span class="font-bold">Total Payment:</span>
-            <span class="text-right font-bold">${formatCurrency(payment.amount)}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Additional Information -->
-      <div class="additional-info">
-        ${payment.description ? `
-          <div class="description-section">
-            <h4>Description</h4>
-            <p>${payment.description}</p>
-          </div>
-        ` : ''}
-        
-        ${payment.notes ? `
-          <div class="notes-section">
-            <h4>Notes</h4>
-            <p>${payment.notes}</p>
-          </div>
-        ` : ''}
-
-        <div class="terms-section">
-          <h4>Terms & Conditions</h4>
-          <ul>
-            <li>This receipt confirms the payment received for the services provided</li>
-            <li>Please keep this receipt for your records</li>
-            <li>For any queries regarding this payment, please contact us</li>
-            <li>All payments are subject to our terms and conditions</li>
-          </ul>
-        </div>
-
-        <div class="tax-info">
-          <p>* This receipt is generated automatically and does not require a signature</p>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="payment-footer" style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;">
+      <div 
+        class="!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
+        style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;"
+      >
         ${printSettings?.footerSettings?.thankYouMessage ? `
-          ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="footer-text">${text}</p>`).join('')}
+          <div class="mb-1">
+            ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="leading-tight">${text}</p>`).join('')}
+          </div>
         ` : ''}
         ${printSettings?.footerSettings?.signatureNote ? `
-          ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="footer-text">${text} • Generated on ${formatDate(payment.createdAt)}</p>`).join('')}
+          <div class="mb-1">
+            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(payment.createdAt)}</p>`).join('')}
+          </div>
         ` : ''}
       </div>
     </div>
@@ -424,286 +286,244 @@ const getPaymentReceiptPrintStyles = (_printSettings?: PrintSettings['payments']
     }
 
     .payment-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #333;
+      border-bottom: 2px solid #d1d5db;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
     }
 
-    .logo-and-address {
+    .flex {
       display: flex;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .items-start {
+      align-items: flex-start;
+    }
+
+    .flex-col {
       flex-direction: column;
-      align-items: flex-start;
     }
 
-    .company-logo {
-      width: 120px;
-      height: auto;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-
-    .company-address-section {
-      margin-top: 0;
-    }
-
-    .company-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin: 0 0 10px 0;
-      color: #1f2937;
-    }
-
-    .company-address {
-      margin: 5px 0;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .payment-status {
-      text-align: right;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 9999px;
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 15px;
-    }
-
-    .status-completed {
-      background-color: #dcfce7 !important;
-      color: #166534 !important;
-    }
-
-    .status-pending {
-      background-color: #fef3c7 !important;
-      color: #92400e !important;
-    }
-
-    .status-failed {
-      background-color: #fee2e2 !important;
-      color: #dc2626 !important;
-    }
-
-    .status-cancelled {
-      background-color: #f3f4f6 !important;
-      color: #374151 !important;
-    }
-
-    .contact-info p {
-      margin: 3px 0;
-      font-size: 14px;
-      color: #6b7280;
-    }
-
-    .receipt-title {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .receipt-title h2 {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0 0 10px 0;
-      color: #1f2937;
-    }
-
-    .receipt-number {
-      font-size: 16px;
-      color: #6b7280;
-      margin: 0;
-    }
-
-    .payment-details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-bottom: 30px;
-    }
-
-    .payment-info h3,
-    .patient-info h3 {
-      font-size: 18px;
-      font-weight: bold;
-      margin: 0 0 15px 0;
-      color: #1f2937;
-    }
-
-    .info-grid {
-      background-color: #f9fafb;
-      padding: 20px;
-      border-radius: 8px;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin: 12px 0;
-      font-size: 14px;
-    }
-
-    .info-label {
-      font-weight: 500;
-      color: #374151;
-    }
-
-    .info-value {
-      font-weight: bold;
-      color: #1f2937;
-    }
-
-    .info-value.amount {
-      font-size: 18px;
-      color: #059669;
-    }
-
-    .method-badge,
-    .type-badge {
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .method-upi {
-      background-color: #ede9fe;
-      color: #7c3aed;
-    }
-
-    .method-card {
-      background-color: #dbeafe;
-      color: #1e40af;
-    }
-
-    .method-cash {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-
-    .method-bank {
-      background-color: #fed7aa;
-      color: #ea580c;
-    }
-
-    .method-cheque {
-      background-color: #f3f4f6;
-      color: #374151;
-    }
-
-    .type-full {
-      background-color: #ede9fe;
-      color: #7c3aed;
-    }
-
-    .type-advance {
-      background-color: #dbeafe;
-      color: #1e40af;
-    }
-
-    .payment-summary {
-      margin-bottom: 30px;
-    }
-
-    .payment-summary h3 {
-      font-size: 18px;
-      font-weight: bold;
-      margin: 0 0 15px 0;
-      color: #1f2937;
-    }
-
-    .summary-table {
-      background-color: #f9fafb;
-      padding: 20px;
-      border-radius: 8px;
-    }
-
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-
-    .total-row {
-      border-top: 2px solid #d1d5db;
-      padding-top: 12px;
-      margin-top: 15px;
-      font-size: 16px;
+    .mr-4 {
+      margin-right: 1rem;
     }
 
     .text-right {
       text-align: right;
     }
 
-    .font-bold {
-      font-weight: bold;
+    .w-20 {
+      width: 5rem;
     }
 
-    .additional-info {
-      margin-bottom: 30px;
+    .h-20 {
+      height: 5rem;
     }
 
-    .description-section,
-    .notes-section,
-    .terms-section {
-      margin-bottom: 20px;
+    .w-32 {
+      width: 8rem;
     }
 
-    .description-section h4,
-    .notes-section h4,
-    .terms-section h4 {
-      font-size: 16px;
-      font-weight: bold;
-      margin: 0 0 10px 0;
-      color: #374151;
+    .h-32 {
+      height: 8rem;
     }
 
-    .terms-section ul {
-      margin: 0;
-      padding-left: 20px;
+    .mb-3 {
+      margin-bottom: 0.75rem;
     }
 
-    .terms-section li {
-      margin: 5px 0;
-      font-size: 14px;
-      color: #6b7280;
+    .mb-2 {
+      margin-bottom: 0.5rem;
     }
 
-    .tax-info {
-      background-color: #eff6ff;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 15px;
+    .mb-1 {
+      margin-bottom: 0.25rem;
     }
 
-    .tax-info p {
-      margin: 0;
-      font-size: 12px;
-      color: #1e40af;
+    .text-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
     }
 
-    .payment-footer {
+    .text-gray-600 {
+      color: #4b5563;
+    }
+
+    .inline-block {
+      display: inline-block;
+    }
+
+    .bg-green-100 {
+      background-color: #dcfce7;
+    }
+
+    .text-green-800 {
+      color: #166534;
+    }
+
+    .px-3 {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .py-1 {
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+    }
+
+    .rounded-full {
+      border-radius: 9999px;
+    }
+
+    .font-semibold {
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gap-8 {
+      gap: 2rem;
+    }
+
+    .mb-6 {
+      margin-bottom: 1.5rem;
+    }
+
+    .font-medium {
+      font-weight: 500;
+    }
+
+    .space-y-1 > * + * {
+      margin-top: 0.25rem;
+    }
+
+    .w-full {
+      width: 100%;
+    }
+
+    .border-collapse {
+      border-collapse: collapse;
+    }
+
+    .border {
+      border-width: 1px;
+    }
+
+    .border-gray-300 {
+      border-color: #d1d5db;
+    }
+
+    .px-3 {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .py-2 {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+
+    .text-center {
       text-align: center;
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #d1d5db;
-      color: #6b7280;
     }
 
-    .payment-footer p {
-      margin: 5px 0;
-      font-size: 14px;
+    .bg-gray-50 {
+      background-color: #f9fafb;
     }
 
-    .footer-text {
-      margin: 2px 0;
-      font-size: 14px;
-      line-height: 1.2;
+    .text-green-600 {
+      color: #16a34a;
+    }
+
+    .border-t {
+      border-top-width: 1px;
+    }
+
+    .pt-4 {
+      padding-top: 1rem;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .leading-tight {
+      line-height: 1.25;
+    }
+
+    .mb-1 {
+      margin-bottom: 0.25rem;
+    }
+
+    .object-contain {
+      object-fit: contain;
     }
   `;
+};
+
+/**
+ * Print payment receipt
+ */
+export const printPaymentReceipt = (payment: Payment): void => {
+  const printSettings = getPaymentPrintSettings();
+  const html = generatePaymentReceiptHTML(payment, printSettings);
+  const styles = getPaymentReceiptPrintStyles(printSettings);
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Receipt - ${payment.receiptNumber}</title>
+          <style>${styles}</style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
+};
+
+/**
+ * Download payment receipt as PDF
+ */
+export const downloadPaymentReceiptAsPDF = (payment: Payment): void => {
+  const printSettings = getPaymentPrintSettings();
+  const html = generatePaymentReceiptHTML(payment, printSettings);
+  const styles = getPaymentReceiptPrintStyles(printSettings);
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Receipt - ${payment.receiptNumber}</title>
+          <style>${styles}</style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
 };

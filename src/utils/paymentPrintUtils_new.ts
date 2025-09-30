@@ -1,4 +1,4 @@
-import { Expense } from '../types';
+import { Payment } from '../types';
 import { PrintSettings } from '../types';
 
 /**
@@ -26,9 +26,9 @@ const formatDate = (date: string | Date): string => {
 };
 
 /**
- * Get default expense print settings
+ * Get default payment print settings
  */
-export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => ({
+export const getDefaultPaymentPrintSettings = (): PrintSettings['payments'] => ({
   pageSettings: {
     paperSize: 'A4',
     orientation: 'Portrait',
@@ -66,67 +66,61 @@ export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => (
       date: '',
     },
     thankYouMessage: 'Thank you for your business!',
-    signatureNote: 'This is a computer generated expense report.',
+    signatureNote: 'This is a computer generated payment receipt.',
   },
 });
 
 /**
- * Get expense print settings from localStorage
+ * Get payment print settings from localStorage
  */
-export const getExpensePrintSettings = (): PrintSettings['expenses'] => {
+export const getPaymentPrintSettings = (): PrintSettings['payments'] => {
   try {
-    // Try to load settings for all document types first
-    const savedAllSettings = localStorage.getItem('printSettings_all');
-    if (savedAllSettings) {
-      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
-      return parsedSettings.expenses;
-    }
-    
-    // If no global settings, try to load individual document type settings
-    const savedSettings = localStorage.getItem('printSettings_expenses');
-    if (savedSettings) {
-      return JSON.parse(savedSettings);
+    const saved = localStorage.getItem('paymentPrintSettings');
+    if (saved) {
+      return JSON.parse(saved);
     }
   } catch (error) {
-    console.error('Error loading expense print settings:', error);
+    console.error('Error loading payment print settings:', error);
   }
-    return getDefaultExpensePrintSettings();
+  return getDefaultPaymentPrintSettings();
 };
 
 /**
- * Save expense print settings to localStorage
+ * Save payment print settings to localStorage
  */
-export const saveExpensePrintSettings = (settings: PrintSettings['expenses']): void => {
+export const savePaymentPrintSettings = (settings: PrintSettings['payments']): void => {
   try {
-    localStorage.setItem('expensePrintSettings', JSON.stringify(settings));
+    localStorage.setItem('paymentPrintSettings', JSON.stringify(settings));
   } catch (error) {
-    console.error('Error saving expense print settings:', error);
+    console.error('Error saving payment print settings:', error);
   }
 };
 
 /**
- * Generate HTML for expense report
+ * Generate HTML for payment receipt
  */
-const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettings['expenses']): string => {
+const generatePaymentReceiptHTML = (payment: Payment, printSettings?: PrintSettings['payments']): string => {
   // Use custom header settings if available
   const headerSettings = printSettings?.headerSettings;
   const showHeader = headerSettings?.includeHeader !== false;
   
   return `
-    <div class="expense-container">
+    <div class="payment-container">
       <!-- Header -->
       ${showHeader ? `
-      <div class="expense-header">
+      <div class="payment-header">
         <div class="flex justify-between items-start">
           <div>
-            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
-            <div>
-              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+            <div class="flex flex-col items-start">
+              ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-20 h-20 mb-3" />' : ''}
+              <div>
+                ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+              </div>
             </div>
           </div>
           <div class="text-right">
             <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
-              Approved
+              ${payment.status}
             </div>
             <div class="text-sm text-gray-600">
               ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
@@ -139,20 +133,20 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <!-- Document Details -->
       <div class="grid grid-cols-2 gap-8 mb-6">
         <div>
-          <h3 class="font-semibold mb-2">Expense Details</h3>
-          <p class="font-medium">${expense.vendor}</p>
-          <p class="text-sm text-gray-600">Business Expense</p>
-      </div>
+          <h3 class="font-semibold mb-2">Payment To</h3>
+          <p class="font-medium">${payment.patientName}</p>
+          <p class="text-sm text-gray-600">Payment Recipient</p>
+        </div>
         <div>
-          <h3 class="font-semibold mb-2">Expense Details</h3>
+          <h3 class="font-semibold mb-2">Payment Details</h3>
           <div class="space-y-1 text-sm">
             <div class="flex justify-between">
-              <span>Expense Number:</span>
-              <span class="font-medium">${expense.expenseNumber}</span>
+              <span>Receipt Number:</span>
+              <span class="font-medium">${payment.receiptNumber}</span>
             </div>
             <div class="flex justify-between">
-              <span>Expense Date:</span>
-              <span>${formatDate(expense.date)}</span>
+              <span>Payment Date:</span>
+              <span>${formatDate(payment.paymentDate)}</span>
             </div>
             <div class="flex justify-between">
               <span>Created By:</span>
@@ -164,31 +158,31 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
 
       <!-- Content Table -->
       <div class="mb-6">
-        <h3 class="font-semibold mb-3">Expense Items</h3>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+        <h3 class="font-semibold mb-3">Payment Details</h3>
+        <table class="w-full border-collapse border border-gray-300">
           <thead>
-            <tr style="background-color: #f9fafb;">
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">#</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Expense Item</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Category</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Amount</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Date</th>
+            <tr class="bg-gray-50">
+              <th class="border border-gray-300 px-3 py-2 text-left">#</th>
+              <th class="border border-gray-300 px-3 py-2 text-left">Payment Method</th>
+              <th class="border border-gray-300 px-3 py-2 text-center">Status</th>
+              <th class="border border-gray-300 px-3 py-2 text-right">Amount</th>
+              <th class="border border-gray-300 px-3 py-2 text-right">Date</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">1</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">
+              <td class="border border-gray-300 px-3 py-2">1</td>
+              <td class="border border-gray-300 px-3 py-2">
                 <div>
-                  <p style="font-weight: 500; margin: 0;">${expense.description}</p>
-                  <p style="font-size: 0.875rem; color: #4b5563; margin: 0;">${expense.vendor}</p>
+                  <p class="font-medium">Payment Receipt</p>
+                  <p class="text-sm text-gray-600">Receipt #${payment.receiptNumber}</p>
                 </div>
               </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">
-                <span style="background-color: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">${expense.category}</span>
+              <td class="border border-gray-300 px-3 py-2 text-center">
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">${payment.status}</span>
               </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right; font-weight: 500;">${formatCurrency(expense.amount)}</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">${formatDate(expense.date)}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">${formatCurrency(payment.amount)}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">${formatDate(payment.paymentDate)}</td>
             </tr>
           </tbody>
         </table>
@@ -197,24 +191,24 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <!-- Document Summary -->
       <div class="grid grid-cols-2 gap-8 mb-6">
         <div>
-          <h3 class="font-semibold mb-2">Expense Notes</h3>
-          <p class="text-sm text-gray-600">${expense.remarks || 'Expense approved for office operations'}</p>
+          <h3 class="font-semibold mb-2">Payment Notes</h3>
+          <p class="text-sm text-gray-600">Payment processed successfully via ${payment.method.toLowerCase()}</p>
         </div>
         <div>
-          <h3 class="font-semibold mb-2">Expense Summary</h3>
+          <h3 class="font-semibold mb-2">Payment Summary</h3>
           <div class="space-y-1 text-sm">
             <div class="flex justify-between">
-            <span>Expense Amount:</span>
-              <span>${formatCurrency(expense.amount)}</span>
+              <span>Payment Amount:</span>
+              <span>${formatCurrency(payment.amount)}</span>
             </div>
             <div class="flex justify-between">
-              <span>Category:</span>
-              <span>${expense.category}</span>
-          </div>
+              <span>Payment Method:</span>
+              <span>${payment.method}</span>
+            </div>
             <div class="flex justify-between">
               <span>Status:</span>
-              <span class="text-green-600">Approved</span>
-          </div>
+              <span class="text-green-600">${payment.status}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -231,7 +225,7 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
         ` : ''}
         ${printSettings?.footerSettings?.signatureNote ? `
           <div class="mb-1">
-            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(expense.createdAt)}</p>`).join('')}
+            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(payment.createdAt)}</p>`).join('')}
           </div>
         ` : ''}
       </div>
@@ -240,9 +234,9 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
 };
 
 /**
- * Get CSS styles for expense report printing
+ * Get CSS styles for payment receipt printing
  */
-const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses']) => {
+const getPaymentReceiptPrintStyles = (_printSettings?: PrintSettings['payments']) => {
   return `
     * {
       box-sizing: border-box;
@@ -280,12 +274,12 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       }
     }
 
-    .expense-container {
+    .payment-container {
       max-width: 800px;
       margin: 0 auto;
     }
 
-    .expense-header {
+    .payment-header {
       border-bottom: 2px solid #d1d5db;
       padding-bottom: 16px;
       margin-bottom: 24px;
@@ -307,10 +301,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       flex-direction: column;
     }
 
-    .mr-4 {
-      margin-right: 1rem;
-    }
-
     .text-right {
       text-align: right;
     }
@@ -323,24 +313,12 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       height: 5rem;
     }
 
-    .w-32 {
-      width: 8rem;
-    }
-
-    .h-32 {
-      height: 8rem;
-    }
-
     .mb-3 {
       margin-bottom: 0.75rem;
     }
 
     .mb-2 {
       margin-bottom: 0.5rem;
-    }
-
-    .mb-1 {
-      margin-bottom: 0.25rem;
     }
 
     .text-sm {
@@ -444,28 +422,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       background-color: #f9fafb;
     }
 
-    .bg-blue-100 {
-      background-color: #dbeafe;
-    }
-
-    .text-blue-800 {
-      color: #1e40af;
-    }
-
-    .px-2 {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-
-    .rounded-full {
-      border-radius: 9999px;
-    }
-
-    .text-xs {
-      font-size: 0.75rem;
-      line-height: 1rem;
-    }
-
     .text-green-600 {
       color: #16a34a;
     }
@@ -489,20 +445,16 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
     .mb-1 {
       margin-bottom: 0.25rem;
     }
-
-    .object-contain {
-      object-fit: contain;
-    }
   `;
 };
 
 /**
- * Print expense report
+ * Print payment receipt
  */
-export const printExpenseReport = (expense: Expense): void => {
-  const printSettings = getExpensePrintSettings();
-  const html = generateExpenseReportHTML(expense, printSettings);
-  const styles = getExpenseReportPrintStyles(printSettings);
+export const printPaymentReceipt = (payment: Payment): void => {
+  const printSettings = getPaymentPrintSettings();
+  const html = generatePaymentReceiptHTML(payment, printSettings);
+  const styles = getPaymentReceiptPrintStyles(printSettings);
   
   const printWindow = window.open('', '_blank');
   if (printWindow) {
@@ -510,7 +462,7 @@ export const printExpenseReport = (expense: Expense): void => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Expense Report - ${expense.expenseNumber}</title>
+          <title>Payment Receipt - ${payment.receiptNumber}</title>
           <style>${styles}</style>
         </head>
         <body>
@@ -524,12 +476,12 @@ export const printExpenseReport = (expense: Expense): void => {
 };
 
 /**
- * Download expense report as PDF
+ * Download payment receipt as PDF
  */
-export const downloadExpenseReportAsPDF = (expense: Expense): void => {
-  const printSettings = getExpensePrintSettings();
-  const html = generateExpenseReportHTML(expense, printSettings);
-  const styles = getExpenseReportPrintStyles(printSettings);
+export const downloadPaymentReceiptAsPDF = (payment: Payment): void => {
+  const printSettings = getPaymentPrintSettings();
+  const html = generatePaymentReceiptHTML(payment, printSettings);
+  const styles = getPaymentReceiptPrintStyles(printSettings);
   
   const printWindow = window.open('', '_blank');
   if (printWindow) {
@@ -537,7 +489,7 @@ export const downloadExpenseReportAsPDF = (expense: Expense): void => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Expense Report - ${expense.expenseNumber}</title>
+          <title>Payment Receipt - ${payment.receiptNumber}</title>
           <style>${styles}</style>
         </head>
         <body>

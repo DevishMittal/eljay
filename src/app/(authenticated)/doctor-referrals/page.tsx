@@ -96,7 +96,8 @@ export default function DoctorReferralsPage() {
   // Function to fetch available doctors for filter dropdown
   const fetchAvailableDoctors = useCallback(async () => {
     try {
-      const response = await doctorService.getAvailableAudiologists(token || undefined);
+      // Referral doctors, not audiologists
+      const response = await doctorService.getDoctors(token || undefined);
       const doctorOptions = response.data.map(doctor => ({
         id: doctor.id,
         name: doctor.name

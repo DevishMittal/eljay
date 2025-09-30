@@ -75,22 +75,14 @@ export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => (
  */
 export const getExpensePrintSettings = (): PrintSettings['expenses'] => {
   try {
-    // Try to load settings for all document types first
-    const savedAllSettings = localStorage.getItem('printSettings_all');
-    if (savedAllSettings) {
-      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
-      return parsedSettings.expenses;
-    }
-    
-    // If no global settings, try to load individual document type settings
-    const savedSettings = localStorage.getItem('printSettings_expenses');
-    if (savedSettings) {
-      return JSON.parse(savedSettings);
+    const saved = localStorage.getItem('expensePrintSettings');
+    if (saved) {
+      return JSON.parse(saved);
     }
   } catch (error) {
     console.error('Error loading expense print settings:', error);
   }
-    return getDefaultExpensePrintSettings();
+  return getDefaultExpensePrintSettings();
 };
 
 /**
@@ -119,9 +111,11 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <div class="expense-header">
         <div class="flex justify-between items-start">
           <div>
-            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
-            <div>
-              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+            <div class="flex flex-col items-start">
+              ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-20 h-20 mb-3" />' : ''}
+              <div>
+                ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+              </div>
             </div>
           </div>
           <div class="text-right">
@@ -142,7 +136,7 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
           <h3 class="font-semibold mb-2">Expense Details</h3>
           <p class="font-medium">${expense.vendor}</p>
           <p class="text-sm text-gray-600">Business Expense</p>
-      </div>
+        </div>
         <div>
           <h3 class="font-semibold mb-2">Expense Details</h3>
           <div class="space-y-1 text-sm">
@@ -165,30 +159,30 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <!-- Content Table -->
       <div class="mb-6">
         <h3 class="font-semibold mb-3">Expense Items</h3>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+        <table class="w-full border-collapse border border-gray-300">
           <thead>
-            <tr style="background-color: #f9fafb;">
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">#</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Expense Item</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Category</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Amount</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Date</th>
+            <tr class="bg-gray-50">
+              <th class="border border-gray-300 px-3 py-2 text-left">#</th>
+              <th class="border border-gray-300 px-3 py-2 text-left">Expense Item</th>
+              <th class="border border-gray-300 px-3 py-2 text-center">Category</th>
+              <th class="border border-gray-300 px-3 py-2 text-right">Amount</th>
+              <th class="border border-gray-300 px-3 py-2 text-right">Date</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">1</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">
+              <td class="border border-gray-300 px-3 py-2">1</td>
+              <td class="border border-gray-300 px-3 py-2">
                 <div>
-                  <p style="font-weight: 500; margin: 0;">${expense.description}</p>
-                  <p style="font-size: 0.875rem; color: #4b5563; margin: 0;">${expense.vendor}</p>
+                  <p class="font-medium">${expense.description}</p>
+                  <p class="text-sm text-gray-600">${expense.vendor}</p>
                 </div>
               </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">
-                <span style="background-color: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">${expense.category}</span>
+              <td class="border border-gray-300 px-3 py-2 text-center">
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">${expense.category}</span>
               </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right; font-weight: 500;">${formatCurrency(expense.amount)}</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">${formatDate(expense.date)}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right font-medium">${formatCurrency(expense.amount)}</td>
+              <td class="border border-gray-300 px-3 py-2 text-right">${formatDate(expense.date)}</td>
             </tr>
           </tbody>
         </table>
@@ -204,17 +198,17 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
           <h3 class="font-semibold mb-2">Expense Summary</h3>
           <div class="space-y-1 text-sm">
             <div class="flex justify-between">
-            <span>Expense Amount:</span>
+              <span>Expense Amount:</span>
               <span>${formatCurrency(expense.amount)}</span>
             </div>
             <div class="flex justify-between">
               <span>Category:</span>
               <span>${expense.category}</span>
-          </div>
+            </div>
             <div class="flex justify-between">
               <span>Status:</span>
               <span class="text-green-600">Approved</span>
-          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -307,10 +301,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       flex-direction: column;
     }
 
-    .mr-4 {
-      margin-right: 1rem;
-    }
-
     .text-right {
       text-align: right;
     }
@@ -323,24 +313,12 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       height: 5rem;
     }
 
-    .w-32 {
-      width: 8rem;
-    }
-
-    .h-32 {
-      height: 8rem;
-    }
-
     .mb-3 {
       margin-bottom: 0.75rem;
     }
 
     .mb-2 {
       margin-bottom: 0.5rem;
-    }
-
-    .mb-1 {
-      margin-bottom: 0.25rem;
     }
 
     .text-sm {
@@ -488,10 +466,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
 
     .mb-1 {
       margin-bottom: 0.25rem;
-    }
-
-    .object-contain {
-      object-fit: contain;
     }
   `;
 };

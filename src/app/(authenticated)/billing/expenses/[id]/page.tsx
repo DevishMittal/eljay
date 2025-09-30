@@ -45,19 +45,13 @@ export default function ExpenseDetailsPage() {
   const handleDownloadReport = () => {
     if (!expense) return;
     
-    downloadExpenseReportAsPDF(expense, {
-      title: `Expense Report ${expense.expenseNumber}`,
-      filename: `expense-report-${expense.expenseNumber}.pdf`
-    });
+    downloadExpenseReportAsPDF(expense);
   };
 
   const handlePrint = () => {
     if (!expense) return;
     
-    printExpenseReport(expense, {
-      title: `Expense Report ${expense.expenseNumber}`,
-      filename: `expense-report-${expense.expenseNumber}.pdf`
-    });
+    printExpenseReport(expense);
   };
 
   const handleEdit = () => {

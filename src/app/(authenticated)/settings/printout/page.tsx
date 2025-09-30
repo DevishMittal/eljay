@@ -3,17 +3,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import MainLayout from '@/components/layout/main-layout';
 import { PrintSettings, PrintPageSettings, PrintHeaderSettings, PrintFooterSettings } from '@/types';
 
 const PrintoutPage = () => {
-  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState('printout');
   
   // Print settings state
-  const [selectedDocumentType, setSelectedDocumentType] = useState<'b2cInvoice' | 'b2bInvoice' | 'payments' | 'expenses'>('b2cInvoice');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<'b2cInvoice' | 'b2bInvoice' | 'payments' | 'expenses' | 'transfers'>('b2cInvoice');
   const [selectedSubTab, setSelectedSubTab] = useState<'pageSettings' | 'header' | 'footer'>('pageSettings');
   
   // Default print settings
@@ -145,6 +143,38 @@ const PrintoutPage = () => {
         thankYouMessage: 'Thank you for your business with Eljay Hearing Care.',
         signatureNote: 'This is a computer-generated expense receipt and does not require a signature.'
       }
+    },
+    transfers: {
+      pageSettings: {
+        paperSize: 'A4',
+        orientation: 'Portrait',
+        printerType: 'Color',
+        margins: { top: 2.00, left: 0.25, bottom: 0.50, right: 0.25 }
+      },
+      headerSettings: {
+        includeHeader: true,
+        headerText: 'Hearing Centre Adyar',
+        leftText: 'No 75, Dhanalkshmi Avenue, Adyar, Chennai - 600020',
+        rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+        logo: { uploaded: true, type: 'Square', alignment: 'Left' }
+      },
+      footerSettings: {
+        topMargin: 0.00,
+        fullWidthContent: [],
+        leftSignature: {
+          name: '',
+          title: '',
+          organization: ''
+        },
+        rightSignature: {
+          name: '',
+          title: '',
+          organization: '',
+          date: ''
+        },
+        thankYouMessage: 'Thank you for your business with Eljay Hearing Care.',
+        signatureNote: 'This is a computer-generated transfer report and does not require a signature.'
+      }
     }
   });
 
@@ -159,7 +189,7 @@ const PrintoutPage = () => {
           setPrintSettings(parsedSettings);
         } else {
           // If no global settings, try to load individual document type settings
-          ['b2cInvoice', 'b2bInvoice', 'payments'].forEach(docType => {
+          ['b2cInvoice', 'b2bInvoice', 'payments', 'expenses', 'transfers'].forEach(docType => {
             const savedSettings = localStorage.getItem(`printSettings_${docType}`);
             if (savedSettings) {
               const parsedSettings = JSON.parse(savedSettings);
@@ -316,7 +346,8 @@ const PrintoutPage = () => {
                  { id: 'b2cInvoice', label: 'B2C Invoice' },
                  { id: 'b2bInvoice', label: 'B2B Invoice' },
                  { id: 'payments', label: 'Payments' },
-                 { id: 'expenses', label: 'Expenses' }
+                 { id: 'expenses', label: 'Expenses' },
+                 { id: 'transfers', label: 'Transfers' }
                ].map((tab) => (
                  <button
                    key={tab.id}
@@ -442,7 +473,8 @@ const PrintoutPage = () => {
                      b2cInvoice: 'B2C Invoice',
                      b2bInvoice: 'B2B Invoice', 
                      payments: 'Payments',
-                     expenses: 'Expenses'
+                     expenses: 'Expenses',
+                     transfers: 'Transfers'
                    };
                    alert(`Settings saved for ${typeLabels[selectedDocumentType]}`);
                  }}
@@ -457,7 +489,8 @@ const PrintoutPage = () => {
                      b2cInvoice: printSettings.b2cInvoice,
                      b2bInvoice: printSettings.b2bInvoice,
                      payments: printSettings.payments,
-                     expenses: printSettings.expenses
+                     expenses: printSettings.expenses,
+                     transfers: printSettings.transfers
                    };
                    localStorage.setItem('printSettings_all', JSON.stringify(settingsToSave));
                    alert('Settings saved for all document types');
@@ -766,19 +799,17 @@ const InvoicePreview = ({ documentType, settings }: {
           <div className="border-b-2 border-gray-300 pb-4 mb-6">
             <div className="flex justify-between items-start">
               <div>
-                <div className="flex flex-col items-start">
-                  {settings.headerSettings.logo.uploaded && <img src="/pdf-view-logo.png" alt="Logo" className="w-20 h-20 mb-3" />}
-                  <div>
-                    {settings.headerSettings.leftText?.split(' || ').map((text, index) => (
-                      <p key={index} className="text-sm text-gray-600">{text}</p>
-                    )) || (
-                      <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
-                    )}
-                  </div>
+                {settings.headerSettings.logo.uploaded && <img src="/pdf-view-logo.png" alt="Logo" className="w-25 h-25 mb- object-contain" />}
+                <div>
+                  {settings.headerSettings.leftText?.split(' || ').map((text, index) => (
+                    <p key={index} className="text-sm text-gray-600">{text}</p>
+                  )) || (
+                    <p className="text-sm text-gray-600">{settings.headerSettings.leftText}</p>
+                  )}
                 </div>
               </div>
               <div className="text-right">
-                <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+                <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-5">
                   Fully Paid
                 </div>
                 <div className="text-sm text-gray-600">
@@ -796,39 +827,46 @@ const InvoicePreview = ({ documentType, settings }: {
           <div>
             <h3 className="font-semibold mb-2">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Bill To' : 
-               documentType === 'payments' ? 'Payment To' : 'Expense Details'}
+               documentType === 'payments' ? 'Payment To' : 
+               documentType === 'expenses' ? 'Expense Details' : 'Transfer Details'}
             </h3>
             <p className="font-medium">
               {documentType === 'b2cInvoice' ? 'Robert Paterson' :
                documentType === 'b2bInvoice' ? 'Apollo Hospitals' :
-               documentType === 'payments' ? 'John Doe' : 'Office Supplies'}
+               documentType === 'payments' ? 'John Doe' : 
+               documentType === 'expenses' ? 'Office Supplies' : 'Main Branch to Adyar Branch'}
             </p>
             <p className="text-sm text-gray-600">
               {documentType === 'b2cInvoice' ? 'Individual Patient' :
                documentType === 'b2bInvoice' ? 'Corporate Account' :
-               documentType === 'payments' ? 'Payment Recipient' : 'Business Expense'}
+               documentType === 'payments' ? 'Payment Recipient' : 
+               documentType === 'expenses' ? 'Business Expense' : 'Inventory Transfer'}
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Details' :
-               documentType === 'payments' ? 'Payment Details' : 'Expense Details'}
+               documentType === 'payments' ? 'Payment Details' : 
+               documentType === 'expenses' ? 'Expense Details' : 'Transfer Details'}
             </h3>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>
                   {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Number:' :
-                   documentType === 'payments' ? 'Receipt Number:' : 'Expense Number:'}
+                   documentType === 'payments' ? 'Receipt Number:' : 
+                   documentType === 'expenses' ? 'Expense Number:' : 'Transfer Number:'}
                 </span>
                 <span className="font-medium">
                   {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'EHC-2025-014' :
-                   documentType === 'payments' ? 'PAY-2025-014' : 'EXP-2025-014'}
+                   documentType === 'payments' ? 'PAY-2025-014' : 
+                   documentType === 'expenses' ? 'EXP-2025-014' : 'TRF-2025-014'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>
                   {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Date:' :
-                   documentType === 'payments' ? 'Payment Date:' : 'Expense Date:'}
+                   documentType === 'payments' ? 'Payment Date:' : 
+                   documentType === 'expenses' ? 'Expense Date:' : 'Transfer Date:'}
                 </span>
                 <span>22 Jun 2025</span>
               </div>
@@ -837,6 +875,18 @@ const InvoicePreview = ({ documentType, settings }: {
                   <div className="flex justify-between">
                     <span>Due Date:</span>
                     <span>24 Jul 2025</span>
+                  </div>
+                </>
+              )}
+              {documentType === 'transfers' && (
+                <>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="text-green-600">Delivered</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Urgency:</span>
+                    <span>Medium</span>
                   </div>
                 </>
               )}
@@ -852,7 +902,8 @@ const InvoicePreview = ({ documentType, settings }: {
         <div className="mb-6">
           <h3 className="font-semibold mb-3">
             {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Services & Items' :
-             documentType === 'payments' ? 'Payment Details' : 'Expense Items'}
+             documentType === 'payments' ? 'Payment Details' : 
+             documentType === 'expenses' ? 'Expense Items' : 'Transferred Items'}
           </h3>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
@@ -873,12 +924,20 @@ const InvoicePreview = ({ documentType, settings }: {
                     <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
                     <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
                   </>
-                ) : (
+                ) : documentType === 'expenses' ? (
                   <>
                     <th className="border border-gray-300 px-3 py-2 text-left">Expense Item</th>
                     <th className="border border-gray-300 px-3 py-2 text-center">Category</th>
                     <th className="border border-gray-300 px-3 py-2 text-right">Amount</th>
                     <th className="border border-gray-300 px-3 py-2 text-right">Date</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="border border-gray-300 px-3 py-2 text-left">Item Name</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Item Code</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Brand</th>
+                    <th className="border border-gray-300 px-3 py-2 text-center">Quantity</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left">Remarks</th>
                   </>
                 )}
               </tr>
@@ -930,7 +989,7 @@ const InvoicePreview = ({ documentType, settings }: {
                     <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
                   </tr>
                 </>
-              ) : (
+              ) : documentType === 'expenses' ? (
                 <>
                   <tr>
                     <td className="border border-gray-300 px-3 py-2">1</td>
@@ -947,6 +1006,35 @@ const InvoicePreview = ({ documentType, settings }: {
                     <td className="border border-gray-300 px-3 py-2 text-right">22 Jun 2025</td>
                   </tr>
                 </>
+              ) : (
+                <>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">1</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Starkey Livio AI 2400</p>
+                        <p className="text-sm text-gray-600">AI-powered hearing aid</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">STK-AI2400</td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">Starkey</td>
+                    <td className="border border-gray-300 px-3 py-2 text-center font-medium">2</td>
+                    <td className="border border-gray-300 px-3 py-2">For new patient fittings</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2">2</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <div>
+                        <p className="font-medium">Smart Charger</p>
+                        <p className="text-sm text-gray-600">Wireless charging case</p>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">STK-CHG01</td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">Starkey</td>
+                    <td className="border border-gray-300 px-3 py-2 text-center font-medium">1</td>
+                    <td className="border border-gray-300 px-3 py-2">Accessory for hearing aids</td>
+                  </tr>
+                </>
               )}
             </tbody>
           </table>
@@ -957,17 +1045,20 @@ const InvoicePreview = ({ documentType, settings }: {
           <div>
             <h3 className="font-semibold mb-2">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Additional Information' :
-               documentType === 'payments' ? 'Payment Notes' : 'Expense Notes'}
+               documentType === 'payments' ? 'Payment Notes' : 
+               documentType === 'expenses' ? 'Expense Notes' : 'Transfer Notes'}
             </h3>
             <p className="text-sm text-gray-600">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Warranty: 3 years warranty + health tracking' :
-               documentType === 'payments' ? 'Payment processed successfully via cash' : 'Expense approved for office operations'}
+               documentType === 'payments' ? 'Payment processed successfully via cash' : 
+               documentType === 'expenses' ? 'Expense approved for office operations' : 'Transfer completed successfully. Items received in good condition.'}
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">
               {documentType === 'b2cInvoice' || documentType === 'b2bInvoice' ? 'Invoice Summary' :
-               documentType === 'payments' ? 'Payment Summary' : 'Expense Summary'}
+               documentType === 'payments' ? 'Payment Summary' : 
+               documentType === 'expenses' ? 'Expense Summary' : 'Transfer Summary'}
             </h3>
             <div className="space-y-1 text-sm">
               {(documentType === 'b2cInvoice' || documentType === 'b2bInvoice') ? (
@@ -1008,7 +1099,7 @@ const InvoicePreview = ({ documentType, settings }: {
                     <span className="text-green-600">Completed</span>
                   </div>
                 </>
-              ) : (
+              ) : documentType === 'expenses' ? (
                 <>
                   <div className="flex justify-between">
                     <span>Expense Amount:</span>
@@ -1021,6 +1112,25 @@ const InvoicePreview = ({ documentType, settings }: {
                   <div className="flex justify-between">
                     <span>Status:</span>
                     <span className="text-green-600">Approved</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span>Total Items:</span>
+                    <span>2</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Quantity:</span>
+                    <span>3</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Transfer Type:</span>
+                    <span>Branch Transfer</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="text-green-600">Delivered</span>
                   </div>
                 </>
               )}

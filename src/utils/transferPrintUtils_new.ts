@@ -1,17 +1,5 @@
-import { Expense } from '../types';
+import { InventoryTransfer } from '../types';
 import { PrintSettings } from '../types';
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format date for display
@@ -26,9 +14,9 @@ const formatDate = (date: string | Date): string => {
 };
 
 /**
- * Get default expense print settings
+ * Get default transfer print settings
  */
-export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => ({
+export const getDefaultTransferPrintSettings = (): PrintSettings['transfers'] => ({
   pageSettings: {
     paperSize: 'A4',
     orientation: 'Portrait',
@@ -66,67 +54,61 @@ export const getDefaultExpensePrintSettings = (): PrintSettings['expenses'] => (
       date: '',
     },
     thankYouMessage: 'Thank you for your business!',
-    signatureNote: 'This is a computer generated expense report.',
+    signatureNote: 'This is a computer generated transfer report.',
   },
 });
 
 /**
- * Get expense print settings from localStorage
+ * Get transfer print settings from localStorage
  */
-export const getExpensePrintSettings = (): PrintSettings['expenses'] => {
+export const getTransferPrintSettings = (): PrintSettings['transfers'] => {
   try {
-    // Try to load settings for all document types first
-    const savedAllSettings = localStorage.getItem('printSettings_all');
-    if (savedAllSettings) {
-      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
-      return parsedSettings.expenses;
-    }
-    
-    // If no global settings, try to load individual document type settings
-    const savedSettings = localStorage.getItem('printSettings_expenses');
-    if (savedSettings) {
-      return JSON.parse(savedSettings);
+    const saved = localStorage.getItem('transferPrintSettings');
+    if (saved) {
+      return JSON.parse(saved);
     }
   } catch (error) {
-    console.error('Error loading expense print settings:', error);
+    console.error('Error loading transfer print settings:', error);
   }
-    return getDefaultExpensePrintSettings();
+  return getDefaultTransferPrintSettings();
 };
 
 /**
- * Save expense print settings to localStorage
+ * Save transfer print settings to localStorage
  */
-export const saveExpensePrintSettings = (settings: PrintSettings['expenses']): void => {
+export const saveTransferPrintSettings = (settings: PrintSettings['transfers']): void => {
   try {
-    localStorage.setItem('expensePrintSettings', JSON.stringify(settings));
+    localStorage.setItem('transferPrintSettings', JSON.stringify(settings));
   } catch (error) {
-    console.error('Error saving expense print settings:', error);
+    console.error('Error saving transfer print settings:', error);
   }
 };
 
 /**
- * Generate HTML for expense report
+ * Generate HTML for transfer report
  */
-const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettings['expenses']): string => {
+const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?: PrintSettings['transfers']): string => {
   // Use custom header settings if available
   const headerSettings = printSettings?.headerSettings;
   const showHeader = headerSettings?.includeHeader !== false;
   
   return `
-    <div class="expense-container">
+    <div class="transfer-container">
       <!-- Header -->
       ${showHeader ? `
-      <div class="expense-header">
+      <div class="transfer-header">
         <div class="flex justify-between items-start">
           <div>
-            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
-            <div>
-              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+            <div class="flex flex-col items-start">
+              ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-20 h-20 mb-3" />' : ''}
+              <div>
+                ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+              </div>
             </div>
           </div>
           <div class="text-right">
             <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
-              Approved
+              ${transfer.status}
             </div>
             <div class="text-sm text-gray-600">
               ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
@@ -139,20 +121,28 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <!-- Document Details -->
       <div class="grid grid-cols-2 gap-8 mb-6">
         <div>
-          <h3 class="font-semibold mb-2">Expense Details</h3>
-          <p class="font-medium">${expense.vendor}</p>
-          <p class="text-sm text-gray-600">Business Expense</p>
-      </div>
+          <h3 class="font-semibold mb-2">Transfer Details</h3>
+          <p class="font-medium">${transfer.fromLocation} to ${transfer.toLocation}</p>
+          <p class="text-sm text-gray-600">Inventory Transfer</p>
+        </div>
         <div>
-          <h3 class="font-semibold mb-2">Expense Details</h3>
+          <h3 class="font-semibold mb-2">Transfer Details</h3>
           <div class="space-y-1 text-sm">
             <div class="flex justify-between">
-              <span>Expense Number:</span>
-              <span class="font-medium">${expense.expenseNumber}</span>
+              <span>Transfer Number:</span>
+              <span class="font-medium">${transfer.trackingNumber}</span>
             </div>
             <div class="flex justify-between">
-              <span>Expense Date:</span>
-              <span>${formatDate(expense.date)}</span>
+              <span>Transfer Date:</span>
+              <span>${formatDate(transfer.transferredDate)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Status:</span>
+              <span class="text-green-600">${transfer.status}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Urgency:</span>
+              <span>${transfer.urgencyLevel}</span>
             </div>
             <div class="flex justify-between">
               <span>Created By:</span>
@@ -164,32 +154,34 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
 
       <!-- Content Table -->
       <div class="mb-6">
-        <h3 class="font-semibold mb-3">Expense Items</h3>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+        <h3 class="font-semibold mb-3">Transferred Items</h3>
+        <table class="w-full border-collapse border border-gray-300">
           <thead>
-            <tr style="background-color: #f9fafb;">
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">#</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Expense Item</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Category</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Amount</th>
-              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">Date</th>
+            <tr class="bg-gray-50">
+              <th class="border border-gray-300 px-3 py-2 text-left">#</th>
+              <th class="border border-gray-300 px-3 py-2 text-left">Item Name</th>
+              <th class="border border-gray-300 px-3 py-2 text-center">Item Code</th>
+              <th class="border border-gray-300 px-3 py-2 text-center">Brand</th>
+              <th class="border border-gray-300 px-3 py-2 text-center">Quantity</th>
+              <th class="border border-gray-300 px-3 py-2 text-left">Remarks</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">1</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">
-                <div>
-                  <p style="font-weight: 500; margin: 0;">${expense.description}</p>
-                  <p style="font-size: 0.875rem; color: #4b5563; margin: 0;">${expense.vendor}</p>
-                </div>
-              </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">
-                <span style="background-color: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">${expense.category}</span>
-              </td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right; font-weight: 500;">${formatCurrency(expense.amount)}</td>
-              <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: right;">${formatDate(expense.date)}</td>
-            </tr>
+            ${transfer.transferItems.map((item, index) => `
+              <tr>
+                <td class="border border-gray-300 px-3 py-2">${index + 1}</td>
+                <td class="border border-gray-300 px-3 py-2">
+                  <div>
+                    <p class="font-medium">${item.inventoryItem.itemName}</p>
+                    <p class="text-sm text-gray-600">${item.inventoryItem.brand || 'N/A'}</p>
+                  </div>
+                </td>
+                <td class="border border-gray-300 px-3 py-2 text-center">${item.inventoryItem.itemCode || '-'}</td>
+                <td class="border border-gray-300 px-3 py-2 text-center">${item.inventoryItem.brand || '-'}</td>
+                <td class="border border-gray-300 px-3 py-2 text-center font-medium">${item.quantity}</td>
+                <td class="border border-gray-300 px-3 py-2">${item.itemRemarks || '-'}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -197,24 +189,28 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
       <!-- Document Summary -->
       <div class="grid grid-cols-2 gap-8 mb-6">
         <div>
-          <h3 class="font-semibold mb-2">Expense Notes</h3>
-          <p class="text-sm text-gray-600">${expense.remarks || 'Expense approved for office operations'}</p>
+          <h3 class="font-semibold mb-2">Transfer Notes</h3>
+          <p class="text-sm text-gray-600">${transfer.notes || 'Transfer completed successfully. Items received in good condition.'}</p>
         </div>
         <div>
-          <h3 class="font-semibold mb-2">Expense Summary</h3>
+          <h3 class="font-semibold mb-2">Transfer Summary</h3>
           <div class="space-y-1 text-sm">
             <div class="flex justify-between">
-            <span>Expense Amount:</span>
-              <span>${formatCurrency(expense.amount)}</span>
+              <span>Total Items:</span>
+              <span>${transfer.transferItems.length}</span>
             </div>
             <div class="flex justify-between">
-              <span>Category:</span>
-              <span>${expense.category}</span>
-          </div>
+              <span>Total Quantity:</span>
+              <span>${transfer.transferItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Transfer Type:</span>
+              <span>${transfer.transferType}</span>
+            </div>
             <div class="flex justify-between">
               <span>Status:</span>
-              <span class="text-green-600">Approved</span>
-          </div>
+              <span class="text-green-600">${transfer.status}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -231,7 +227,7 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
         ` : ''}
         ${printSettings?.footerSettings?.signatureNote ? `
           <div class="mb-1">
-            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(expense.createdAt)}</p>`).join('')}
+            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(transfer.createdAt)}</p>`).join('')}
           </div>
         ` : ''}
       </div>
@@ -240,9 +236,9 @@ const generateExpenseReportHTML = (expense: Expense, printSettings?: PrintSettin
 };
 
 /**
- * Get CSS styles for expense report printing
+ * Get CSS styles for transfer report printing
  */
-const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses']) => {
+const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers']) => {
   return `
     * {
       box-sizing: border-box;
@@ -280,12 +276,12 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       }
     }
 
-    .expense-container {
+    .transfer-container {
       max-width: 800px;
       margin: 0 auto;
     }
 
-    .expense-header {
+    .transfer-header {
       border-bottom: 2px solid #d1d5db;
       padding-bottom: 16px;
       margin-bottom: 24px;
@@ -307,10 +303,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       flex-direction: column;
     }
 
-    .mr-4 {
-      margin-right: 1rem;
-    }
-
     .text-right {
       text-align: right;
     }
@@ -323,24 +315,12 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       height: 5rem;
     }
 
-    .w-32 {
-      width: 8rem;
-    }
-
-    .h-32 {
-      height: 8rem;
-    }
-
     .mb-3 {
       margin-bottom: 0.75rem;
     }
 
     .mb-2 {
       margin-bottom: 0.5rem;
-    }
-
-    .mb-1 {
-      margin-bottom: 0.25rem;
     }
 
     .text-sm {
@@ -444,28 +424,6 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
       background-color: #f9fafb;
     }
 
-    .bg-blue-100 {
-      background-color: #dbeafe;
-    }
-
-    .text-blue-800 {
-      color: #1e40af;
-    }
-
-    .px-2 {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
-
-    .rounded-full {
-      border-radius: 9999px;
-    }
-
-    .text-xs {
-      font-size: 0.75rem;
-      line-height: 1rem;
-    }
-
     .text-green-600 {
       color: #16a34a;
     }
@@ -489,20 +447,16 @@ const getExpenseReportPrintStyles = (_printSettings?: PrintSettings['expenses'])
     .mb-1 {
       margin-bottom: 0.25rem;
     }
-
-    .object-contain {
-      object-fit: contain;
-    }
   `;
 };
 
 /**
- * Print expense report
+ * Print transfer report
  */
-export const printExpenseReport = (expense: Expense): void => {
-  const printSettings = getExpensePrintSettings();
-  const html = generateExpenseReportHTML(expense, printSettings);
-  const styles = getExpenseReportPrintStyles(printSettings);
+export const printInventoryTransferReport = (transfer: InventoryTransfer): void => {
+  const printSettings = getTransferPrintSettings();
+  const html = generateTransferReportHTML(transfer, printSettings);
+  const styles = getTransferReportPrintStyles(printSettings);
   
   const printWindow = window.open('', '_blank');
   if (printWindow) {
@@ -510,7 +464,7 @@ export const printExpenseReport = (expense: Expense): void => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Expense Report - ${expense.expenseNumber}</title>
+          <title>Transfer Report - ${transfer.trackingNumber}</title>
           <style>${styles}</style>
         </head>
         <body>
@@ -524,12 +478,12 @@ export const printExpenseReport = (expense: Expense): void => {
 };
 
 /**
- * Download expense report as PDF
+ * Download transfer report as PDF
  */
-export const downloadExpenseReportAsPDF = (expense: Expense): void => {
-  const printSettings = getExpensePrintSettings();
-  const html = generateExpenseReportHTML(expense, printSettings);
-  const styles = getExpenseReportPrintStyles(printSettings);
+export const downloadInventoryTransferReportAsPDF = (transfer: InventoryTransfer): void => {
+  const printSettings = getTransferPrintSettings();
+  const html = generateTransferReportHTML(transfer, printSettings);
+  const styles = getTransferReportPrintStyles(printSettings);
   
   const printWindow = window.open('', '_blank');
   if (printWindow) {
@@ -537,7 +491,7 @@ export const downloadExpenseReportAsPDF = (expense: Expense): void => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Expense Report - ${expense.expenseNumber}</title>
+          <title>Transfer Report - ${transfer.trackingNumber}</title>
           <style>${styles}</style>
         </head>
         <body>

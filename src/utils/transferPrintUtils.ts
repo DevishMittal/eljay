@@ -1,528 +1,531 @@
-import { InventoryTransfer } from '@/types';
+import { InventoryTransfer } from '../types';
+import { PrintSettings } from '../types';
 
 /**
- * Print utility functions for inventory transfer reports
+ * Format date for display
  */
-
-export interface TransferPrintOptions {
-  title?: string;
-  filename?: string;
-  includeStyles?: boolean;
-  customStyles?: string;
-}
-
-/**
- * Print inventory transfer report with proper formatting
- */
-export const printInventoryTransferReport = (transfer: InventoryTransfer, options: TransferPrintOptions = {}) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    console.error('Could not open print window');
-    return;
-  }
-
-  const transferHTML = generateTransferReportHTML(transfer, options);
-  
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${options.title || `Transfer Report ${transfer.trackingNumber}`}</title>
-        <style>
-          ${getTransferReportPrintStyles()}
-          ${options.customStyles || ''}
-        </style>
-      </head>
-      <body>
-        ${transferHTML}
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+const formatDate = (date: string | Date): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 };
 
 /**
- * Download inventory transfer report as PDF (using browser's print to PDF)
+ * Get default transfer print settings
  */
-export const downloadInventoryTransferReportAsPDF = (transfer: InventoryTransfer, options: TransferPrintOptions = {}) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    console.error('Could not open print window');
-    return;
-  }
+export const getDefaultTransferPrintSettings = (): PrintSettings['transfers'] => ({
+  pageSettings: {
+    paperSize: 'A4',
+    orientation: 'Portrait',
+    margins: {
+      top: 0.5,
+      right: 0.5,
+      bottom: 0.5,
+      left: 0.5,
+    },
+    printerType: 'Color',
+  },
+  headerSettings: {
+    includeHeader: true,
+    headerText: 'Hearing Centre Adyar',
+    logo: {
+      uploaded: true,
+      type: 'Square',
+      alignment: 'Left',
+    },
+    leftText: 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.',
+    rightText: 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111',
+  },
+  footerSettings: {
+    topMargin: 0.5,
+    fullWidthContent: [],
+    leftSignature: {
+      name: '',
+      title: '',
+      organization: '',
+    },
+    rightSignature: {
+      name: '',
+      title: '',
+      organization: '',
+      date: '',
+    },
+    thankYouMessage: 'Thank you for your business!',
+    signatureNote: 'This is a computer generated transfer report.',
+  },
+});
 
-  const transferHTML = generateTransferReportHTML(transfer, options);
-  
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${options.title || `Transfer Report ${transfer.trackingNumber}`}</title>
-        <style>
-          ${getTransferReportPrintStyles()}
-          ${options.customStyles || ''}
-        </style>
-      </head>
-      <body>
-        ${transferHTML}
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  
-  // Wait for content to load, then trigger print dialog
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
+/**
+ * Get transfer print settings from localStorage
+ */
+export const getTransferPrintSettings = (): PrintSettings['transfers'] => {
+  try {
+    // Try to load settings for all document types first
+    const savedAllSettings = localStorage.getItem('printSettings_all');
+    if (savedAllSettings) {
+      const parsedSettings: PrintSettings = JSON.parse(savedAllSettings);
+      return parsedSettings.transfers;
+    }
     
-    // Close window after a delay to allow user to save PDF
-    setTimeout(() => {
-      printWindow.close();
-    }, 1000);
-  };
+    // If no global settings, try to load individual document type settings
+    const savedSettings = localStorage.getItem('printSettings_transfers');
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    }
+  } catch (error) {
+    console.error('Error loading transfer print settings:', error);
+  }
+  return getDefaultTransferPrintSettings();
 };
 
 /**
- * Generate HTML for inventory transfer report printing
+ * Save transfer print settings to localStorage
  */
-const generateTransferReportHTML = (transfer: InventoryTransfer, options: TransferPrintOptions = {}) => {
-  // Options can be used for future customization
-  const {} = options;
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+export const saveTransferPrintSettings = (settings: PrintSettings['transfers']): void => {
+  try {
+    localStorage.setItem('transferPrintSettings', JSON.stringify(settings));
+  } catch (error) {
+    console.error('Error saving transfer print settings:', error);
+  }
+};
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getStatusBadgeHTML = (status: string) => {
-    const statusColors: { [key: string]: string } = {
-      'Delivered': 'background: #10B981; color: white;',
-      'In Transit': 'background: #3B82F6; color: white;',
-      'Pending': 'background: #F59E0B; color: white;',
-      'Cancelled': 'background: #EF4444; color: white;'
-    };
-    
-    const style = statusColors[status] || 'background: #6B7280; color: white;';
-    return `<span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; ${style}">${status}</span>`;
-  };
-
-  const getUrgencyBadgeHTML = (urgency: string) => {
-    const urgencyColors: { [key: string]: string } = {
-      'High': 'background: #FEE2E2; color: #DC2626;',
-      'Medium': 'background: #FEF3C7; color: #D97706;',
-      'Low': 'background: #E0F2FE; color: #0284C7;'
-    };
-    
-    const style = urgencyColors[urgency] || 'background: #F3F4F6; color: #6B7280;';
-    return `<span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; ${style}">${urgency}</span>`;
-  };
+/**
+ * Generate HTML for transfer report
+ */
+const generateTransferReportHTML = (transfer: InventoryTransfer, printSettings?: PrintSettings['transfers']): string => {
+  // Use custom header settings if available
+  const headerSettings = printSettings?.headerSettings;
+  const showHeader = headerSettings?.includeHeader !== false;
 
   return `
-    <div class="transfer-report">
+    <div class="transfer-container">
       <!-- Header -->
-      <div class="header">
-        <div class="company-info">
-          <h1>ElJay Hearing Centre</h1>
-          <p>Professional Hearing Solutions</p>
+      ${showHeader ? `
+      <div class="transfer-header">
+        <div class="flex justify-between items-start">
+          <div>
+            ${headerSettings?.logo?.uploaded ? '<img src="/pdf-view-logo.png" alt="Logo" class="w-32 h-32 mb-1 object-contain" />' : ''}
+            <div>
+              ${(headerSettings?.leftText || 'No 75, DhanaLakshmi Avenue, Adyar, Chennai - 600020.').split(' || ').map(text => `<p class="text-sm text-gray-600">${text}</p>`).join('')}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+              ${transfer.status}
+            </div>
+            <div class="text-sm text-gray-600">
+              ${(headerSettings?.rightText || 'GST: 33BXCFA4838GL2U | Phone: +91 6385 054 111').split(' || ').map(text => `<p>${text}</p>`).join('')}
+            </div>
+          </div>
         </div>
-        <div class="document-info">
-          <h2>INVENTORY TRANSFER REPORT</h2>
-          <p><strong>Transfer #:</strong> ${transfer.trackingNumber}</p>
-          <p><strong>Generated:</strong> ${formatDate(new Date().toISOString())} at ${formatTime(new Date().toISOString())}</p>
+      </div>
+      ` : ''}
+
+      <!-- Document Details -->
+      <div class="grid grid-cols-2 gap-8 mb-6">
+        <div>
+          <h3 class="font-semibold mb-2">Transfer Details</h3>
+          <p class="font-medium">${transfer.fromLocation} to ${transfer.toLocation}</p>
+          <p class="text-sm text-gray-600">Inventory Transfer</p>
+          </div>
+        <div>
+          <h3 class="font-semibold mb-2">Transfer Details</h3>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span>Transfer Number:</span>
+              <span class="font-medium">${transfer.trackingNumber}</span>
+          </div>
+            <div class="flex justify-between">
+              <span>Transfer Date:</span>
+              <span>${formatDate(transfer.transferredDate)}</span>
+          </div>
+            <div class="flex justify-between">
+              <span>Status:</span>
+              <span class="text-green-600">${transfer.status}</span>
+          </div>
+            <div class="flex justify-between">
+              <span>Urgency:</span>
+              <span>${transfer.urgencyLevel}</span>
+          </div>
+            <div class="flex justify-between">
+              <span>Created By:</span>
+              <span>Staff</span>
+          </div>
+          </div>
         </div>
       </div>
 
-      <!-- Transfer Details -->
-      <div class="transfer-details">
-        <h3>Transfer Information</h3>
-        <div class="details-grid">
-          <div class="detail-item">
-            <span class="label">Transfer Date:</span>
-            <span class="value">${formatDate(transfer.transferredDate)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">From Location:</span>
-            <span class="value">${transfer.fromLocation}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">To Location:</span>
-            <span class="value">${transfer.toLocation}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Status:</span>
-            <span class="value">${getStatusBadgeHTML(transfer.status)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Urgency:</span>
-            <span class="value">${getUrgencyBadgeHTML(transfer.urgencyLevel)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Transferred By:</span>
-            <span class="value">${transfer.transferredBy}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Transfer Type:</span>
-            <span class="value">${transfer.transferType}</span>
-          </div>
-          ${transfer.approvedBy ? `
-          <div class="detail-item">
-            <span class="label">Approved By:</span>
-            <span class="value">${transfer.approvedBy}</span>
-          </div>
-          ` : ''}
-          ${transfer.shippingCost ? `
-          <div class="detail-item">
-            <span class="label">Shipping Cost:</span>
-            <span class="value">₹${transfer.shippingCost}</span>
-          </div>
-          ` : ''}
-        </div>
-      </div>
-
-      <!-- Items Table -->
-      <div class="items-section">
-        <h3>Transferred Items</h3>
-        <table class="items-table">
+      <!-- Content Table -->
+      <div class="mb-6">
+        <h3 class="font-semibold mb-3">Transferred Items</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
           <thead>
-            <tr>
-              <th>Item Name</th>
-              <th>Item Code</th>
-              <th>Brand</th>
-              <th>Quantity</th>
-              <th>Remarks</th>
+            <tr style="background-color: #f9fafb;">
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">#</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Item Name</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Item Code</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Brand</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">Quantity</th>
+              <th style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left;">Remarks</th>
             </tr>
           </thead>
           <tbody>
-            ${transfer.transferItems.map(item => `
+            ${transfer.transferItems.map((item, index) => `
               <tr>
-                <td>${item.inventoryItem.itemName}</td>
-                <td>${item.inventoryItem.itemCode || '-'}</td>
-                <td>${item.inventoryItem.brand || '-'}</td>
-                <td class="quantity">${item.quantity}</td>
-                <td>${item.itemRemarks || '-'}</td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">${index + 1}</td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">
+                  <div>
+                    <p style="font-weight: 500; margin: 0;">${item.inventoryItem.itemName}</p>
+                    <p style="font-size: 0.875rem; color: #4b5563; margin: 0;">${item.inventoryItem.brand || 'N/A'}</p>
+                  </div>
+                </td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">${item.inventoryItem.itemCode || '-'}</td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center;">${item.inventoryItem.brand || '-'}</td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: center; font-weight: 500;">${item.quantity}</td>
+                <td style="border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;">${item.itemRemarks || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>
 
-      <!-- Summary -->
-      <div class="summary-section">
-        <h3>Transfer Summary</h3>
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span class="label">Total Items:</span>
-            <span class="value">${transfer.transferItems.length}</span>
+      <!-- Document Summary -->
+      <div class="grid grid-cols-2 gap-8 mb-6">
+        <div>
+          <h3 class="font-semibold mb-2">Transfer Notes</h3>
+          <p class="text-sm text-gray-600">${transfer.additionalNotes || 'Transfer completed successfully. Items received in good condition.'}</p>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Transfer Summary</h3>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span>Total Items:</span>
+              <span>${transfer.transferItems.length}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Total Quantity:</span>
+              <span>${transfer.transferItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Transfer Type:</span>
+              <span>${transfer.transferType}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Status:</span>
+              <span class="text-green-600">${transfer.status}</span>
           </div>
-          <div class="summary-item">
-            <span class="label">Total Quantity:</span>
-            <span class="value">${transfer.transferItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
           </div>
         </div>
       </div>
-
-      ${transfer.additionalNotes ? `
-      <!-- Notes -->
-      <div class="notes-section">
-        <h3>Transfer Notes</h3>
-        <p>${transfer.additionalNotes}</p>
-      </div>
-      ` : ''}
 
       <!-- Footer -->
-      <div class="footer">
-        <div class="signatures">
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <p>Transferred By</p>
-            <p>Staff Name: _________________</p>
-            <p>Date: ${formatDate(transfer.transferredDate)}</p>
+      <div 
+        class="!border-t border-gray-300 pt-4 text-center text-sm text-gray-600"
+        style="margin-top: ${printSettings?.footerSettings?.topMargin || 0}in;"
+      >
+        ${printSettings?.footerSettings?.thankYouMessage ? `
+          <div class="mb-1">
+            ${printSettings.footerSettings.thankYouMessage.split(' || ').map(text => `<p class="leading-tight">${text}</p>`).join('')}
           </div>
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <p>Received By</p>
-            <p>Staff Name: _________________</p>
-            <p>Date: _________________</p>
+        ` : ''}
+        ${printSettings?.footerSettings?.signatureNote ? `
+          <div class="mb-1">
+            ${printSettings.footerSettings.signatureNote.split(' || ').map(text => `<p class="leading-tight">${text} • Generated on ${formatDate(transfer.createdAt)}</p>`).join('')}
           </div>
-        </div>
-        <div class="company-footer">
-          <p>ElJay Hearing Centre - Professional Hearing Solutions</p>
-          <p>This is a computer-generated document and does not require a signature.</p>
-        </div>
+        ` : ''}
       </div>
     </div>
   `;
 };
 
 /**
- * CSS styles for transfer report printing
+ * Get CSS styles for transfer report printing
  */
-const getTransferReportPrintStyles = () => {
+const getTransferReportPrintStyles = (_printSettings?: PrintSettings['transfers']) => {
   return `
-    @page {
-      size: A4;
-      margin: 15mm;
-    }
-
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
 
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 11px;
-      line-height: 1.4;
-      color: #333;
-      background: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #000;
+      line-height: 1.6;
+      font-size: 14px;
     }
 
-    .transfer-report {
-      max-width: 100%;
+    @media print {
+      body {
+        margin: 0;
+        padding: 15px;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-break {
+        page-break-before: always;
+      }
+      
+      .print-break-after {
+        page-break-after: always;
+      }
+      
+      .print-break-inside {
+        page-break-inside: avoid;
+      }
+    }
+
+    .transfer-container {
+      max-width: 800px;
       margin: 0 auto;
     }
 
-    /* Header Styles */
-    .header {
+    .transfer-header {
+      border-bottom: 2px solid #d1d5db;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .flex {
       display: flex;
+    }
+
+    .justify-between {
       justify-content: space-between;
+    }
+
+    .items-start {
       align-items: flex-start;
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #e5e7eb;
     }
 
-    .company-info h1 {
-      font-size: 20px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 4px;
+    .flex-col {
+      flex-direction: column;
     }
 
-    .company-info p {
-      font-size: 12px;
-      color: #6b7280;
+    .mr-4 {
+      margin-right: 1rem;
     }
 
-    .document-info {
+    .text-right {
       text-align: right;
     }
 
-    .document-info h2 {
-      font-size: 16px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 8px;
+    .w-20 {
+      width: 5rem;
     }
 
-    .document-info p {
-      font-size: 10px;
-      color: #6b7280;
-      margin-bottom: 2px;
+    .h-20 {
+      height: 5rem;
     }
 
-    /* Section Styles */
-    h3 {
-      font-size: 14px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 12px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #e5e7eb;
+    .w-32 {
+      width: 8rem;
     }
 
-    .transfer-details,
-    .items-section,
-    .summary-section,
-    .notes-section {
-      margin-bottom: 20px;
+    .h-32 {
+      height: 8rem;
     }
 
-    /* Details Grid */
-    .details-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 20px;
-      margin-bottom: 15px;
+    .mb-3 {
+      margin-bottom: 0.75rem;
     }
 
-    .detail-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 4px 0;
+    .mb-2 {
+      margin-bottom: 0.5rem;
     }
 
-    .detail-item .label {
-      font-weight: 500;
-      color: #6b7280;
-      width: 120px;
-      flex-shrink: 0;
+    .mb-1 {
+      margin-bottom: 0.25rem;
     }
 
-    .detail-item .value {
-      font-weight: 500;
-      color: #1f2937;
-      text-align: right;
+    .text-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
     }
 
-    /* Table Styles */
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
+    .text-gray-600 {
+      color: #4b5563;
     }
 
-    .items-table th {
-      background-color: #f9fafb;
-      padding: 8px 6px;
-      text-align: left;
+    .inline-block {
+      display: inline-block;
+    }
+
+    .bg-green-100 {
+      background-color: #dcfce7;
+    }
+
+    .text-green-800 {
+      color: #166534;
+    }
+
+    .px-3 {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .py-1 {
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+    }
+
+    .rounded-full {
+      border-radius: 9999px;
+    }
+
+    .font-semibold {
       font-weight: 600;
-      font-size: 10px;
-      color: #374151;
-      border: 1px solid #e5e7eb;
     }
 
-    .items-table td {
-      padding: 6px;
-      border: 1px solid #e5e7eb;
-      font-size: 10px;
-      color: #1f2937;
-    }
-
-    .items-table .quantity {
-      text-align: center;
-      font-weight: 500;
-    }
-
-    .items-table tbody tr:nth-child(even) {
-      background-color: #f9fafb;
-    }
-
-    /* Summary Grid */
-    .summary-grid {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      background-color: #f9fafb;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
     }
 
-    .summary-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .summary-item .label {
+    .gap-8 {
+      gap: 2rem;
+    }
+
+    .mb-6 {
+      margin-bottom: 1.5rem;
+    }
+
+    .font-medium {
       font-weight: 500;
-      color: #6b7280;
     }
 
-    .summary-item .value {
-      font-weight: bold;
-      color: #1f2937;
-      font-size: 12px;
+    .space-y-1 > * + * {
+      margin-top: 0.25rem;
     }
 
-    /* Notes Section */
-    .notes-section p {
-      background-color: #f9fafb;
-      padding: 10px;
-      border-radius: 4px;
-      border-left: 3px solid #3b82f6;
-      font-style: italic;
-      color: #374151;
+    .w-full {
+      width: 100%;
     }
 
-    /* Footer Styles */
-    .footer {
-      margin-top: 30px;
-      page-break-inside: avoid;
+    .border-collapse {
+      border-collapse: collapse;
     }
 
-    .signatures {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
+    .border {
+      border-width: 1px;
     }
 
-    .signature-block {
+    .border-gray-300 {
+      border-color: #d1d5db;
+    }
+
+    .px-3 {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .py-2 {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+
+    .text-center {
       text-align: center;
-      min-width: 150px;
     }
 
-    .signature-line {
-      height: 1px;
-      background-color: #6b7280;
-      margin-bottom: 8px;
-      width: 120px;
-      margin-left: auto;
-      margin-right: auto;
+    .bg-gray-50 {
+      background-color: #f9fafb;
     }
 
-    .signature-block p {
-      font-size: 9px;
-      color: #6b7280;
-      margin-bottom: 2px;
+    .text-green-600 {
+      color: #16a34a;
     }
 
-    .signature-block p:first-of-type {
-      font-weight: 500;
-      color: #1f2937;
+    .border-t {
+      border-top-width: 1px;
     }
 
-    .company-footer {
+    .pt-4 {
+      padding-top: 1rem;
+    }
+
+    .text-center {
       text-align: center;
-      margin-top: 20px;
-      padding-top: 15px;
-      border-top: 1px solid #e5e7eb;
     }
 
-    .company-footer p {
-      font-size: 9px;
-      color: #6b7280;
-      margin-bottom: 2px;
+    .leading-tight {
+      line-height: 1.25;
     }
 
-    .company-footer p:first-child {
-      font-weight: 500;
-      color: #1f2937;
+    .mb-1 {
+      margin-bottom: 0.25rem;
     }
 
-    /* Print-specific styles */
-    @media print {
-      .transfer-report {
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-      }
-
-      .items-table {
-        page-break-inside: auto;
-      }
-
-      .items-table tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-      }
+    .object-contain {
+      object-fit: contain;
     }
   `;
+};
+
+/**
+ * Print transfer report
+ */
+export const printInventoryTransferReport = (transfer: InventoryTransfer): void => {
+  const printSettings = getTransferPrintSettings();
+  const html = generateTransferReportHTML(transfer, printSettings);
+  const styles = getTransferReportPrintStyles(printSettings);
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Transfer Report - ${transfer.trackingNumber}</title>
+          <style>${styles}</style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
+};
+
+/**
+ * Download transfer report as PDF
+ */
+export const downloadInventoryTransferReportAsPDF = (transfer: InventoryTransfer): void => {
+  const printSettings = getTransferPrintSettings();
+  const html = generateTransferReportHTML(transfer, printSettings);
+  const styles = getTransferReportPrintStyles(printSettings);
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Transfer Report - ${transfer.trackingNumber}</title>
+          <style>${styles}</style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
 };

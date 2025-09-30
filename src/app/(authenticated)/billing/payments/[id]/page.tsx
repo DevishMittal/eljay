@@ -60,19 +60,13 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
   const handleDownloadPDF = () => {
     if (!payment) return;
     
-    downloadPaymentReceiptAsPDF(payment, {
-      title: `Payment Receipt ${payment.receiptNumber}`,
-      filename: `payment-receipt-${payment.receiptNumber}.pdf`
-    });
+    downloadPaymentReceiptAsPDF(payment);
   };
 
   const handlePrint = () => {
     if (!payment) return;
     
-    printPaymentReceipt(payment, {
-      title: `Payment Receipt ${payment.receiptNumber}`,
-      filename: `payment-receipt-${payment.receiptNumber}.pdf`
-    });
+    printPaymentReceipt(payment);
   };
 
   const handleEdit = () => {
@@ -82,19 +76,13 @@ export default function PaymentReceiptPage({ params }: { params: Promise<{ id: s
   const handleDownloadReceipt = () => {
     if (!payment) return;
     
-    downloadPaymentReceiptAsPDF(payment, {
-      title: `Payment Receipt ${payment.receiptNumber}`,
-      filename: `payment-receipt-${payment.receiptNumber}.pdf`
-    });
+    downloadPaymentReceiptAsPDF(payment);
   };
 
   const handlePrintReceipt = () => {
     if (!payment) return;
     
-    printPaymentReceipt(payment, {
-      title: `Payment Receipt ${payment.receiptNumber}`,
-      filename: `payment-receipt-${payment.receiptNumber}.pdf`
-    });
+    printPaymentReceipt(payment);
   };
 
   const handleEditPayment = () => {
