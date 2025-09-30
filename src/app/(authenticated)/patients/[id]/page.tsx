@@ -8,7 +8,7 @@ import MainLayout from '@/components/layout/main-layout';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Patient, UpdateUserData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment } from '@/types';
+import { Patient, UpdateUserData, UserAppointment, ClinicalNote, DiagnosticAppointment, Invoice, Payment, AppointmentSummary } from '@/types';
 import { patientService } from '@/services/patientService';
 import PatientService from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
@@ -27,6 +27,7 @@ import FileUploadModal from '@/components/modals/file-upload-modal';
 import FileList from '@/components/ui/file-list';
 import { fileService, UploadedFile } from '@/services/fileService';
 import MedicalHistoryTimeline from '@/components/medical-history-timeline';
+import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -39,6 +40,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<UserAppointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false);
+  const [selectedAppointmentSummary, setSelectedAppointmentSummary] = useState<AppointmentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -132,7 +135,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       const response = await appointmentService.getAppointmentsByUserId(patient.id, token || undefined);
       
       // Transform the appointments to match UserAppointment format
-      const transformedAppointments: UserAppointment[] = response.data.appointments.map((appointment: any) => ({
+      let transformedAppointments: UserAppointment[] = response.data.appointments.map((appointment: any) => ({
         id: appointment.id,
         appointmentDate: appointment.appointmentDate,
         appointmentTime: appointment.appointmentTime,
@@ -142,8 +145,34 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         referralSource: appointment.referralSource,
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
-        audiologist: appointment.audiologist
+        audiologist: appointment.audiologist || appointment.staff
       }));
+
+      // If the user appointments payload doesn't include visitStatus (or it's null),
+      // enrich from the summary endpoint so status like 'check_in' reflects correctly.
+      const needsEnrichment = transformedAppointments.filter(a => !a.visitStatus);
+      if (needsEnrichment.length > 0 && token) {
+        const summaries = await Promise.all(
+          needsEnrichment.map(a => appointmentService.getAppointmentSummary(a.id, token))
+        );
+        const idToSummary: Record<string, any> = {};
+        summaries.forEach(s => {
+          if (s?.data?.id) idToSummary[s.data.id] = s.data;
+        });
+        transformedAppointments = transformedAppointments.map(a => {
+          const s = idToSummary[a.id];
+          if (!s) return a;
+          return {
+            ...a,
+            visitStatus: s.visitStatus ?? a.visitStatus,
+            // Also pick audiologist/staff name if available from summary
+            audiologist: s.audiologist || s.staff || a.audiologist,
+            // Prefer date/time from summary if original missing
+            appointmentDate: a.appointmentDate || s.date,
+            appointmentTime: a.appointmentTime || s.time
+          };
+        });
+      }
       
       setAppointments(transformedAppointments);
     } catch (err) {
@@ -485,6 +514,32 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     router.push(`/patients/${patient?.id}/diagnostics/${appointmentId}`);
   };
 
+  const handleEditAppointment = async (appointmentId: string) => {
+    try {
+      if (!token) return;
+      const res = await appointmentService.getAppointmentSummary(appointmentId, token);
+      setSelectedAppointmentSummary(res.data);
+      setShowEditAppointmentModal(true);
+    } catch (e) {
+      console.error('Failed to load appointment summary for editing', e);
+    }
+  };
+
+  const handleAppointmentUpdated = (updated: AppointmentSummary) => {
+    setAppointments(prev => prev.map(a => (
+      a.id === updated.id
+        ? {
+            ...a,
+            appointmentDuration: updated.duration ?? a.appointmentDuration,
+            procedures: updated.procedures ?? a.procedures,
+            visitStatus: updated.visitStatus ?? a.visitStatus,
+            audiologist: updated.audiologist ?? a.audiologist
+          }
+        : a
+    )));
+    fetchAppointments();
+  };
+
   const handleDiagnosticPlanCreated = useCallback((newAppointment: any) => {
     // Refresh the diagnostics list
     fetchDiagnosticAppointments();
@@ -528,17 +583,14 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   // Get appointment status color
   const getAppointmentStatusColor = (status?: string | null, appointmentDate?: string) => {
-    // Check if appointment date has passed and no status is set
     if (!status && appointmentDate) {
-      const appointmentDateTime = new Date(appointmentDate);
+      const appointmentDateOnly = new Date(appointmentDate);
       const now = new Date();
-      if (appointmentDateTime < now) {
-        return 'bg-orange-100 text-orange-800'; // Absent for past appointments
-      }
+      return appointmentDateOnly > now
+        ? 'bg-gray-100 text-gray-800' // Pending (future)
+        : 'bg-orange-100 text-orange-800'; // Absent (past)
     }
-    
     if (!status) return 'bg-gray-100 text-gray-800';
-    
     switch (status) {
       case 'check_in':
         return 'bg-green-100 text-green-800';
@@ -553,17 +605,12 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   // Get appointment status text
   const getAppointmentStatusText = (status?: string | null, appointmentDate?: string) => {
-    // Check if appointment date has passed and no status is set
     if (!status && appointmentDate) {
-      const appointmentDateTime = new Date(appointmentDate);
+      const appointmentDateOnly = new Date(appointmentDate);
       const now = new Date();
-      if (appointmentDateTime < now) {
-        return 'Absent'; // Absent for past appointments
-      }
+      return appointmentDateOnly > now ? 'Pending' : 'Absent';
     }
-    
     if (!status) return 'Pending';
-    
     switch (status) {
       case 'check_in':
         return 'Checked In';
@@ -574,6 +621,24 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       default:
         return 'Pending';
     }
+  };
+
+  // Format time from API (supports HH:mm and ISO)
+  const formatAppointmentTimeForDisplay = (timeString?: string) => {
+    if (!timeString) return '';
+    if (timeString.includes('T')) {
+      // Treat as time-only in UTC (API uses 1970-01-01T..Z for times)
+      const d = new Date(timeString);
+      const hours = d.getUTCHours();
+      const minutes = d.getUTCMinutes();
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    if (/^\d{1,2}:\d{2}$/.test(timeString)) {
+      return appointmentService.convertTo12Hour(timeString);
+    }
+    return timeString;
   };
 
   if (loading) {
@@ -588,6 +653,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       </MainLayout>
     );
   }
+
 
   if (error || !patient) {
     return (
@@ -1325,7 +1391,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
                 {/* Appointment History Section */}
                 <div id="appointment-history" className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex justify-end mb-4">
+                
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-gray-900">Appointment History</h2>
                     <button 
                       onClick={handleBookAppointment}
                       className="bg-orange-600 text-white px-4 py-2 text-xs rounded-lg font-medium flex items-center space-x-2 hover:bg-orange-800 transition-colors"
@@ -1375,7 +1443,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                               <div>
                                 <h3 className="font-medium text-xs text-gray-900">{appointment.procedures}</h3>
                                 <p className="text-xs text-gray-500">
-                                  {patientService.formatDate(appointment.appointmentDate)} at {patientService.formatTime(appointment.appointmentTime)}
+                                  {patientService.formatDate(appointment.appointmentDate)} at {formatAppointmentTimeForDisplay(appointment.appointmentTime)}
                                 </p>
                               </div>
                             </div>
@@ -1399,23 +1467,23 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
-                                <span>{appointment.audiologist?.name ?? 'Unknown'}</span>
+                                <span>{appointment.audiologist?.name || 'Not assigned'}</span>
                               </div>
                               <div className="flex items-center space-x-1">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
-                                <span>{appointment.audiologist?.email ?? 'No email'}</span>
+                                <span>{appointment.audiologist?.email || 'No email'}</span>
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <button className="p-1 hover:bg-gray-200 rounded-md transition-colors" title="View details">
+                              <button onClick={() => handleAppointmentClick(appointment.id)} className="p-1 hover:bg-gray-200 rounded-md transition-colors" title="View details">
                                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                               </button>
-                              <button className="p-1 hover:bg-gray-200 rounded-md transition-colors" title="Edit appointment">
+                              <button onClick={() => handleEditAppointment(appointment.id)} className="p-1 hover:bg-gray-200 rounded-md transition-colors" title="Edit appointment">
                                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
@@ -1473,7 +1541,17 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {appointments.slice(0, 5).map((appointment) => (
+                        {appointments
+                          .filter((appointment) => {
+                            const name = (appointment.procedures || '').toLowerCase();
+                            return !(
+                              name.includes('hat') ||
+                              name.includes('hearing aid trial') ||
+                              name.includes('oae')
+                            );
+                          })
+                          .slice(0, 5)
+                          .map((appointment) => (
                           <div 
                             key={appointment.id} 
                             className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -1499,7 +1577,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                                     <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>{new Date(appointment.appointmentTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                                    <span>{formatAppointmentTimeForDisplay(appointment.appointmentTime)}</span>
                                   </div>
                                   <span className="text-gray-400">•</span>
                                   <div className="flex items-center">
@@ -1536,7 +1614,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
                         <p className="mt-2 text-gray-600 text-xs">Loading diagnostic plans...</p>
                       </div>
-                    ) : diagnosticAppointments.length === 0 ? (
+                   ) : (diagnosticAppointments.length === 0 && appointments.length === 0) ? (
                       <div className="text-center py-16">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1556,7 +1634,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </button>
                       </div>
                     ) : (
-                      diagnosticAppointments.map((appointment) => (
+                      diagnosticAppointments
+                        .filter((appointment) => {
+                          const name = (appointment.procedures || '').toLowerCase();
+                          return !(
+                            name.includes('hat') ||
+                            name.includes('hearing aid trial') ||
+                            name.includes('oae')
+                          );
+                        })
+                        .map((appointment) => (
                         <div 
                           key={appointment.id} 
                           className="border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -1817,9 +1904,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                          <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                          <img src="/rupee.svg" alt="Rupee" className="w-6 h-6" />
                 </div>
                         <div>
                           <h3 className="text-sm font-bold text-gray-900">
@@ -2029,9 +2114,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <div id="billing-payments" className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
+                      <img src="/rupee.svg" alt="Rupee" className="w-5 h-5" />
                       <h2 className="text-sm font-semibold text-gray-900">Recent Payments</h2>
                   </div>
                     <button 
@@ -2052,9 +2135,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                     ) : payments.length === 0 ? (
                       <div className="text-center py-8">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                          </svg>
+                          <img src="/rupee.svg" alt="Rupee" className="w-8 h-8 opacity-60" />
                         </div>
                         <h3 className="text-xs font-medium mb-2 text-gray-900">No payments found</h3>
                         <p className="text-gray-500">This patient has no payment records yet.</p>
@@ -2298,6 +2379,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         token={token || undefined}
         onFileUploaded={handleFileUploaded}
       />
+
+      {/* Edit Appointment Modal */}
+      {showEditAppointmentModal && selectedAppointmentSummary && (
+        <EditAppointmentModal
+          isOpen={showEditAppointmentModal}
+          onClose={() => setShowEditAppointmentModal(false)}
+          appointment={selectedAppointmentSummary}
+          onAppointmentUpdated={handleAppointmentUpdated}
+        />
+      )}
     </MainLayout>
   );
 }

@@ -65,91 +65,6 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
         console.log('Fetching timeline data for patient:', patientId);
         console.log('Token available:', !!token);
         
-        // Mock data for testing - similar to payment history structure
-        const mockEvents: MedicalHistoryEvent[] = [
-          {
-            id: 'mock-1',
-            type: 'appointment',
-            date: '2025-01-16',
-            time: '02:00 PM',
-            title: 'Appointment',
-            description: 'Regular consultation with Dr. Emily Davis',
-            status: 'completed',
-            createdBy: 'Dr. Emily Davis',
-            referenceId: 'APT-001',
-            actions: {
-              view: () => console.log('View appointment')
-            }
-          },
-          {
-            id: 'mock-2',
-            type: 'payment',
-            date: '2025-01-16',
-            time: '03:00 PM',
-            title: 'Payment',
-            description: 'Payment for consultation services',
-            status: 'completed',
-            amount: 1500,
-            method: 'GPay',
-            referenceId: 'Recpt002',
-            actions: {
-              view: () => console.log('View payment'),
-              download: () => console.log('Download receipt')
-            }
-          },
-          {
-            id: 'mock-3',
-            type: 'invoice',
-            date: '2025-01-15',
-            time: '11:30 AM',
-            title: 'Invoice',
-            description: 'Comprehensive Hearing Assessment',
-            status: 'pending',
-            amount: 500,
-            referenceId: 'INV-2025-001',
-            actions: {
-              view: () => console.log('View invoice'),
-              print: () => console.log('Print invoice')
-            }
-          },
-          {
-            id: 'mock-4',
-            type: 'diagnostic',
-            date: '2025-01-15',
-            time: '10:00 AM',
-            title: 'Diagnostic Completed',
-            description: 'Comprehensive Hearing Assessment completed',
-            status: 'completed',
-            createdBy: 'Dr. Sarah Johnson',
-            referenceId: 'DIAG-001',
-            actions: {
-              view: () => console.log('View diagnostic')
-            }
-          },
-          {
-            id: 'mock-5',
-            type: 'diagnostic',
-            date: '2025-01-15',
-            time: '09:30 AM',
-            title: 'Diagnostic Plan',
-            description: 'Comprehensive Hearing Assessment planned',
-            status: 'completed',
-            createdBy: 'Dr. Sarah Johnson',
-            referenceId: 'PLAN-001'
-          },
-          {
-            id: 'mock-6',
-            type: 'appointment',
-            date: '2025-01-15',
-            time: '09:00 AM',
-            title: 'Appointment',
-            description: 'Initial consultation with Dr. Sarah Johnson',
-            status: 'completed',
-            createdBy: 'Dr. Sarah Johnson',
-            referenceId: 'APT-002'
-          }
-        ];
-
         // Try to fetch real data, but fall back to mock data if there are issues
         try {
           const [
@@ -469,17 +384,11 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
           });
           console.log('All events:', events);
           
-          // Use real data if available, otherwise use mock data as fallback
-          if (events.length > 0) {
-            console.log('Using real data from APIs');
-            setMedicalHistoryEvents(events);
-          } else {
-            console.log('No real data found, using mock data as fallback');
-            setMedicalHistoryEvents(mockEvents);
-          }
+          // Use real data only
+          setMedicalHistoryEvents(events);
         } catch (apiError) {
-          console.error('Error fetching real data, using mock data:', apiError);
-          setMedicalHistoryEvents(mockEvents);
+          console.error('Error fetching real data:', apiError);
+          setMedicalHistoryEvents([]);
         }
       } catch (err) {
         console.error('Error fetching timeline data:', err);
@@ -634,222 +543,132 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
     );
   }
 
+  // Group events by date for timeline display
+  const groupedByDate = filteredAndSortedEvents.reduce((acc: Record<string, MedicalHistoryEvent[]>, event) => {
+    if (!acc[event.date]) acc[event.date] = [];
+    acc[event.date].push(event);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+  const renderIcon = (type: string) => {
+    switch (type) {
+      case 'payment':
+        return (
+          <span className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+            ₹
+          </span>
+        );
+      case 'invoice':
+        return (
+          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+            🧾
+          </span>
+        );
+      case 'diagnostic':
+        return (
+          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+            🔬
+          </span>
+        );
+      case 'clinical_note':
+        return (
+          <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+            ✎
+          </span>
+        );
+      default:
+        return (
+          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+            📅
+          </span>
+        );
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Medical History Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-6">
-          {/* Section Header */}
-          <div className="flex justify-between items-center p-6 mb-6">
-            <div className="flex items-center space-x-3">
-              <h2 className="text-sm text-[#101828] font-sans">
-                Medical History
-              </h2>
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{filteredAndSortedEvents.length}</span>
-            </div>
-          </div>
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-gray-900">Medical History Timeline</h2>
+        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{filteredAndSortedEvents.length}</span>
+      </div>
 
-          {/* Filters and Search */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search medical history..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-            </div>
-            <CustomDropdown
-              options={[
-                { value: "All Types", label: "All Types" },
-                { value: "appointment", label: "Appointments" },
-                { value: "payment", label: "Payments" },
-                { value: "invoice", label: "Invoices" },
-                { value: "diagnostic", label: "Diagnostics" },
-                { value: "clinical_note", label: "Clinical Notes" }
-              ]}
-              value={typeFilter}
-              onChange={setTypeFilter}
-              placeholder="All Types"
-              className="h-9 text-xs"
-              aria-label="Filter by type"
-            />
-            <CustomDropdown
-              options={[
-                { value: "All Status", label: "All Status" },
-                { value: "completed", label: "Completed" },
-                { value: "pending", label: "Pending" },
-                { value: "cancelled", label: "Cancelled" },
-                { value: "planned", label: "Planned" }
-              ]}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              placeholder="All Status"
-              className="h-9 text-xs"
-              aria-label="Filter by status"
-            />
+      {sortedDates.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-
-          {/* Medical History Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th 
-                    className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("date")}
-                  >
-                    Date & Time
-                    {getSortIcon("date")}
-                  </th>
-                  <th 
-                    className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("type")}
-                  >
-                    Type
-                    {getSortIcon("type")}
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Description</th>
-                  <th 
-                    className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("status")}
-                  >
-                    Status
-                    {getSortIcon("status")}
-                  </th>
-                  <th 
-                    className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort("amount")}
-                  >
-                    Amount
-                    {getSortIcon("amount")}
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Reference</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedEvents.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Medical History Found</h3>
-                      <p className="text-gray-500">No medical activities match your current filters.</p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAndSortedEvents.map((event) => (
-                    <tr 
-                      key={event.id} 
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => event.actions?.view?.()}
-                    >
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        <div>
-                          <div>{formatDate(event.date)}</div>
-                          <div className="text-xs text-gray-500">{event.time}</div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getTypeColor(event.type))}>
-                          {event.title}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        <div className="max-w-xs truncate" title={event.description}>
-                          {event.description}
-                        </div>
-                        {event.createdBy && (
-                          <div className="text-xs text-gray-500 mt-1">by {event.createdBy}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getStatusColor(event.status))}>
-                          {event.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {event.amount ? formatCurrency(event.amount) : '-'}
-                        {event.method && (
-                          <div className="text-xs text-gray-500 mt-1">via {event.method}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {event.referenceId || '-'}
-                      </td>
-                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex space-x-2">
-                          {event.actions?.view && (
-                            <button 
-                              onClick={event.actions.view}
-                              className="text-gray-400 hover:text-gray-600"
-                              aria-label={`View ${event.title.toLowerCase()}`}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          )}
-                          {event.actions?.download && (
-                            <button 
-                              onClick={event.actions.download}
-                              className="text-gray-400 hover:text-gray-600"
-                              aria-label={`Download ${event.title.toLowerCase()}`}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                            </button>
-                          )}
-                          {event.actions?.print && (
-                            <button 
-                              onClick={event.actions.print}
-                              className="text-gray-400 hover:text-gray-600"
-                              aria-label={`Print ${event.title.toLowerCase()}`}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Summary Footer */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 p-6">
-            <p className="text-sm text-gray-600">
-              Showing {filteredAndSortedEvents.length} of {medicalHistoryEvents.length} medical history entries
-              {(typeFilter !== "All Types" || statusFilter !== "All Status" || searchTerm) && ' (filtered)'}
-            </p>
-          </div>
+          <h3 className="text-xs font-medium mb-2 text-gray-900">No Medical History Found</h3>
+          <p className="text-gray-500 text-xs">No medical activities are available.</p>
         </div>
+      )}
+
+      <div className="space-y-8">
+        {sortedDates.map((date) => (
+          <div key={date}>
+            <div className="text-xs font-semibold text-gray-700 mb-3">
+              {new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+            <div className="space-y-4">
+              {groupedByDate[date].map((event) => (
+                <div key={event.id} className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    {renderIcon(event.type)}
+                    <div>
+                      <div className="flex items-center gap-3 mb-1">
+                        <div className="text-sm font-medium text-gray-900">{event.title}</div>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">{event.time}</span>
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getStatusColor(event.status))}>{event.status}</span>
+                      </div>
+                      <div className="text-xs text-gray-700 whitespace-pre-line">
+                        {event.description}
+                      </div>
+                      {event.createdBy && (
+                        <div className="text-[11px] text-gray-500 mt-1">Created by {event.createdBy}</div>
+                      )}
+                      {event.referenceId && (
+                        <div className="text-[11px] text-gray-500">Ref: {event.referenceId}</div>
+                      )}
+                      {typeof event.amount === 'number' && (
+                        <div className="text-[11px] text-gray-500 mt-1">Amount: {formatCurrency(event.amount)}</div>
+                      )}
+                      {event.method && (
+                        <div className="text-[11px] text-gray-500">Via {event.method}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {event.actions?.view && (
+                      <button onClick={event.actions.view} className="text-gray-400 hover:text-gray-600" aria-label={`View ${event.title.toLowerCase()}`}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                    )}
+                    {event.actions?.download && (
+                      <button onClick={event.actions.download} className="text-gray-400 hover:text-gray-600" aria-label={`Download ${event.title.toLowerCase()}`}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                    )}
+                    {event.actions?.print && (
+                      <button onClick={event.actions.print} className="text-gray-400 hover:text-gray-600" aria-label={`Print ${event.title.toLowerCase()}`}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

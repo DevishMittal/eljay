@@ -15,7 +15,7 @@ const PrintoutPage = () => {
   const [selectedSubTab, setSelectedSubTab] = useState<'pageSettings' | 'header' | 'footer'>('pageSettings');
   
   // Default print settings
-  const [printSettings, setPrintSettings] = useState<PrintSettings>({
+  const [printSettings, setPrintSettings] = useState<PrintSettings>(() => ({
     b2cInvoice: {
       pageSettings: {
         paperSize: 'A4',
@@ -176,7 +176,7 @@ const PrintoutPage = () => {
         signatureNote: 'This is a computer-generated transfer report and does not require a signature.'
       }
     }
-  });
+  }));
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -797,10 +797,14 @@ const InvoicePreview = ({ documentType, settings }: {
         {/* Header */}
         {settings.headerSettings.includeHeader && (
           <div className="border-b-2 border-gray-300 pb-4 mb-6">
-            <div className="flex justify-between items-start">
-              <div>
-                {settings.headerSettings.logo.uploaded && <img src="/pdf-view-logo.png" alt="Logo" className="w-25 h-25 mb- object-contain" />}
+              <div className="flex justify-between items-start">
                 <div>
+                  {settings.headerSettings.logo.uploaded && (
+                    <div className="logo-box mb-1" style={{ height: '6rem', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                      <img src="/pdf-view-logo.png" alt="Logo" className="w-32 h-full object-cover" />
+                    </div>
+                  )}
+                  <div>
                   {settings.headerSettings.leftText?.split(' || ').map((text, index) => (
                     <p key={index} className="text-sm text-gray-600">{text}</p>
                   )) || (
@@ -808,10 +812,10 @@ const InvoicePreview = ({ documentType, settings }: {
                   )}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-5">
-                  Fully Paid
-                </div>
+                <div className="text-right">
+                  <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+                    Fully Paid
+                  </div>
                 <div className="text-sm text-gray-600">
                   {settings.headerSettings.rightText.split(' || ').map((text, index) => (
                     <p key={index}>{text}</p>

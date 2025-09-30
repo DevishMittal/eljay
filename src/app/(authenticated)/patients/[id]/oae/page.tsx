@@ -471,8 +471,9 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-4">
+        {/* Header (sticky) */}
+        <div className="sticky top-0 z-30 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200 px-0 py-3">
+          <div className="flex flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <Link href={`/patients/${patientId}`} className="p-2 hover:bg-muted rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -511,7 +512,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
               onClick={handleCancel}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-xs"
             >
-              X Cancel
+              Cancel
             </button>
             <button 
               onClick={handleSaveForm}
@@ -532,6 +533,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                 Edit
             </button>
             )}
+          </div>
           </div>
         </div>
 

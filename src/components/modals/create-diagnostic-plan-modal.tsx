@@ -6,7 +6,9 @@ import { CreateDiagnosticAppointmentData } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
+import diagnosticsService from '@/services/diagnosticsService';
 import { appointmentService } from '@/services/appointmentService';
+import { doctorService } from '@/services/doctorService';
 import { staffService } from '@/services/staffService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Audiologist, Procedure, Doctor } from '@/types';
@@ -88,65 +90,26 @@ export default function CreateDiagnosticPlanModal({
     }
   }, [token]);
 
-  // Load procedures from API
+  // Load diagnostics (procedures) from Settings diagnostics API
   const loadProcedures = useCallback(async () => {
     try {
-      const response = await appointmentService.getProcedures(token || undefined);
+      const response = await diagnosticsService.getDiagnostics(token || undefined);
+      // Response shape: { status, data: Diagnostic[] }
       setProcedures(response.data);
     } catch (error) {
-      console.error('Error loading procedures:', error);
+      console.error('Error loading diagnostics/procedures:', error);
     }
   }, [token]);
 
-  // Load referral doctors from API - using a mock for now since getDoctors doesn't exist
+  // Load referral doctors from API
   const loadReferralDoctors = useCallback(async () => {
     try {
-      // Mock data for now - replace with actual API call when available
-      const mockDoctors: Doctor[] = [
-        {
-          id: '1',
-          name: 'Dr. John Smith',
-          email: 'john.smith@example.com',
-          countrycode: '+91',
-          phoneNumber: '9876543210',
-          specialization: 'ENT',
-          qualification: 'MD',
-          bdmName: 'John BDM',
-          bdmContact: '9876543210',
-          commissionRate: 10,
-          facilityName: 'City Hospital',
-          location: 'Mumbai',
-          organizationId: 'org-1',
-          isAvailable: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          appointments: []
-        },
-        {
-          id: '2',
-          name: 'Dr. Sarah Johnson',
-          email: 'sarah.johnson@example.com',
-          countrycode: '+91',
-          phoneNumber: '9876543211',
-          specialization: 'General Medicine',
-          qualification: 'MD',
-          bdmName: 'Sarah BDM',
-          bdmContact: '9876543211',
-          commissionRate: 12,
-          facilityName: 'General Hospital',
-          location: 'Delhi',
-          organizationId: 'org-1',
-          isAvailable: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          appointments: []
-        }
-      ];
-      setReferralDoctors(mockDoctors);
+      const response = await doctorService.getDoctors(token || undefined);
+      setReferralDoctors(response.data);
     } catch (error) {
       console.error('Error loading referral doctors:', error);
     }
-  }, []);
+  }, [token]);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -208,6 +171,25 @@ export default function CreateDiagnosticPlanModal({
         return sum + (procedure?.price || 0);
       }, 0);
 
+      // Build referral source object as expected by API
+      const selectedDoctor = referralDoctors.find(d => d.id === formData.selectedReferralId);
+      const referralSource = {
+        type: (formData.referralSource === 'Doctor Referral'
+          ? 'doctor'
+          : formData.referralSource === 'Hear.com'
+          ? 'hear.com'
+          : 'direct') as 'doctor' | 'hear.com' | 'direct',
+        sourceName:
+          formData.referralSource === 'Direct'
+            ? 'Walk-in'
+            : formData.referralSource === 'Hear.com'
+            ? 'Hear.com'
+            : (selectedDoctor?.name || formData.referralDetails.sourceName || 'Walk-in'),
+        contactNumber: selectedDoctor?.phoneNumber || formData.referralDetails.contactNumber || '',
+        hospital: selectedDoctor?.facilityName || formData.referralDetails.hospital || '',
+        specialization: selectedDoctor?.specialization || formData.referralDetails.specialization || ''
+      };
+
       // Create diagnostic appointment
       const appointmentData: CreateDiagnosticAppointmentData = {
         userId: patientId,
@@ -217,8 +199,8 @@ export default function CreateDiagnosticPlanModal({
         appointmentDuration: totalProcedureDuration > 0 ? totalProcedureDuration : parseInt(formData.appointmentDuration),
         procedures: formData.procedures || 'General Diagnostic',
         cost: totalCost,
-        status: 'planned'
-        
+        status: 'planned',
+        referralSource
       };
 
       const response = await diagnosticAppointmentsService.createDiagnosticAppointment(
