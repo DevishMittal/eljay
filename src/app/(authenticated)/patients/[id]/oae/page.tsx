@@ -4,13 +4,14 @@
 import React, { useState, useEffect, use } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import Link from 'next/link';
-import { Volume2, User, Building, Calendar, CheckCircle, AlertCircle, Clock, Phone, FileText, Hospital, UserCheck } from 'lucide-react';
+import { Volume2, User, Building, Calendar, CheckCircle, AlertCircle, Clock, Phone, FileText } from 'lucide-react';
 import { patientService } from '@/services/patientService';
 import { oaeService, OAEForm, CreateOAEFormData } from '@/services/oaeService';
 import { staffService } from '@/services/staffService';
 import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { Staff, Doctor } from '@/types';
 
 interface FormData {
@@ -27,6 +28,7 @@ interface FormData {
   // Hospital & Medical Staff
   hospitalName: string;
   staffId: string;
+  doctorName: string;
   
   // Test Session
   testDate: string;
@@ -64,6 +66,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
     opNumber: '',
     hospitalName: 'Sunrise Hospital',
     staffId: '',
+    doctorName: '',
     testDate: new Date().toISOString().split('T')[0],
     testReason: 'Initial Screening',
     testResults: '',
@@ -116,6 +119,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
             hospitalName: patientResponse.patient.hospital_name || 'Sunrise Hospital',
             opNumber: patientResponse.patient.patient_id || '',
             staffId: '', // Will be set by user from staff dropdown
+            doctorName: '', // Will be set by user from doctor dropdown
             sessionNumber: patientForms.length + 1,
             failedAttempts: patientForms.filter(form => form.testResults === 'Fail').length
           }));
@@ -190,7 +194,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         opNumber: formData.opNumber,
         contactNumber: formData.contactNumber,
         hospitalName: formData.hospitalName,
-        doctorName: formData.conductedBy, // Map conductedBy to doctorName for API
+        doctorName: formData.doctorName, // Use the new doctorName field
         sessionNumber: formData.sessionNumber,
         testDate: formatDateForAPI(formData.testDate),
         conductedBy: formData.conductedBy,
@@ -280,6 +284,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
       opNumber: form.opNumber,
       hospitalName: form.hospitalName,
       staffId: form.staffId || '',
+      doctorName: form.doctorName || '',
       testDate: form.testDate.split('T')[0], // Convert to date input format
       testReason: form.testReason,
       testResults: form.testResults,
@@ -430,6 +435,12 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
   const conductedByOptions = audiologists.map(audiologist => ({
     value: audiologist.name,
     label: `${audiologist.name} - ${audiologist.specialization}`
+  }));
+
+  // Doctor options for Doctor Name field (using names)
+  const doctorOptions = audiologists.map(doctor => ({
+    value: doctor.name,
+    label: `${doctor.name} - ${doctor.specialization}`
   }));
 
   // Helper function to get staff name by ID
@@ -599,6 +610,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                   value={formData.babyGender}
                   onChange={(value) => handleInputChange('babyGender', value)}
                   placeholder="Select gender"
+                  className="text-xs"
                 />
               ) : (
                 <p className="text-xs text-gray-900">{formData.babyGender}</p>
@@ -658,39 +670,45 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Hospital Name</label>
               {isEditing ? (
-                <div className="flex items-center space-x-2">
-                  <Hospital size={16} className="text-gray-400" />
-                  <CustomDropdown
-                    options={hospitalOptions}
-                    value={formData.hospitalName}
-                    onChange={(value) => handleInputChange('hospitalName', value)}
-                    placeholder="Select hospital"
-                  />
-                </div>
+                <CustomDropdown
+                  options={hospitalOptions}
+                  value={formData.hospitalName}
+                  onChange={(value) => handleInputChange('hospitalName', value)}
+                  placeholder="Select hospital"
+                  className="text-xs"
+                />
               ) : (
-                <div className="flex items-center space-x-2">
-                  <Hospital size={16} className="text-gray-400" />
-                  <p className="text-xs text-gray-900">{formData.hospitalName}</p>
-                </div>
+                <p className="text-xs text-gray-900">{formData.hospitalName}</p>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Staff</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Audiologist Name</label>
               {isEditing ? (
-                <div className="flex items-center space-x-2">
-                  <UserCheck size={16} className="text-gray-400" />
-                  <CustomDropdown
-                    options={staffOptions}
-                    value={formData.staffId}
-                    onChange={(value) => handleInputChange('staffId', value)}
-                    placeholder="Select staff member"
-                  />
-                </div>
+                <SearchableDropdown
+                  options={staffOptions}
+                  value={formData.staffId}
+                  onChange={(value) => handleInputChange('staffId', value)}
+                  placeholder="Select audiologist"
+                  searchPlaceholder="Search audiologist..."
+                  className="text-xs"
+                />
               ) : (
-                <div className="flex items-center space-x-2">
-                  <UserCheck size={16} className="text-gray-400" />
-                  <p className="text-xs text-gray-900">{getStaffName(formData.staffId)}</p>
-                </div>
+                <p className="text-xs text-gray-900">{getStaffName(formData.staffId)}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Doctor Name</label>
+              {isEditing ? (
+                <SearchableDropdown
+                  options={doctorOptions}
+                  value={formData.doctorName}
+                  onChange={(value) => handleInputChange('doctorName', value)}
+                  placeholder="Select doctor"
+                  searchPlaceholder="Search doctor..."
+                  className="text-xs"
+                />
+              ) : (
+                <p className="text-xs text-gray-900">{formData.doctorName || 'Not assigned'}</p>
               )}
             </div>
           </div>
@@ -818,21 +836,23 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Test Reason *</label>
-                    <CustomDropdown
-                      options={testReasonOptions}
+                <CustomDropdown
+                  options={testReasonOptions}
                   value={formData.testReason}
-                      onChange={(value) => handleInputChange('testReason', value)}
-                      placeholder="Select test reason"
-                    />
+                  onChange={(value) => handleInputChange('testReason', value)}
+                  placeholder="Select test reason"
+                  className="text-xs"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Test Results *</label>
-                    <CustomDropdown
-                      options={testResultOptions}
+                <CustomDropdown
+                  options={testResultOptions}
                   value={formData.testResults}
-                      onChange={(value) => handleInputChange('testResults', value)}
-                      placeholder="Select test results"
-                    />
+                  onChange={(value) => handleInputChange('testResults', value)}
+                  placeholder="Select test results"
+                  className="text-xs"
+                />
                     {/* Test Result Feedback */}
                     {formData.testResults && getTestResultFeedback(formData.testResults) && (
                       <div className={`mt-3 p-3 rounded-lg border-l-4 ${getTestResultFeedback(formData.testResults)?.borderColor} ${
@@ -858,12 +878,14 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Conducted By *</label>
-                    <CustomDropdown
-                      options={conductedByOptions}
+                <SearchableDropdown
+                  options={conductedByOptions}
                   value={formData.conductedBy}
-                      onChange={(value) => handleInputChange('conductedBy', value)}
-                      placeholder="Select audiologist"
-                    />
+                  onChange={(value) => handleInputChange('conductedBy', value)}
+                  placeholder="Select audiologist"
+                  searchPlaceholder="Search audiologist..."
+                  className="text-xs"
+                />
               </div>
             </div>
           </div>
