@@ -179,6 +179,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                     value={formData.dob}
                     onChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
                     placeholder="Select date of birth..."
+                    context="dob"
                   />
                 </div>
 

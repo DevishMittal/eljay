@@ -10,6 +10,7 @@ interface CustomCalendarProps {
   maxDate?: Date;
   disabledDates?: Date[];
   className?: string;
+  context?: 'dob' | 'appointment' | 'general'; // Context for different use cases
 }
 
 const CustomCalendar: React.FC<CustomCalendarProps> = ({
@@ -19,16 +20,57 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
   maxDate,
   disabledDates = [],
   className = "",
+  context = 'general',
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
     return value || new Date();
   });
+
+  // Auto-set date restrictions based on context
+  const effectiveMinDate = useMemo(() => {
+    if (minDate) return minDate; // Use provided minDate if available
+    
+    switch (context) {
+      case 'dob':
+        // For date of birth, allow dates from 100 years ago to today
+        const hundredYearsAgo = new Date();
+        hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
+        return hundredYearsAgo;
+      case 'appointment':
+        // For appointments, don't allow past dates
+        return new Date();
+      case 'general':
+      default:
+        // For general use, no restrictions
+        return undefined;
+    }
+  }, [minDate, context]);
+
+  const effectiveMaxDate = useMemo(() => {
+    if (maxDate) return maxDate; // Use provided maxDate if available
+    
+    switch (context) {
+      case 'dob':
+        // For date of birth, don't allow future dates
+        return new Date();
+      case 'appointment':
+        // For appointments, allow up to 60 days in the future
+        const sixtyDaysFromNow = new Date();
+        sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
+        return sixtyDaysFromNow;
+      case 'general':
+      default:
+        // For general use, no restrictions
+        return undefined;
+    }
+  }, [maxDate, context]);
 
   // Dropdown state management
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
+  const yearDropdownListRef = useRef<HTMLDivElement>(null);
 
   // Calculate calendar grid start date
   const startDate = useMemo(() => {
@@ -45,8 +87,11 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Generate year range (1925 to 2035)
-  const yearRange = Array.from({ length: 111 }, (_, i) => 1925 + i);
+  // Generate year range (1925 to current year + 10)
+  const currentYear = new Date().getFullYear();
+  const startYear = 1925;
+  const endYear = currentYear + 10;
+  const yearRange = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -64,6 +109,22 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showMonthDropdown, showYearDropdown]);
+
+  // Scroll year dropdown to show years around 1975 when opened
+  useEffect(() => {
+    if (showYearDropdown && yearDropdownListRef.current) {
+      // Calculate index for year 1975
+      const targetYear = 1975;
+      const yearIndex = targetYear - startYear;
+      
+      // Scroll to show the target year in the middle of the dropdown
+      const itemHeight = 32; // Approximate height of each year item (py-2 = 8px top + 8px bottom + text height)
+      const containerHeight = 192; // max-h-48 = 192px
+      const scrollPosition = Math.max(0, (yearIndex * itemHeight) - (containerHeight / 2));
+      
+      yearDropdownListRef.current.scrollTop = scrollPosition;
+    }
+  }, [showYearDropdown, startYear]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -110,11 +171,11 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
   // Date validation functions
   const isDateDisabled = (date: Date) => {
-    // Check if date is before minDate
-    if (minDate && date < minDate) return true;
+    // Check if date is before effectiveMinDate
+    if (effectiveMinDate && date < effectiveMinDate) return true;
     
-    // Check if date is after maxDate
-    if (maxDate && date > maxDate) return true;
+    // Check if date is after effectiveMaxDate
+    if (effectiveMaxDate && date > effectiveMaxDate) return true;
     
     // Check if date is in disabledDates array
     return disabledDates.some(disabledDate => 
@@ -207,7 +268,7 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
             </button>
             
             {showYearDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+              <div ref={yearDropdownListRef} className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                 {yearRange.map((year) => (
                   <button
                     key={year}

@@ -910,7 +910,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              value={formData.dateOfBirth}
              onChange={(date) => handleInputChange('dateOfBirth', date)}
              placeholder="Select date of birth"
-             maxDate={new Date()} // Can't select future dates for DOB
+             context="dob"
              className={existingUser ? 'border-green-200 bg-green-50' : ''}
              aria-label="Date of birth"
            />
@@ -1365,7 +1365,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             value={formData.appointmentDate}
             onChange={(date) => handleInputChange('appointmentDate', date)}
             placeholder="Select appointment date"
-            minDate={new Date()} // Can't select past dates for appointments
+            context="appointment"
             required
             aria-label="Appointment date"
           />

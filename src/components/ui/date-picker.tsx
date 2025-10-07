@@ -15,6 +15,7 @@ interface DatePickerProps {
   disabledDates?: Date[];
   required?: boolean;
   'aria-label'?: string;
+  context?: 'dob' | 'appointment' | 'general'; // Context for different use cases
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
@@ -28,6 +29,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   disabledDates,
   required = false,
   'aria-label': ariaLabel,
+  context = 'general',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +178,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             minDate={minDate}
             maxDate={maxDate}
             disabledDates={disabledDates}
+            context={context}
             className="shadow-lg border-2 border-gray-200"
           />
         </div>
