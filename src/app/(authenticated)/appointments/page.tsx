@@ -61,7 +61,7 @@ export default function AppointmentsPage() {
         
         return {
           id: appointment.id,
-          date: new Date(appointment.appointmentDate),
+          date: new Date(new Date(appointment.appointmentDate).toDateString()),
           time: time24, // Use 24-hour format to match calendar time slots
           patient: appointment.user.fullname,
           type: appointment.procedures,
@@ -116,7 +116,7 @@ export default function AppointmentsPage() {
     // Convert the new appointment to match the CalendarAppointment type
     const appointment: CalendarAppointment = {
       id: newAppointment.id,
-      date: newAppointment.date,
+      date: new Date(newAppointment.date.toDateString()),
       time: time24, // Use 24-hour format
       patient: newAppointment.patient,
       type: newAppointment.type || 'Walk-in Appointment',

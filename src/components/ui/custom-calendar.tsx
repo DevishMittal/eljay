@@ -171,11 +171,18 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
 
   // Date validation functions
   const isDateDisabled = (date: Date) => {
-    // Check if date is before effectiveMinDate
-    if (effectiveMinDate && date < effectiveMinDate) return true;
+    // Helper function to normalize dates to start of day for comparison
+    const normalizeDate = (d: Date) => {
+      const normalized = new Date(d);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
     
-    // Check if date is after effectiveMaxDate
-    if (effectiveMaxDate && date > effectiveMaxDate) return true;
+    // Check if date is before effectiveMinDate (compare only date part, not time)
+    if (effectiveMinDate && normalizeDate(date) < normalizeDate(effectiveMinDate)) return true;
+    
+    // Check if date is after effectiveMaxDate (compare only date part, not time)
+    if (effectiveMaxDate && normalizeDate(date) > normalizeDate(effectiveMaxDate)) return true;
     
     // Check if date is in disabledDates array
     return disabledDates.some(disabledDate => 

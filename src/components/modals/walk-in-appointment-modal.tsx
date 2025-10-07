@@ -593,7 +593,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       } else if (formData.referralSource === 'Hear.com') {
         // For Hear.com referrals, send as a new referral source
         referralSourceData = {
-          type: 'doctor',
+          type: 'direct',
           sourceName: 'Hear.com',
           contactNumber: '',
           hospital: '',
