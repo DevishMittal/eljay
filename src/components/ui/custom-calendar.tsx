@@ -232,9 +232,9 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
               </svg>
             </button>
             
-            {showMonthDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                {monthNames.map((month, index) => (
+             {showMonthDropdown && (
+               <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto scrollbar-hide">
+                 {monthNames.map((month, index) => (
                   <button
                     key={month}
                     onClick={() => handleMonthSelect(index)}
@@ -267,9 +267,9 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
               </svg>
             </button>
             
-            {showYearDropdown && (
-              <div ref={yearDropdownListRef} className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                {yearRange.map((year) => (
+             {showYearDropdown && (
+               <div ref={yearDropdownListRef} className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto scrollbar-hide">
+                 {yearRange.map((year) => (
                   <button
                     key={year}
                     onClick={() => handleYearSelect(year)}

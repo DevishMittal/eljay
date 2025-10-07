@@ -846,7 +846,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         </div>
       )}
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto scrollbar-hide">
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
              Full Name * {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
@@ -1399,7 +1399,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
           Available Time Slots *
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-hide">
           {[
             '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', 
             '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
@@ -1457,7 +1457,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             </div>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto scrollbar-hide">
           {diagnostics.map((diagnostic) => {
             const isSelected = selectedProcedureIds.includes(diagnostic.id);
             const specialType = isSpecialDiagnostic(diagnostic.name);
@@ -1494,7 +1494,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                   isSelected
                     ? 'bg-blue-50 border-blue-300'
                     : 'bg-white border-gray-200 hover:border-gray-300',
-                  specialType && 'ring-2 ring-orange-200 border-orange-300'
+                  specialType && ' border-orange-300'
                 )}
               >
                 <div className="flex items-start space-x-3">
@@ -1554,7 +1554,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 max-h-80 overflow-y-auto scrollbar-hide">
         <div className="flex items-center space-x-2 mb-4">
           <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1676,7 +1676,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
+      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto scrollbar-hide border-2 shadow-lg">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">

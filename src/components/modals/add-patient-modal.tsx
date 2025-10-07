@@ -126,7 +126,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2  shadow-lg">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide border-2  shadow-lg">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-semibold" style={{ color: '#101828' }}>Add New Patient</h2>

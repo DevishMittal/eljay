@@ -205,7 +205,7 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto border-2 shadow-lg">
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide border-2 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-3">

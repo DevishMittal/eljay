@@ -686,7 +686,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     <MainLayout className="!pt-2.5 !p-0 bg-white">
       <div className="flex h-full bg-gray-50">
         {/* Sidebar */}
-        <div className="w-80 bg-white flex flex-col -mt-2">
+        <div className="w-80 bg-white flex flex-col -mt-2 sticky top-0 h-screen overflow-y-auto scrollbar-hide">
           {/* Patient Records Header */}
           <div className="!border-b border-gray-200 p-4.5">
             <div className="flex items-center space-x-3">
