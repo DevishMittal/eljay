@@ -157,7 +157,7 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
           {/* Task Title */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-2">
-              Task Title
+              Task Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -193,7 +193,7 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
 
             <div className="relative">
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Due Date
+                Due Date <span className="text-red-500">*</span>
               </label>
               <button
                 type="button"

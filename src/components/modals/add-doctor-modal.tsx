@@ -160,7 +160,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Full Name *
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -182,7 +182,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Hospital/Clinic */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Hospital/Clinic *
+                  Hospital/Clinic <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -204,7 +204,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Phone *
+                  Phone <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -228,7 +228,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* BDM Name */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  BDM Name *
+                  BDM Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -358,7 +358,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Email *
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -380,7 +380,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Specialization */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Specialization *
+                  Specialization <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={specializations}

@@ -296,7 +296,7 @@ export default function CreateDiagnosticPlanModal({
 
       <div className="space-y-3">
         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-          Select Available Audiologist *
+          Select Available Audiologist <span className="text-red-500">*</span>
         </label>
         <SearchableDropdown
           options={audiologists.map((audiologist): SearchableOption => ({
@@ -422,7 +422,7 @@ export default function CreateDiagnosticPlanModal({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
-            Appointment Date *
+            Appointment Date <span className="text-red-500">*</span>
           </label>
           <DatePicker
             value={formData.appointmentDate}
@@ -435,7 +435,7 @@ export default function CreateDiagnosticPlanModal({
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
-            Duration *
+            Duration <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -456,7 +456,7 @@ export default function CreateDiagnosticPlanModal({
 
       <div className="space-y-3">
         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-          Available Time Slots *
+          Available Time Slots <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -500,7 +500,7 @@ export default function CreateDiagnosticPlanModal({
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
-            Select Procedures/Diagnostics *
+            Select Procedures/Diagnostics <span className="text-red-500">*</span>
           </label>
           {totalProcedureDuration > 0 && (
             <div className="text-sm font-medium text-blue-600">

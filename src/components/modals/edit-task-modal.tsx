@@ -150,7 +150,7 @@ export default function EditTaskModal({ isOpen, onClose, task }: EditTaskModalPr
           {/* Task Title */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-2">
-              Task Title
+              Task Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -184,7 +184,7 @@ export default function EditTaskModal({ isOpen, onClose, task }: EditTaskModalPr
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
               <label className="block text-xs font-medium text-gray-700 mb-2">
-                Due Date
+                Due Date <span className="text-red-500">*</span>
               </label>
               <button
                 type="button"

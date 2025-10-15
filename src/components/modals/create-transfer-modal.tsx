@@ -303,7 +303,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Transfer Type *
+                  Transfer Type <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={transferTypeOptions}
@@ -321,7 +321,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Urgency Level *
+                  Urgency Level <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={urgencyLevelOptions}
@@ -339,7 +339,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  From Location *
+                  From Location <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={locationOptions}
@@ -357,7 +357,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  To Location *
+                  To Location <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={locationOptions}
@@ -414,7 +414,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Transferred Date *
+                  Transferred Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -477,7 +477,7 @@ export default function CreateTransferModal({
                   className="block text-sm font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Transferred By *
+                  Transferred By <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={transferredByOptions}
@@ -586,7 +586,7 @@ export default function CreateTransferModal({
                         className="block text-sm font-medium text-[#101828] mb-2"
                         style={{ fontFamily: "Segoe UI" }}
                       >
-                        Item *
+                        Item <span className="text-red-500">*</span>
                       </label>
                       <CustomDropdown
                         options={itemOptions}
@@ -604,7 +604,7 @@ export default function CreateTransferModal({
                         className="block text-sm font-medium text-[#101828] mb-2"
                         style={{ fontFamily: "Segoe UI" }}
                       >
-                        Quantity *
+                        Quantity <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"

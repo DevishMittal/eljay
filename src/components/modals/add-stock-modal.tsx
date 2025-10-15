@@ -324,7 +324,7 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Item Name *
+                        Item Name <span className="text-red-500">*</span>
                       </label>
                       <CustomDropdown
                         options={itemNameOptions}
@@ -338,7 +338,7 @@ export default function AddStockModal({ isOpen, onClose, onSuccess }: AddStockMo
 
                     <div>
                       <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                        Quantity *
+                        Quantity <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"

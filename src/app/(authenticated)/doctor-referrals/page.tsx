@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/main-layout';
 import AddDoctorModal from '@/components/modals/add-doctor-modal';
 import { referralService } from '@/services/referralService';
@@ -19,6 +20,7 @@ import RupeeIcon from '@/components/ui/rupee-icon';
 import { convertToCSV, downloadCSV, formatDateTimeForExport } from '@/utils/exportUtils';
 
 export default function DoctorReferralsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
   const [referrals, setReferrals] = useState<ReferralSource[]>([]);
@@ -1230,9 +1232,17 @@ export default function DoctorReferralsPage() {
                               }`}>{statement.status}</span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-xs" style={{ color: '#101828' }}>{statement.dueDate}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-xs">
+                            <td className="px-9 py-4 whitespace-nowrap text-xs">
                               <div className="flex items-center space-x-2">
-                                <button 
+                                <button
+                                  onClick={() => {
+                                    const slug = encodeURIComponent(`${statement.doctor}-${statement.period}`);
+                                    const params = new URLSearchParams({
+                                      doctor: statement.doctor,
+                                      period: statement.period,
+                                    });
+                                    router.push(`/doctor-referrals/statements/${slug}?${params.toString()}`);
+                                  }}
                                   className="text-gray-400 hover:text-gray-600"
                                   aria-label="View statement"
                                   title="View statement"
@@ -1242,7 +1252,7 @@ export default function DoctorReferralsPage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                   </svg>
                                 </button>
-                                <button 
+                                {/* <button 
                                   className="text-gray-400 hover:text-gray-600"
                                   aria-label="Download statement"
                                   title="Download statement"
@@ -1250,7 +1260,7 @@ export default function DoctorReferralsPage() {
                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                   </svg>
-                                </button>
+                                </button> */}
                               </div>
                             </td>
                           </tr>

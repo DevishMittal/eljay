@@ -116,6 +116,51 @@ class ReferralService {
       throw error;
     }
   }
+
+  // Get doctor commission statements for a period
+  async getDoctorCommissionStatements(
+    params: { period?: string; commissionRate?: number; dueDate?: string } = {},
+    token?: string
+  ): Promise<{
+    status: string;
+    data: Array<{
+      doctor: string;
+      period: string;
+      referrals: number;
+      revenue: number;
+      commission: number;
+      status: 'draft' | 'sent' | 'paid';
+      dueDate: string;
+    }>;
+  }> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const query = new URLSearchParams();
+      if (params.period) query.set('period', params.period);
+      if (params.commissionRate !== undefined)
+        query.set('commissionRate', String(params.commissionRate));
+      if (params.dueDate) query.set('dueDate', params.dueDate);
+
+      const url = `${BASE_URL}/api/v1/referrals/doctor-commission-statements${
+        query.toString() ? `?${query.toString()}` : ''
+      }`;
+
+      const response = await fetch(url, { method: 'GET', headers });
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch commission statements: ${response.statusText}`
+        );
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching commission statements:', error);
+      throw error;
+    }
+  }
 }
 
 export const referralService = new ReferralService();

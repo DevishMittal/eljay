@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -5,6 +6,7 @@ import MainLayout from '@/components/layout/main-layout';
 import { useRouter } from 'next/navigation';
 import { Patient } from '@/types';
 import { patientService } from '@/services/patientService';
+import { patientTransferService } from '@/services/patientTransferService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,10 +46,39 @@ export default function PatientsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await patientService.getPatients(currentPage, 10, token || undefined);
-      setPatients(response.patients);
-      setTotalPages(response.pagination.totalPages);
-      setTotalPatients(response.pagination.total);
+      // Prefer branch-aware list (returns users with branch info). Fallback to existing service if needed.
+      try {
+        const { users } = await patientTransferService.getAllPatients(token || undefined);
+        const transformed = users.map((u: any) => ({
+          id: u.id,
+          patient_id: u.id,
+          full_name: u.fullname,
+          mobile_number: u.phoneNumber,
+          email_address: u.email,
+          dob: u.dob,
+          gender: u.gender,
+          occupation: u.occupation,
+          type: u.customerType,
+          status: 'Active',
+          created_at: u.createdAt,
+          updated_at: u.updatedAt,
+          alternative_number: u.alternateNumber,
+          countrycode: u.countrycode,
+          hospital_name: u.hospitalName,
+          opipNumber: u.opipNumber,
+          branchId: u.branch?.id,
+          branchName: u.branch?.name,
+        }));
+        setPatients(transformed);
+        // No server-side pagination in this endpoint; approximate
+        setTotalPages(1);
+        setTotalPatients(transformed.length);
+      } catch (_e) {
+        const response = await patientService.getPatients(currentPage, 10, token || undefined);
+        setPatients(response.patients);
+        setTotalPages(response.pagination.totalPages);
+        setTotalPatients(response.pagination.total);
+      }
     } catch (err) {
       setError('Failed to fetch patients. Please try again.');
       console.error('Error fetching patients:', err);
@@ -166,10 +197,6 @@ export default function PatientsPage() {
             aValue = a.full_name.toLowerCase();
             bValue = b.full_name.toLowerCase();
             break;
-          case 'email':
-            aValue = a.email_address.toLowerCase();
-            bValue = b.email_address.toLowerCase();
-            break;
           case 'age':
             aValue = a.age || (a.dob ? patientService.calculateAge(a.dob) : 0);
             bValue = b.age || (b.dob ? patientService.calculateAge(b.dob) : 0);
@@ -208,6 +235,25 @@ export default function PatientsPage() {
       setSortBy(field);
       setSortOrder('asc');
     }
+    setShowSortMenu(false);
+  };
+
+  // Close other dropdowns when one opens
+  const handleFilterToggle = () => {
+    setShowFilters(!showFilters);
+    setShowSortMenu(false);
+    setShowActionMenu(false);
+  };
+
+  const handleSortToggle = () => {
+    setShowSortMenu(!showSortMenu);
+    setShowFilters(false);
+    setShowActionMenu(false);
+  };
+
+  const handleActionToggle = () => {
+    setShowActionMenu(!showActionMenu);
+    setShowFilters(false);
     setShowSortMenu(false);
   };
 
@@ -342,7 +388,7 @@ export default function PatientsPage() {
           <div className="flex items-center space-x-3">
             <div className="relative">
               <button 
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={handleFilterToggle}
                 className={`border text-xs px-3 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors ${
                   showFilters || classification || gender || patientStatus
                     ? 'bg-orange-100 text-orange-700 border border-orange-200'
@@ -437,7 +483,7 @@ export default function PatientsPage() {
             
             <div className="relative">
               <button 
-                onClick={() => setShowSortMenu(!showSortMenu)}
+                onClick={handleSortToggle}
                 className={`border text-xs px-3 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors ${
                   sortBy ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-white text-gray-700 hover:bg-gray-200'
                 }`}
@@ -463,7 +509,6 @@ export default function PatientsPage() {
                   
                   {[
                     { key: 'name', label: 'Name (A-Z)', icon: '↕' },
-                    { key: 'email', label: 'Email', icon: '' },
                     { key: 'age', label: 'Age', icon: '' },
                     { key: 'dateAdded', label: 'Date Added', icon: '' },
                     { key: 'lastVisit', label: 'Last Visit', icon: '' }
@@ -518,7 +563,7 @@ export default function PatientsPage() {
             {selectedPatients.size > 0 && (
               <div className="relative">
                 <button 
-                  onClick={() => setShowActionMenu(!showActionMenu)}
+                  onClick={handleActionToggle}
                   className="text-xs bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-600 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -784,18 +829,18 @@ export default function PatientsPage() {
             </div>
           ) : (
             // Grid View
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            <div className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                 {displayedPatients.map((patient) => (
                   <div
                     key={patient.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-orange-200 relative"
+                    className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-orange-200 relative"
                   >
                     {/* Selection checkbox for grid view */}
-                    <div className="absolute top-3 right-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="checkbox" 
-                        className="rounded border-gray-300" 
+                        className="rounded border-gray-300 w-3 h-3" 
                         aria-label={`Select ${patient.full_name}`}
                         id={`select-grid-${patient.patient_id}`}
                         checked={selectedPatients.has(patient.patient_id)}
@@ -804,28 +849,30 @@ export default function PatientsPage() {
                     </div>
                     {/* Patient Avatar and Info */}
                     <div 
-                      className="flex flex-col items-center text-center mb-4 cursor-pointer"
+                      className="flex items-start text-left mb-3 cursor-pointer"
                       onClick={() => handlePatientClick(patient.patient_id)}
                     >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-gray-700 font-medium text-sm mb-2" style={{ backgroundColor: '#F3F4F6' }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-gray-700 font-medium text-xs mr-2 flex-shrink-0" style={{ backgroundColor: '#F3F4F6' }}>
                         {getInitials(patient.full_name)}
                       </div>
-                      <h3 className="font-medium text-sm text-gray-900 mb-1 truncate w-full">{patient.full_name}</h3>
-                      <p className="text-xs text-gray-500 mb-2">{patient.patient_id}</p>
-                      
-                      {/* Status Badges */}
-                      <div className="flex flex-wrap gap-1 justify-center mb-3">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getTypeColor(patient.type || '')}`}>
-                          {patient.type || 'B2C'}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(patient.status || '')}`}>
-                          {patient.status || 'New'}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-xs text-gray-900 mb-0.5 truncate">{patient.full_name}</h3>
+                        <p className="text-xs text-gray-500 mb-1">{patient.patient_id}</p>
+                        
+                        {/* Status Badges */}
+                        <div className="flex gap-1 mb-2">
+                          <span className={`px-1.5 py-0.5 text-xs rounded-full ${getTypeColor(patient.type || '')}`}>
+                            {patient.type || 'B2C'}
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xs rounded-full ${getStatusColor(patient.status || '')}`}>
+                            {patient.status || 'New'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
                     {/* Contact Info */}
-                    <div className="space-y-2 text-xs text-gray-600">
+                    <div className="space-y-1 text-xs text-gray-600">
                       <div className="flex items-center space-x-2">
                         <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -861,16 +908,16 @@ export default function PatientsPage() {
                     </div>
                     
                     {/* Actions */}
-                    <div className="mt-4 pt-3 !border-t border-gray-100 flex justify-center">
+                    <div className="mt-1 pt-1 !border-t border-gray-100 flex justify-center">
                       <button 
                         onClick={(e) => handleDeletePatient(patient.patient_id, e)}
                         disabled={loading}
-                        className="p-1 hover:bg-red-100 text-red-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1 hover:bg-red-100 text-red-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Delete patient"
                         title="Delete patient"
                       >
                         {loading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                         ) : (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

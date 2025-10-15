@@ -663,7 +663,19 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       }
     }
     if (currentStage === 2) {
-      // Stage 2 (patient details) - no validation, always allow proceeding
+      // Stage 2 (patient details) - validate required fields
+      if (!formData.fullName?.trim()) {
+        setErrorMessage('Please enter the patient\'s full name.');
+        return false;
+      }
+      if (!formData.mobileNumber?.trim()) {
+        setErrorMessage('Please enter the patient\'s mobile number.');
+        return false;
+      }
+      if (!formData.gender) {
+        setErrorMessage('Please select the patient\'s gender.');
+        return false;
+      }
       return true;
     }
     if (currentStage === 3) {
@@ -717,8 +729,8 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       return formData.phoneNumber && formData.phoneNumber.length >= 10 && !userLookupLoading;
     }
     if (currentStage === 2) {
-      // Stage 2 (patient details) - always allow proceeding, no validation
-      return true;
+      // Stage 2 (patient details) - validate required fields
+      return formData.fullName?.trim() && formData.mobileNumber?.trim() && formData.gender;
     }
     if (currentStage === 3) {
       return formData.selectedAudiologist;
@@ -784,7 +796,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       <div className="space-y-3">
         <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-            Patient Phone Number *
+            Patient Phone Number <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -850,7 +862,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto scrollbar-hide">
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Full Name * {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
+             Full Name <span className="text-red-500">*</span> {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="text"
@@ -886,7 +898,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
          <div>
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-             Mobile Number {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
+             Mobile Number <span className="text-red-500">*</span> {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
            <input
              type="tel"
@@ -919,7 +931,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
                  <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-            Gender {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
+            Gender <span className="text-red-500">*</span> {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
           </label>
           <CustomDropdown
             options={[
@@ -1015,7 +1027,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
          {formData.customerType === 'B2B' && (
            <div>
              <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-               Hospital Name {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>} *
+               Hospital Name {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
              </label>
              <div className="space-y-2">
                <CustomDropdown
@@ -1111,7 +1123,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
       <div className="space-y-3">
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-          Select Available Audiologist *
+          Select Available Audiologist <span className="text-red-500">*</span>
         </label>
         <SearchableDropdown
           options={audiologists.map((audiologist): SearchableOption => ({
@@ -1348,7 +1360,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-            Appointment Date *
+            Appointment Date <span className="text-red-500">*</span>
           </label>
           <DatePicker
             value={formData.appointmentDate}
@@ -1362,7 +1374,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
         <div>
           <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-            Duration *
+            Duration <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -1386,7 +1398,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
       <div className="space-y-3">
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
-          Available Time Slots *
+          Available Time Slots <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-hide">
           {[

@@ -162,9 +162,9 @@ export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: Consum
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Select Item to Consume */}
           <div>
-            <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-              Select Item to Consume *
-            </label>
+              <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
+                Select Item to Consume <span className="text-red-500">*</span>
+              </label>
             <CustomDropdown
               options={itemOptions}
               value={formData.selectedItem}
@@ -186,7 +186,7 @@ export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: Consum
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                  Consumption Date *
+                  Consumption Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -237,7 +237,7 @@ export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: Consum
 
               <div>
                 <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                  Consumption Type *
+                  Consumption Type <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={consumptionTypeOptions}
@@ -250,7 +250,7 @@ export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: Consum
 
               <div>
                 <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                  Quantity *
+                  Quantity <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -283,7 +283,7 @@ export default function ConsumeStockModal({ isOpen, onClose, onSuccess }: Consum
 
             <div>
               <label className="block text-xs font-medium text-[#101828] mb-2" style={{ fontFamily: 'Segoe UI' }}>
-                Reason *
+                Reason <span className="text-red-500">*</span>
               </label>
               <textarea
                 required

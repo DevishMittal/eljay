@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://eljay-api.vizdale.com/api/v1';
 
 export interface OAEForm {
@@ -142,9 +143,10 @@ class OAEFormService {
   async updateOAEForm(id: string, formData: Partial<CreateOAEFormData>, token?: string): Promise<OAEForm> {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
     
-    // Remove userId, audiologistId, and staffId from the update payload as per API requirement
+    // Remove userId from the update payload as per API requirement
+    // But keep audiologistId and staffId as they are allowed in updates
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { userId, audiologistId, staffId, ...updatePayload } = formData;
+    const { userId, ...updatePayload } = formData;
     
     const response = await this.makeRequest(url, {
       method: 'PUT',
@@ -164,6 +166,16 @@ class OAEFormService {
     const url = `${API_BASE_URL}/oae-forms/${id}`;
     const response = await this.makeRequest(url, {}, token);
     return response.data;
+  }
+
+  async getAllDoctorNames(token?: string): Promise<any> {
+    const url = `${API_BASE_URL}/oae-forms/doctors`;
+    return this.makeRequest(url, {}, token);
+  }
+
+  async getAllHospitalNames(token?: string): Promise<any> {
+    const url = `${API_BASE_URL}/oae-forms/hospitals`;
+    return this.makeRequest(url, {}, token);
   }
 }
 

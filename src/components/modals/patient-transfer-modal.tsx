@@ -71,12 +71,13 @@ export default function PatientTransferModal({ isOpen, onClose, patientId, onTra
             <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>
           )}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Target Branch</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Target Branch <span className="text-red-500">*</span></label>
             <select
               className="w-full px-3 py-2 text-xs rounded-lg border bg-white"
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
               disabled={loading}
+              aria-label="Select target branch for patient transfer"
             >
               <option value="">{loading ? 'Loading branches...' : 'Select a branch'}</option>
               {branches.map((b) => (

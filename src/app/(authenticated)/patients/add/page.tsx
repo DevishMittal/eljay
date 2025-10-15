@@ -394,7 +394,7 @@ export default function AddPatientPage() {
                       <h3 className="font-medium text-gray-900 mb-4">Personal Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
                           <input
                             type="text"
                             value={formData.fullname}
@@ -407,20 +407,19 @@ export default function AddPatientPage() {
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
                           <DatePicker
                             value={formData.dob}
                             onChange={(date) => handleInputChange('dob', date)}
                             placeholder="29-08-2025"
                             maxDate={new Date()}
                             disabled={loading}
-                            required
                             aria-label="Date of birth"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender <span className="text-red-500">*</span></label>
                           <CustomDropdown
                             options={[
                               { value: 'Male', label: 'Male' },
@@ -436,7 +435,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation</label>
                           <input
                             type="text"
                             value={formData.occupation}
@@ -444,7 +443,6 @@ export default function AddPatientPage() {
                             className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             placeholder="Enter occupation"
                             disabled={loading}
-                            required
                           />
                         </div>
                       </div>
@@ -455,7 +453,7 @@ export default function AddPatientPage() {
                       <h3 className="font-medium text-gray-900 mb-4">Contact Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Mobile Number *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Mobile Number <span className="text-red-500">*</span></label>
                           <input
                             type="tel"
                             value={formData.phoneNumber}
@@ -486,7 +484,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code <span className="text-red-500">*</span></label>
                           <CustomDropdown
                             options={[
                               { value: '+91', label: '+91 (India)' }
@@ -500,7 +498,7 @@ export default function AddPatientPage() {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type <span className="text-red-500">*</span></label>
                           <CustomDropdown
                             options={[
                               { value: 'B2C', label: 'B2C' },
@@ -517,7 +515,7 @@ export default function AddPatientPage() {
                         {/* Hospital field - only show for B2B patients */}
                         {formData.customerType === 'B2B' && (
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Hospital Name *</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Hospital Name</label>
                             <div className="space-y-2">
                               <CustomDropdown
                                 options={[

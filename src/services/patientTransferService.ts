@@ -15,6 +15,22 @@ export type BranchOption = {
 };
 
 class PatientTransferService {
+  async getAllPatients(token?: string): Promise<{ users: any[] }>{
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${BASE_URL}/api/v1/patient-transfers/patients`, {
+      method: 'GET',
+      headers,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Failed to load patients: ${res.status} ${res.statusText} ${text}`);
+    }
+    const data = await res.json();
+    return { users: data?.data ?? [] };
+  }
+
   async getAvailableBranches(patientId: string, token?: string): Promise<BranchOption[]> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;

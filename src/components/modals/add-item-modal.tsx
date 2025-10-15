@@ -164,10 +164,12 @@ export default function AddItemModal({
       // Validate required fields
       if (
         !formData.itemName ||
+        !formData.itemCode ||
         !formData.brand ||
         !formData.mrp ||
         !formData.currentStock ||
-        !formData.minimumStock
+        !formData.minimumStock ||
+        !formData.description
       ) {
         setError("Please fill in all required fields");
         return;
@@ -314,7 +316,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Item Name *
+                  Item Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -334,7 +336,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Brand *
+                  Brand <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -354,7 +356,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Item Type *
+                  Item Type <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={itemTypeOptions}
@@ -373,7 +375,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Category *
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <CustomDropdown
                   options={categoryOptions}
@@ -414,7 +416,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Minimum Stock *
+                  Minimum Stock <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -437,7 +439,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Item Code
+                  Item Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -448,13 +450,8 @@ export default function AddItemModal({
                   placeholder="e.g., PHK-AP90-312"
                   className="w-full px-3 py-1 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                   style={{ fontFamily: "Segoe UI" }}
+                  required
                 />
-                <div
-                  className="text-xs text-[#4A5565] mt-1"
-                  style={{ fontFamily: "Segoe UI" }}
-                >
-                  Optional: Unique identifier or SKU for the item
-                </div>
               </div>
 
               <div>
@@ -462,7 +459,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  MRP (₹) *
+                  MRP (₹) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -502,7 +499,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Current Stock *
+                  Current Stock <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -612,7 +609,7 @@ export default function AddItemModal({
               className="block text-xs font-medium text-[#101828] mb-2"
               style={{ fontFamily: "Segoe UI" }}
             >
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               value={formData.description}
@@ -623,6 +620,7 @@ export default function AddItemModal({
               rows={4}
               className="w-full px-3 py-2 bg-gray-100 h-24 rounded-lg "
               style={{ fontFamily: "Segoe UI" }}
+              required
             />
           </div>
 

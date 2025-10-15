@@ -152,7 +152,7 @@ export default function ClinicalNoteModal({
             {/* Title */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Title *
+                Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -171,7 +171,7 @@ export default function ClinicalNoteModal({
             {/* Content */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Content *
+                Content <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={formData.content}
@@ -185,7 +185,7 @@ export default function ClinicalNoteModal({
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-2">
-                Category *
+                Category <span className="text-red-500">*</span>
               </label>
               <CustomDropdown
                 options={[

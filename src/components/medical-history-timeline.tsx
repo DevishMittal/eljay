@@ -626,9 +626,9 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
                       <div className="text-xs text-gray-700 whitespace-pre-line">
                         {event.description}
                       </div>
-                      {event.createdBy && (
-                        <div className="text-[11px] text-gray-500 mt-1">Created by {event.createdBy}</div>
-                      )}
+                      {/* {event.createdBy && (
+                        // <div className="text-[11px] text-gray-500 mt-1">Created by {event.createdBy}</div>
+                      )} */}
                       {event.referenceId && (
                         <div className="text-[11px] text-gray-500">Ref: {event.referenceId}</div>
                       )}
@@ -641,7 +641,7 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {event.actions?.view && (
+                    {event.actions?.view && event.type !== 'appointment' && (
                       <button onClick={event.actions.view} className="text-gray-400 hover:text-gray-600" aria-label={`View ${event.title.toLowerCase()}`}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -649,20 +649,20 @@ export default function MedicalHistoryTimeline({ patientId }: MedicalHistoryTime
                         </svg>
                       </button>
                     )}
-                    {event.actions?.download && (
+                    {/* {event.actions?.download && (
                       <button onClick={event.actions.download} className="text-gray-400 hover:text-gray-600" aria-label={`Download ${event.title.toLowerCase()}`}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                       </button>
-                    )}
-                    {event.actions?.print && (
+                    )} */}
+                    {/* {event.actions?.print && (
                       <button onClick={event.actions.print} className="text-gray-400 hover:text-gray-600" aria-label={`Print ${event.title.toLowerCase()}`}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                       </button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               ))}

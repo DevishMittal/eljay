@@ -11,7 +11,7 @@ import { staffService } from '@/services/staffService';
 import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
+import SearchableDropdown from '@/components/ui/searchable-dropdown';
 import { Staff, Doctor } from '@/types';
 
 interface FormData {
@@ -92,19 +92,41 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
           // Filter forms by patient ID since the API returns all forms
           const allForms = oaeResponse.data?.oaeForms || [];
           const patientForms = allForms.filter(form => form.patientId === patientId);
+          console.log('OAE Forms data:', patientForms);
           setOaeForms(patientForms);
 
           // Fetch staff data for Staff dropdown (filtered for audiologists)
           const staffResponse = await staffService.getStaff(token);
+          console.log('Staff response:', staffResponse);
           const audiologistStaff = staffResponse.data.filter((s: any) => {
             const role = (s.role || '').toLowerCase();
             return role === 'audiologist' || role === 'senior audiologist';
           });
           setStaff(audiologistStaff);
+          console.log('Filtered audiologist staff:', audiologistStaff);
 
           // Fetch audiologists data for "Conducted By" dropdown
           const audiologistsResponse = await doctorService.getDoctors(token);
+          console.log('Audiologists response:', audiologistsResponse);
           setAudiologists(audiologistsResponse.data || []);
+
+          // Fetch doctor names for "Doctor Name" dropdown using OAE endpoint
+          try {
+            const doctorsResponse = await oaeService.getAllDoctorNames(token);
+            console.log('Doctor names response:', doctorsResponse);
+            setAudiologists(prev => [...prev, ...(doctorsResponse.data || [])]);
+          } catch (error) {
+            console.warn('Failed to fetch doctor names from OAE endpoint:', error);
+          }
+
+          // Fetch hospital names for dropdown using OAE endpoint
+          try {
+            const hospitalsResponse = await oaeService.getAllHospitalNames(token);
+            // You can store this in a separate state if needed for hospital dropdown
+            console.log('Available hospitals:', hospitalsResponse.data);
+          } catch (error) {
+            console.warn('Failed to fetch hospital names from OAE endpoint:', error);
+          }
 
           // Set form data from patient
           setFormData(prev => ({
@@ -184,6 +206,14 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         return dateString; // Return as is if we can't parse it
       };
 
+      // Helper function to get staff ID from staff name
+      const getStaffIdFromName = (staffName: string) => {
+        if (!staffName) return null;
+        const staffMember = staff.find(s => s.name === staffName);
+        return staffMember?.id || null;
+      };
+
+
       const formPayload: any = {
         patientName: formData.patientName,
         patientId: formData.patientId,
@@ -194,38 +224,56 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
         opNumber: formData.opNumber,
         contactNumber: formData.contactNumber,
         hospitalName: formData.hospitalName,
-        doctorName: formData.doctorName, // Use the new doctorName field
+        doctorName: formData.doctorName,
         sessionNumber: formData.sessionNumber,
         testDate: formatDateForAPI(formData.testDate),
         conductedBy: formData.conductedBy,
         testReason: formData.testReason,
-        equipmentUsed: 'OAE Screener - Standard Equipment', // Default value since removed from UI
+        equipmentUsed: 'OAE Screener - Standard Equipment',
         testResults: formData.testResults,
         testNotes: formData.testNotes,
         failedAttempts: formData.failedAttempts
       };
 
-      // Use staffId instead of audiologistId
+      // Map staff ID properly
       if (formData.staffId && formData.staffId.trim() !== '') {
         formPayload.staffId = formData.staffId;
       }
 
-      // Debug: Log the formatted dates
-      console.log('Original babyDateOfBirth:', formData.babyDateOfBirth);
-      console.log('Formatted babyDateOfBirth:', formatDateForAPI(formData.babyDateOfBirth));
-      console.log('Original testDate:', formData.testDate);
-      console.log('Formatted testDate:', formatDateForAPI(formData.testDate));
+      // Validate required fields
+      if (!formData.testResults) {
+        throw new Error('Test results are required.');
+      }
+      if (!formData.conductedBy) {
+        throw new Error('Conducted by field is required.');
+      }
 
+      // For editing, include the required IDs in the payload
       if (editingFormId) {
-        // Update existing form
+        // Update existing form - include staffId if we have it
+        if (formData.staffId) {
+          formPayload.staffId = formData.staffId;
+        }
         await oaeService.updateOAEForm(editingFormId, formPayload, token);
         setSuccess('OAE form updated successfully!');
       } else {
-        // Create new form
+        // Create new form - ensure we have either staffId or audiologistId
         const createData: CreateOAEFormData = {
-          userId: formData.patientId, // Use patient ID as userId
+          userId: formData.patientId,
           ...formPayload
         };
+
+        // Ensure we have either staffId or audiologistId for creation
+        if (!createData.staffId && !createData.audiologistId) {
+          // Try to get staffId from conductedBy if available
+          const conductedByStaffId = getStaffIdFromName(formData.conductedBy);
+          if (conductedByStaffId) {
+            createData.staffId = conductedByStaffId;
+          } else {
+            throw new Error('Please select an audiologist or staff member for this test session.');
+          }
+        }
+
         await oaeService.createOAEForm(createData, token);
         setSuccess('OAE form saved successfully!');
       }
@@ -246,7 +294,7 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
 
     } catch (error) {
       console.error('Error saving OAE form:', error);
-      setError('Failed to save OAE form. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to save OAE form. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -427,20 +475,26 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
 
   // Staff options from staff API (using staff IDs for Staff field)
   const staffOptions = staff.map(staffMember => ({
-    value: staffMember.id,
-    label: `${staffMember.name} - ${staffMember.role}`
+    id: staffMember.id,
+    name: staffMember.name,
+    subtitle: staffMember.role,
+    additionalInfo: 'Staff Member'
   }));
 
-  // Audiologist options for Conducted By field (using names)
+  // Audiologist options for Conducted By field (using names for display, IDs for values)
   const conductedByOptions = audiologists.map(audiologist => ({
-    value: audiologist.name,
-    label: `${audiologist.name} - ${audiologist.specialization}`
+    id: audiologist.name,
+    name: audiologist.name,
+    subtitle: audiologist.specialization || 'General Practice',
+    additionalInfo: 'Audiologist'
   }));
 
-  // Doctor options for Doctor Name field (using names)
+  // Doctor options for Doctor Name field (using names for display)
   const doctorOptions = audiologists.map(doctor => ({
-    value: doctor.name,
-    label: `${doctor.name} - ${doctor.specialization}`
+    id: doctor.name,
+    name: doctor.name,
+    subtitle: doctor.specialization || 'General Practice',
+    additionalInfo: 'Doctor'
   }));
 
   // Helper function to get staff name by ID
@@ -448,6 +502,31 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
     if (!staffId) return 'Not assigned';
     const staffMember = staff.find(s => s.id === staffId);
     return staffMember ? `${staffMember.name} - ${staffMember.role}` : staffId;
+  };
+
+  // Helper function to get staff name from OAE form data (includes staff object)
+  const getStaffNameFromForm = (oaeForm: any) => {
+    if (oaeForm.staff) {
+      return `${oaeForm.staff.name} - ${oaeForm.staff.role}`;
+    }
+    if (oaeForm.audiologist) {
+      return `${oaeForm.audiologist.name} - ${oaeForm.audiologist.specialization || 'Audiologist'}`;
+    }
+    return oaeForm.staffId ? getStaffName(oaeForm.staffId) : 'Not assigned';
+  };
+
+  // Helper function to get doctor name from OAE form data
+  const getDoctorNameFromForm = (oaeForm: any) => {
+    if (oaeForm.doctorName) {
+      return oaeForm.doctorName;
+    }
+    if (oaeForm.audiologist) {
+      return oaeForm.audiologist.name;
+    }
+    if (oaeForm.staff && (oaeForm.staff.role?.toLowerCase().includes('doctor') || oaeForm.staff.role?.toLowerCase().includes('audiologist'))) {
+      return oaeForm.staff.name;
+    }
+    return 'Not assigned';
   };
 
   if (loading) {
@@ -693,7 +772,9 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                   className="text-xs"
                 />
               ) : (
-                <p className="text-xs text-gray-900">{getStaffName(formData.staffId)}</p>
+                <p className="text-xs text-gray-900">
+                  {oaeForms.length > 0 ? getStaffNameFromForm(oaeForms[oaeForms.length - 1]) : 'Not assigned'}
+                </p>
               )}
             </div>
             <div>
@@ -708,7 +789,9 @@ export default function OAEFormPage({ params }: { params: Promise<{ id: string }
                   className="text-xs"
                 />
               ) : (
-                <p className="text-xs text-gray-900">{formData.doctorName || 'Not assigned'}</p>
+                <p className="text-xs text-gray-900">
+                  {oaeForms.length > 0 ? getDoctorNameFromForm(oaeForms[oaeForms.length - 1]) : 'Not assigned'}
+                </p>
               )}
             </div>
           </div>

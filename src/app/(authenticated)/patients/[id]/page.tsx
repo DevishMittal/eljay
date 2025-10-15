@@ -384,8 +384,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       setIsEditing(false);
       setEditFormData({});
     } else {
-      // Start editing
+      // Start editing - switch to profile section and patient information tab
       setIsEditing(true);
+      setActiveSection('profile');
+      setActiveSubTab('information');
+      setActiveProfileButton('information');
       setEditFormData({
         fullname: patient?.full_name || '',
         phoneNumber: patient?.mobile_number || '',
@@ -398,6 +401,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         hospitalName: patient?.hospital_name || '',
         opipNumber: patient?.opipNumber || ''
       });
+      
+      // Scroll to patient information section after a brief delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToPatientInformation();
+      }, 100);
     }
   };
 
@@ -495,21 +503,42 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const scrollToAppointmentHistory = () => {
     const appointmentHistoryElement = document.getElementById('appointment-history');
     if (appointmentHistoryElement) {
-      appointmentHistoryElement.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 80; // Account for sticky header height
+      const elementPosition = appointmentHistoryElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
   const scrollToPatientInformation = () => {
     const patientInformationElement = document.getElementById('patient-information');
     if (patientInformationElement) {
-      patientInformationElement.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 80; // Account for sticky header height
+      const elementPosition = patientInformationElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
   const scrollToSection = (section: string) => {
     const element = document.getElementById(section);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 80; // Account for sticky header height
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -1140,6 +1169,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 >
                   {isEditing ? 'Cancel' : 'Edit'}
                 </button>
+                <button
+                  onClick={() => setShowTransferModal(true)}
+                  disabled={!patient || loading}
+                  className="px-4 py-2 text-xs bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Transfer
+                </button>
                 {isEditing && (
                   <button
                     onClick={handleSaveEdit}
@@ -1180,47 +1216,6 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={handleEditToggle}
-                        disabled={loading}
-                        className="px-4 py-2 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                      >
-                        {isEditing ? 'Cancel' : 'Edit'}
-                      </button>
-                      <button
-                        onClick={() => setShowTransferModal(true)}
-                        disabled={!patient || loading}
-                        className="px-4 py-2 text-xs bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                      >
-                        Transfer
-                      </button>
-                      {isEditing && (
-                        <button
-                          onClick={handleSaveEdit}
-                          disabled={loading}
-                          className="px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-800 transition-colors disabled:opacity-50 flex items-center space-x-2"
-                        >
-                          {loading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          ) : (
-                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <g clipPath="url(#clip0_145_14395)">
-                                <path d="M9.36667 1.8501C9.6744 1.85448 9.96793 1.98028 10.1833 2.2001L12.4 4.41676C12.6198 4.63217 12.7456 4.9257 12.75 5.23343V11.1834C12.75 11.4928 12.6271 11.7896 12.4083 12.0084C12.1895 12.2272 11.8928 12.3501 11.5833 12.3501H3.41667C3.10725 12.3501 2.8105 12.2272 2.59171 12.0084C2.37292 11.7896 2.25 11.4928 2.25 11.1834V3.01676C2.25 2.70735 2.37292 2.4106 2.59171 2.19181C2.8105 1.97301 3.10725 1.8501 3.41667 1.8501H9.36667Z" stroke="white" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M10.4163 12.3503V8.26693C10.4163 8.11222 10.3549 7.96384 10.2455 7.85445C10.1361 7.74505 9.98772 7.68359 9.83301 7.68359H5.16634C5.01163 7.68359 4.86326 7.74505 4.75386 7.85445C4.64447 7.96384 4.58301 8.11222 4.58301 8.26693V12.3503" stroke="white" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M4.58301 1.8501V4.18343C4.58301 4.33814 4.64447 4.48651 4.75386 4.59591C4.86326 4.70531 5.01163 4.76676 5.16634 4.76676H9.24967" stroke="white" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                              </g>
-                              <defs>
-                                <clipPath id="clip0_145_14395">
-                                  <rect width="14" height="14" fill="white" transform="translate(0.5 0.100098)"/>
-                                </clipPath>
-                              </defs>
-                            </svg>
-                          )}
-                          <span>{loading ? 'Saving...' : 'Save'}</span>
-                        </button>
-                      )}
-                    </div>
                   </div>
 
                 {error && (
@@ -1257,7 +1252,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <h3 className="font-medium text-gray-900 mb-4 text-xs">Personal Details</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
                           {isEditing ? (
                             <input
                               type="text"
@@ -1275,7 +1270,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
                           {isEditing ? (
                             <DatePicker
                               value={editFormData.dob || ''}
@@ -1293,7 +1288,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Gender <span className="text-red-500">*</span></label>
                           {isEditing ? (
                             <CustomDropdown
                               options={[
@@ -1315,7 +1310,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Occupation</label>
                           {isEditing ? (
                             <input
                               type="text"
@@ -1339,7 +1334,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                       <h3 className="font-medium text-gray-900 mb-4 text-xs">Contact Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number <span className="text-red-500">*</span></label>
                           {isEditing ? (
                             <input
                               type="tel"
@@ -1357,7 +1352,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Country Code <span className="text-red-500">*</span></label>
                           {isEditing ? (
                             <CustomDropdown
                               options={[
@@ -1395,7 +1390,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
                           {isEditing ? (
                             <input
                               type="email"
@@ -1413,7 +1408,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Customer Type</label>
                           <div className="w-full px-3 py-2 text-xs bg-gray-50 rounded-lg text-gray-600">
                             {patient.type || 'Regular'}
                           </div>

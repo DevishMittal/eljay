@@ -42,8 +42,8 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullname.trim() || !formData.phoneNumber.trim()) {
-      setError('Please fill in all required fields (Name and Phone Number)');
+    if (!formData.fullname.trim() || !formData.phoneNumber.trim() || !formData.gender) {
+      setError('Please fill in all required fields (Name, Phone Number, and Gender)');
       return;
     }
 
@@ -157,7 +157,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Full Name *
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -185,7 +185,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Gender *
+                    Gender <span className="text-red-500">*</span>
                   </label>
                   <CustomDropdown
                     options={[
@@ -203,7 +203,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Occupation *
+                    Occupation
                   </label>
                   <input
                     type="text"
@@ -212,7 +212,6 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                     className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter occupation"
                     disabled={loading}
-                    required
                   />
                 </div>
               </div>
@@ -223,7 +222,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Phone Number *
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -252,7 +251,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                                         <div>
                           <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                            Country Code *
+                            Country Code <span className="text-red-500">*</span>
                           </label>
                           <CustomDropdown
                             options={[
@@ -268,7 +267,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
 
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                    Customer Type *
+                    Customer Type <span className="text-red-500">*</span>
                   </label>
                   <CustomDropdown
                     options={[
@@ -287,7 +286,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                 {formData.customerType === 'B2B' && (
                   <div>
                     <label className="block text-xs font-medium mb-1" style={{ color: '#0A0A0A' }}>
-                      Hospital Name *
+                      Hospital Name
                     </label>
                     <input
                       type="text"
@@ -296,7 +295,6 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess }: AddPatie
                       className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Enter hospital name"
                       disabled={loading}
-                      required
                     />
                   </div>
                 )}

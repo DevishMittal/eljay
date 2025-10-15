@@ -35,10 +35,18 @@ export class InventoryService {
   static async getInventoryItemsWithView(
     view: 'branch' | 'network' = 'branch',
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    branchName?: string
   ): Promise<InventoryViewResponse['data']> {
     try {
-      const response = await fetch(`${API_BASE_URL}/inventory/v2?view=${view}&page=${page}&limit=${limit}`, {
+      const params = new URLSearchParams({
+        view,
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(branchName && branchName !== 'All Branches' && { branchName })
+      });
+
+      const response = await fetch(`${API_BASE_URL}/inventory/v2?${params}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });

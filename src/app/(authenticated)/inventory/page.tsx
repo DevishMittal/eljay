@@ -78,6 +78,7 @@ export default function InventoryPage() {
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('All Branches');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [currentBranch, setCurrentBranch] = useState<string>('Main Branch'); // Current user's branch
 
   // API state
   const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
@@ -95,17 +96,39 @@ export default function InventoryPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await InventoryService.getInventoryItemsWithView(currentView, page, limit);
+      
+      // Determine branch filter based on current view
+      let branchFilter: string | undefined;
+      if (currentView === 'branch') {
+        // In branch view, filter by current user's branch
+        branchFilter = currentBranch;
+      } else if (currentView === 'network' && selectedBranch !== 'All Branches') {
+        // In network view, filter by selected branch if not "All Branches"
+        branchFilter = selectedBranch;
+      }
+      
+      const response = await InventoryService.getInventoryItemsWithView(
+        currentView, 
+        page, 
+        limit, 
+        branchFilter
+      );
       setInventoryItems(response.items);
       setPagination(response.pagination);
-      // Populate branches via branches API (fallback if inventory endpoint doesn't provide list)
-      try {
-        const branchesResp = await branchService.getBranches(1, 50, token || undefined);
-        const names = (branchesResp.data.branches || []).map(b => b.name).filter(Boolean);
-        setAvailableBranches(names);
-      } catch (e) {
-        // If branch fetch fails, keep any existing list
-        console.warn('Failed to fetch branches for filter:', e);
+      
+      // Set available branches from API response or fetch separately
+      if (response.availableBranches && response.availableBranches.length > 0) {
+        setAvailableBranches(response.availableBranches);
+      } else {
+        // Fallback: fetch available branches for dropdown
+        try {
+          const branchesResp = await branchService.getBranches(1, 50, token || undefined);
+          const names = (branchesResp.data.branches || []).map(b => b.name).filter(Boolean);
+          setAvailableBranches(names);
+        } catch (e) {
+          // If branch fetch fails, keep any existing list
+          console.warn('Failed to fetch branches for filter:', e);
+        }
       }
       
       // Initialize colors from fetched data
@@ -130,10 +153,10 @@ export default function InventoryPage() {
     }
   };
 
-  // Load inventory on component mount and when view changes
+  // Load inventory on component mount and when view or branch selection changes
   useEffect(() => {
     fetchInventoryItems();
-  }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentView, selectedBranch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -184,6 +207,8 @@ export default function InventoryPage() {
   // Handle branch selection
   const handleBranchChange = (branch: string) => {
     setSelectedBranch(branch);
+    // Reset to first page when changing branch filter
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   // Toggle item expansion in network view
@@ -285,7 +310,12 @@ export default function InventoryPage() {
               className="text-[#4A5565] text-sm"
               style={{ fontFamily: "Segoe UI" }}
             >
-              Managing inventory for Main Branch
+              {currentView === 'branch' 
+                ? `Managing inventory for ${currentBranch}` 
+                : selectedBranch === 'All Branches' 
+                  ? 'Managing inventory across all branches' 
+                  : `Managing inventory for ${selectedBranch}`
+              }
             </p>
           </div>
 
@@ -729,46 +759,70 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
-                              getStatusColor(
-                                getStockStatus(
+                          {currentView === 'branch' ? (
+                            <>
+                              <span
+                                className={cn(
+                                  "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                                  getStatusColor(
+                                    getStockStatus(
+                                      item.currentStock,
+                                      item.minimumStock
+                                    )
+                                  )
+                                )}
+                                style={{ fontFamily: "Segoe UI" }}
+                              >
+                                {getStockStatus(
                                   item.currentStock,
                                   item.minimumStock
-                                )
-                              )
-                            )}
-                            style={{ fontFamily: "Segoe UI" }}
-                          >
-                            {getStockStatus(
-                              item.currentStock,
-                              item.minimumStock
-                            )}
-                          </span>
-                          {getExpiryInfo(item.expiresAt) && (
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                                getExpiryColor(getExpiryInfo(item.expiresAt)!)
+                                )}
+                              </span>
+                              {getExpiryInfo(item.expiresAt) && (
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                                    getExpiryColor(getExpiryInfo(item.expiresAt)!)
+                                  )}
+                                  style={{ fontFamily: "Segoe UI" }}
+                                >
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  {getExpiryInfo(item.expiresAt)}
+                                </span>
                               )}
-                              style={{ fontFamily: "Segoe UI" }}
-                            >
-                              <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              {getExpiryInfo(item.expiresAt)}
-                            </span>
+                            </>
+                          ) : (
+                            <>
+                              {/* Network view: show overall status from branch statistics */}
+                              {item.branchStatistics?.overallStatus?.map((status, index) => (
+                                <span
+                                  key={index}
+                                  className={cn(
+                                    "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                                    status === 'Active' ? 'bg-green-100 text-green-800' :
+                                    status === 'Low Stock' ? 'bg-yellow-100 text-yellow-800' :
+                                    status === 'Out Of Stock' ? 'bg-red-100 text-red-800' :
+                                    status === 'Expired' ? 'bg-orange-100 text-orange-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  )}
+                                  style={{ fontFamily: "Segoe UI" }}
+                                >
+                                  {status}
+                                </span>
+                              ))}
+                            </>
                           )}
                           <span
                             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
