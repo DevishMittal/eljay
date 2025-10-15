@@ -200,6 +200,21 @@ export default function B2CInvoicePage() {
     }
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showPatientDropdown && !target.closest('.patient-dropdown-container')) {
+        setShowPatientDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPatientDropdown]);
+
   const addService = () => {
     const newService: InvoiceServiceType & { diagnosticId?: string; inventoryId?: string } = {
       serviceName: '',
@@ -518,7 +533,7 @@ export default function B2CInvoicePage() {
                       className="w-full"
                     />
                   </div>
-                <div className="relative">
+                <div className="relative patient-dropdown-container">
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                     Patient*
                     </label>
@@ -540,13 +555,22 @@ export default function B2CInvoicePage() {
                   {/* Patient Dropdown */}
                   {showPatientDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      <div className="p-3 border-b border-gray-200">
-                    <Input
+                      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                        <Input
                           placeholder="Search patients..."
                           value={patientSearchTerm}
                           onChange={(e) => setPatientSearchTerm(e.target.value)}
                           className="w-full"
                         />
+                        <button
+                          onClick={() => setShowPatientDropdown(false)}
+                          className="ml-2 p-1 text-gray-400 hover:text-gray-600"
+                          aria-label="Close patient dropdown"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
                       <div className="py-1">
                         {loadingPatients ? (
@@ -588,8 +612,28 @@ export default function B2CInvoicePage() {
                   <h2 className="text-sm font-semibold text-[#101828]" style={{ fontFamily: 'Segoe UI' }}>
                     Outstanding Receipts
                   </h2>
-                  <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                    {outstandingPayments.length} Available
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      {outstandingPayments.length} Available
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newSelectedPayments: { [key: string]: number } = {};
+                        outstandingPayments.forEach(payment => {
+                          newSelectedPayments[payment.id] = payment.availableAmount;
+                        });
+                        setSelectedPayments(newSelectedPayments);
+                      }}
+                      className="text-xs px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded border"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={() => setSelectedPayments({})}
+                      className="text-xs px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded border"
+                    >
+                      Clear All
+                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-gray-600 mb-4">

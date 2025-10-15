@@ -16,6 +16,7 @@ interface CustomDropdownProps {
   className?: string;
   disabled?: boolean;
   'aria-label'?: string;
+  forceOpenUpwards?: boolean;
 }
 
 export const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -26,6 +27,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   className = "",
   disabled = false,
   'aria-label': ariaLabel,
+  forceOpenUpwards = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -44,6 +46,11 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   // Calculate dropdown position when opening
   const calculateDropdownPosition = () => {
     if (!buttonRef.current) return 'bottom';
+    
+    // If forceOpenUpwards is true, always open upwards
+    if (forceOpenUpwards) {
+      return 'top';
+    }
     
     const buttonRect = buttonRef.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;

@@ -201,6 +201,7 @@ export default function ClinicalNoteModal({
                 onChange={(value) => handleInputChange('category', value)}
                 placeholder="Select category"
                 disabled={loading}
+                forceOpenUpwards={true}
               />
             </div>
           </div>

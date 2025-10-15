@@ -214,6 +214,10 @@ export default function InvoicesPage() {
     return InvoiceService.formatDateForDisplay(dateString);
   };
 
+  const formatDateTime = (dateString: string) => {
+    return InvoiceService.formatDateTimeForDisplay(dateString);
+  };
+
   // Filter and sort logic
   const filteredAndSortedInvoices = useMemo(() => {
     const filtered = invoices.filter((invoice) => {
@@ -672,7 +676,7 @@ export default function InvoicesPage() {
                       className="text-left py-3 px-4 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
                       onClick={() => handleSort("date")}
                     >
-                      Date
+                      Date & Time
                       {getSortIcon("date")}
                     </th>
                     <th 
@@ -734,10 +738,16 @@ export default function InvoicesPage() {
                         />
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">
-                        {formatDate(invoice.invoiceDate)}
+                        <div>{formatDate(invoice.invoiceDate)}</div>
+                        <div className="text-xs text-gray-500">{formatDateTime(invoice.createdAt)}</div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {invoice.invoiceNumber}
+                      <td className="py-3 px-4 text-sm">
+                        <button
+                          onClick={() => window.location.href = `/billing/invoices/${invoice.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                        >
+                          {invoice.invoiceNumber}
+                        </button>
                       </td>
                       <td className="py-3 px-4">
                         <span

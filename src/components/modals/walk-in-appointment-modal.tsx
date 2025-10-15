@@ -8,6 +8,7 @@ import { appointmentService } from '@/services/appointmentService';
 import { Audiologist, CreateAppointmentData, User, Doctor, Hospital, Diagnostic, Staff } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
+import SearchableDropdown, { SearchableOption } from '@/components/ui/searchable-dropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { doctorService } from '@/services/doctorService';
 import { staffService } from '@/services/staffService';
@@ -1112,39 +1113,20 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
         <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
           Select Available Audiologist *
         </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {audiologists.map((audiologist) => (
-            <div
-              key={audiologist.id}
-              onClick={() => handleInputChange('selectedAudiologist', audiologist.id)}
-              className={cn(
-                'p-3 rounded-lg border cursor-pointer transition-all duration-200',
-                formData.selectedAudiologist === audiologist.id
-                  ? 'bg-gray-100 border-gray-300'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm" style={{ color: '#0A0A0A' }}>{audiologist.name}</div>
-                  <div className="text-xs" style={{ color: '#717182' }}>
-                    {audiologist.isAvailable ? 'Available' : 'Not Available'}
-                  </div>
-                </div>
-                <div className={cn(
-                  'w-4 h-4 rounded-full border-2',
-                  formData.selectedAudiologist === audiologist.id
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'border-gray-300'
-                )}>
-                  {formData.selectedAudiologist === audiologist.id && (
-                    <div className="w-2 h-2 bg-white rounded-full m-0.5" />
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <SearchableDropdown
+          options={audiologists.map((audiologist): SearchableOption => ({
+            id: audiologist.id,
+            name: audiologist.name,
+            subtitle: audiologist.isAvailable ? 'Available' : 'Not Available',
+            additionalInfo: 'Audiologist'
+          }))}
+          value={formData.selectedAudiologist}
+          onChange={(value) => handleInputChange('selectedAudiologist', value)}
+          placeholder="Select an audiologist"
+          searchPlaceholder="Search audiologists..."
+          maxHeight="max-h-64"
+          showCount={true}
+        />
       </div>
     </div>
   );
@@ -1219,8 +1201,13 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
             <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
               Select Doctor Referral
             </label>
-            <CustomDropdown
-              options={referralDoctors.map(d => ({ value: d.id || '', label: d.name }))}
+            <SearchableDropdown
+              options={referralDoctors.map((d): SearchableOption => ({
+                id: d.id || '',
+                name: d.name,
+                subtitle: d.specialization || 'General Practice',
+                additionalInfo: d.facilityName || 'No facility specified'
+              }))}
               value={formData.selectedReferralId}
               onChange={(value) => {
                 handleInputChange('selectedReferralId', value);
@@ -1243,7 +1230,9 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
                 }
               }}
               placeholder="Select doctor referral source"
-              aria-label="Doctor referral source"
+              searchPlaceholder="Search doctors..."
+              maxHeight="max-h-64"
+              showCount={true}
             />
             
             {/* Display doctor notes when a doctor is selected */}

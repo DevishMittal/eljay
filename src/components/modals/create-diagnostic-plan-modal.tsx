@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CreateDiagnosticAppointmentData } from '@/types';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import DatePicker from '@/components/ui/date-picker';
+import SearchableDropdown, { SearchableOption } from '@/components/ui/searchable-dropdown';
 import { diagnosticAppointmentsService } from '@/services/diagnosticAppointmentsService';
 import diagnosticsService from '@/services/diagnosticsService';
 import { appointmentService } from '@/services/appointmentService';
@@ -297,37 +298,20 @@ export default function CreateDiagnosticPlanModal({
         <label className="block text-xs font-medium text-gray-700 mb-1.5">
           Select Available Audiologist *
         </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {audiologists.map((audiologist) => (
-            <div
-              key={audiologist.id}
-              onClick={() => handleInputChange('selectedAudiologist', audiologist.id)}
-              className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                formData.selectedAudiologist === audiologist.id
-                  ? 'bg-gray-100 border-gray-300'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm text-gray-900">{audiologist.name}</div>
-                  <div className="text-xs text-gray-600">
-                    {audiologist.isAvailable ? 'Available' : 'Not Available'}
-                  </div>
-                </div>
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  formData.selectedAudiologist === audiologist.id
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'border-gray-300'
-                }`}>
-                  {formData.selectedAudiologist === audiologist.id && (
-                    <div className="w-2 h-2 bg-white rounded-full m-0.5" />
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <SearchableDropdown
+          options={audiologists.map((audiologist): SearchableOption => ({
+            id: audiologist.id,
+            name: audiologist.name,
+            subtitle: audiologist.isAvailable ? 'Available' : 'Not Available',
+            additionalInfo: 'Audiologist'
+          }))}
+          value={formData.selectedAudiologist}
+          onChange={(value) => handleInputChange('selectedAudiologist', value)}
+          placeholder="Select an audiologist"
+          searchPlaceholder="Search audiologists..."
+          maxHeight="max-h-64"
+          showCount={true}
+        />
       </div>
     </div>
   );
