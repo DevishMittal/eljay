@@ -126,7 +126,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
       } else if (i === 1) {
         label = 'Tomorrow';
       } else {
-        label = formatDate(date);
+        label = formatDate(date.toISOString().split('T')[0]);
       }
       
       dates.push({ date, label, index: i });

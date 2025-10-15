@@ -129,7 +129,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setError(errorMessage);
       console.error('Failed to load tasks:', err);
       addNotification({
-        type: 'error',
+        type: 'system_alert',
         priority: 'high',
         title: 'Error Loading Tasks',
         message: errorMessage,
@@ -188,7 +188,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 'success') {
         setTasks(prev => [...prev, response.data]);
         addNotification({
-          type: 'success',
+          type: 'task_reminder',
           priority: 'medium',
           title: 'Task Created',
           message: `Task "${taskData.title}" has been created successfully`,
@@ -202,7 +202,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setError(errorMessage);
       console.error('Failed to create task:', err);
       addNotification({
-        type: 'error',
+        type: 'system_alert',
         priority: 'high',
         title: 'Error Creating Task',
         message: errorMessage,
@@ -224,7 +224,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           task.id === id ? response.data : task
         ));
         addNotification({
-          type: 'success',
+          type: 'task_reminder',
           priority: 'medium',
           title: 'Task Updated',
           message: `Task has been updated successfully`,
@@ -238,7 +238,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setError(errorMessage);
       console.error('Failed to update task:', err);
       addNotification({
-        type: 'error',
+        type: 'system_alert',
         priority: 'high',
         title: 'Error Updating Task',
         message: errorMessage,
@@ -258,7 +258,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 'success') {
         setTasks(prev => prev.filter(task => task.id !== id));
         addNotification({
-          type: 'success',
+          type: 'task_reminder',
           priority: 'medium',
           title: 'Task Deleted',
           message: 'Task has been deleted successfully',
@@ -272,7 +272,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setError(errorMessage);
       console.error('Failed to delete task:', err);
       addNotification({
-        type: 'error',
+        type: 'system_alert',
         priority: 'high',
         title: 'Error Deleting Task',
         message: errorMessage,

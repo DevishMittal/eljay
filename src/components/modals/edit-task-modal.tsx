@@ -75,7 +75,7 @@ export default function EditTaskModal({ isOpen, onClose, task }: EditTaskModalPr
     try {
       const updateData: UpdateTaskInput = {
         title: formData.title.trim(),
-        description: formData.description.trim() || null,
+        description: formData.description.trim() || undefined,
         priority: formData.priority,
         dueDate: formData.dueDate,
         type: formData.type,
