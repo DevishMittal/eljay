@@ -171,7 +171,7 @@ body {
 }
 
 /* Custom Dropdown Styling */
-select {
+select:not(.custom-select-no-arrow) {
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
@@ -189,14 +189,33 @@ select {
   transition: all 0.15s ease-in-out;
 }
 
-select:focus {
+/* Custom select without arrow styling */
+select.custom-select-no-arrow {
+  appearance: none;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--foreground);
+  transition: all 0.15s ease-in-out;
+}
+
+select:not(.custom-select-no-arrow):focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
-select:hover {
+select:not(.custom-select-no-arrow):hover {
   border-color: #d1d5db;
+}
+
+select.custom-select-no-arrow:focus {
+  outline: none;
 }
 
 /* Custom dropdown menu styling */
