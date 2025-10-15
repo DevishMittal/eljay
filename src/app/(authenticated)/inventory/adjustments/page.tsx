@@ -173,9 +173,9 @@ export default function InventoryAdjustmentsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                   Authorized By
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-[#E5E7EB]">
@@ -222,7 +222,7 @@ export default function InventoryAdjustmentsPage() {
                       {transaction.authorizedBy || '-'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  {/* <td className="px-6 py-4">
                     <button 
                       className="text-[#4A5565] hover:text-[#101828] transition-colors"
                       aria-label="View transaction details"
@@ -232,7 +232,7 @@ export default function InventoryAdjustmentsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
@@ -280,9 +280,9 @@ export default function InventoryAdjustmentsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                   Authorized By
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-[#E5E7EB]">
@@ -327,7 +327,7 @@ export default function InventoryAdjustmentsPage() {
                       {transaction.authorizedBy || '-'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  {/* <td className="px-6 py-4">
                     <button 
                       className="text-[#4A5565] hover:text-[#101828] transition-colors"
                       aria-label="View transaction details"
@@ -337,7 +337,7 @@ export default function InventoryAdjustmentsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
@@ -390,9 +390,9 @@ export default function InventoryAdjustmentsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                 Authorized By
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-[#E5E7EB]">
@@ -454,7 +454,7 @@ export default function InventoryAdjustmentsPage() {
                     {transaction.authorizedBy || '-'}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                {/* <td className="px-6 py-4">
                   <button 
                     className="text-[#4A5565] hover:text-[#101828] transition-colors"
                     aria-label="View transaction details"
@@ -464,7 +464,7 @@ export default function InventoryAdjustmentsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                     </svg>
                   </button>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
@@ -513,9 +513,9 @@ export default function InventoryAdjustmentsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                 Authorized By
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-[#101828] uppercase tracking-wider" style={{ fontFamily: 'Segoe UI' }}>
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-[#E5E7EB]">
@@ -565,7 +565,7 @@ export default function InventoryAdjustmentsPage() {
                     {transaction.authorizedBy || '-'}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                {/* <td className="px-6 py-4">
                   <button 
                     className="text-[#4A5565] hover:text-[#101828] transition-colors"
                     aria-label="View transaction details"
@@ -575,7 +575,7 @@ export default function InventoryAdjustmentsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                     </svg>
                   </button>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
