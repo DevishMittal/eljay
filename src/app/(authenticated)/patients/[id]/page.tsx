@@ -28,6 +28,7 @@ import FileList from '@/components/ui/file-list';
 import { fileService, UploadedFile } from '@/services/fileService';
 import MedicalHistoryTimeline from '@/components/medical-history-timeline';
 import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
+import PatientTransferModal from '@/components/modals/patient-transfer-modal';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -83,6 +84,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [filesLoading, setFilesLoading] = useState(false);
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
 
@@ -1110,6 +1112,13 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         className="px-4 py-2 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         {isEditing ? 'Cancel' : 'Edit'}
+                      </button>
+                      <button
+                        onClick={() => setShowTransferModal(true)}
+                        disabled={!patient || loading}
+                        className="px-4 py-2 text-xs bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        Transfer
                       </button>
                       {isEditing && (
                         <button
@@ -2378,6 +2387,18 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         userId={patient?.id || ''}
         token={token || undefined}
         onFileUploaded={handleFileUploaded}
+      />
+
+      {/* Patient Transfer Modal */}
+      <PatientTransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        patientId={patient?.id || ''}
+        onTransferred={() => {
+          fetchPatient();
+          setSuccess('Patient transferred successfully');
+          setTimeout(() => setSuccess(null), 3000);
+        }}
       />
 
       {/* Edit Appointment Modal */}
