@@ -159,6 +159,40 @@ export default function ExpensesPage() {
     window.location.href = '/billing/expenses/add';
   };
 
+  const handleDeleteExpense = async (id: string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this expense? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      await ExpenseService.deleteExpense(id);
+      fetchExpenses();
+    } catch (err) {
+      console.error('Failed to delete expense:', err);
+      alert('Failed to delete expense. Please try again.');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedExpenses.length === 0) {
+      alert('Please select expenses to delete');
+      return;
+    }
+    const confirmed = window.confirm(`Delete ${selectedExpenses.length} selected expense(s)? This cannot be undone.`);
+    if (!confirmed) return;
+    try {
+      const tasks = selectedExpenses.map((id) => ExpenseService.deleteExpense(id));
+      const results = await Promise.allSettled(tasks);
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        alert(`Deleted ${selectedExpenses.length - failed} expense(s), ${failed} failed.`);
+      }
+      setSelectedExpenses([]);
+      fetchExpenses();
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      alert('Failed to delete selected expenses.');
+    }
+  };
+
   // Filter and sort logic
   const filteredAndSortedExpenses = useMemo(() => {
     const filtered = expenses.filter((expense) => {
@@ -391,25 +425,26 @@ export default function ExpensesPage() {
               </div>
               <div className="flex gap-2">
                 {selectedExpenses.length > 0 && (
-                  <button
-                    onClick={handleExportSelected}
-                    className="flex items-center gap-2 px-4 py-1.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 text-sm transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  <>
+                    <button
+                      onClick={handleExportSelected}
+                      className="flex items-center gap-2 px-4 py-1.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 text-sm transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Export ({selectedExpenses.length})
-                  </button>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export ({selectedExpenses.length})
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 px-4 py-1.5 border border-red-300 bg-white text-red-600 rounded-lg hover:bg-red-50 text-sm transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m-3 0h14" />
+                      </svg>
+                      Delete ({selectedExpenses.length})
+                    </button>
+                  </>
                 )}
                 <div className="relative w-64">
                   <svg
@@ -591,6 +626,15 @@ export default function ExpensesPage() {
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteExpense(expense.id)}
+                            className="text-gray-400 hover:text-red-600"
+                            aria-label={`Delete expense ${expense.expenseNumber}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m-3 0h14" />
                             </svg>
                           </button>
                         </div>
