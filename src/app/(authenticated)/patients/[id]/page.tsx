@@ -29,6 +29,8 @@ import { fileService, UploadedFile } from '@/services/fileService';
 import MedicalHistoryTimeline from '@/components/medical-history-timeline';
 import EditAppointmentModal from '@/components/modals/edit-appointment-modal';
 import PatientTransferModal from '@/components/modals/patient-transfer-modal';
+import { patientTransferService } from '@/services/patientTransferService';
+import branchService from '@/services/branchService';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -46,6 +48,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [patientBranch, setPatientBranch] = useState<string | null>(null);
+  const [availableBranches, setAvailableBranches] = useState<Array<{id: string, name: string}>>([]);
   const [procedureInfo, setProcedureInfo] = useState<PatientProcedureInfo>({
     hasHAT: false,
     hasOAE: false,
@@ -112,10 +116,40 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     }
   }, [resolvedParams.id, token]);
 
+  const detectPatientBranch = useCallback(async () => {
+    if (!resolvedParams.id || !token) return;
+    
+    try {
+      // Try to get patient from transfer endpoint to detect branch
+      const { users } = await patientTransferService.getAllPatients(token);
+      const patientData = users.find((user: any) => user.id === resolvedParams.id);
+      if (patientData?.branch) {
+        setPatientBranch(patientData.branch.name || 'Unknown Branch');
+      }
+    } catch (error) {
+      console.error('Error detecting patient branch:', error);
+    }
+  }, [resolvedParams.id, token]);
+
+  const loadAvailableBranches = useCallback(async () => {
+    if (!token) return;
+    
+    try {
+      const response = await branchService.getBranches(1, 100, token);
+      setAvailableBranches(response.data.branches.map((branch: any) => ({
+        id: branch.id,
+        name: branch.name
+      })));
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
+  }, [token]);
+
   const fetchPatient = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setPatientBranch(null);
       const response = await patientService.getPatientById(resolvedParams.id, token || undefined);
       setPatient(response.patient);
       
@@ -124,10 +158,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     } catch (err) {
       setError('Failed to fetch patient details. Please try again.');
       console.error('Error fetching patient:', err);
+      
+      // Try to detect patient branch and load available branches on error
+      await Promise.all([
+        detectPatientBranch(),
+        loadAvailableBranches()
+      ]);
     } finally {
       setLoading(false);
     }
-  }, [resolvedParams.id, token, checkProcedures]);
+  }, [resolvedParams.id, token, checkProcedures, detectPatientBranch, loadAvailableBranches]);
 
   const fetchAppointments = useCallback(async () => {
     if (!patient) return;
@@ -661,9 +701,44 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
+          <div className="text-center max-w-md">
             <div className="text-red-500 text-xl mb-4">⚠️</div>
             <p className="text-red-600 mb-4">{error || 'Patient not found'}</p>
+            
+            {patientBranch && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 text-sm mb-2">
+                  <strong>Patient Information:</strong>
+                </p>
+                <p className="text-blue-700 text-sm">
+                  This patient belongs to: <strong>{patientBranch}</strong>
+                </p>
+              </div>
+            )}
+            
+            {availableBranches.length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <p className="text-gray-700 text-sm mb-2">
+                  <strong>Available Branches:</strong>
+                </p>
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white"
+                  disabled
+                  aria-label="Available branches (read-only)"
+                >
+                  <option>Select a branch (read-only)</option>
+                  {availableBranches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-gray-500 text-xs mt-1">
+                  Contact your administrator to access patients from other branches
+                </p>
+              </div>
+            )}
+            
             <div className="space-x-3">
               <button 
                 onClick={fetchPatient}

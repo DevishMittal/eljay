@@ -576,7 +576,7 @@ const StaffPage = () => {
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Full Name
+                      Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -596,7 +596,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Role
+                      Role <span className="text-red-500">*</span>
                     </label>
                     <CustomDropdown
                       options={roleOptions}
@@ -617,7 +617,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -637,7 +637,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Phone Number
+                      Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -664,7 +664,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Country Code
+                      Country Code <span className="text-red-500">*</span>
                     </label>
                     <CustomDropdown
                       options={countryCodeOptions}
@@ -773,7 +773,7 @@ const StaffPage = () => {
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Full Name
+                      Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -786,7 +786,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Role
+                      Role <span className="text-red-500">*</span>
                     </label>
                     <CustomDropdown
                       options={roleOptions}
@@ -799,7 +799,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -812,7 +812,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Phone Number
+                      Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -825,7 +825,7 @@ const StaffPage = () => {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Country Code
+                      Country Code <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"

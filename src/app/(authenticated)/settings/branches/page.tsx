@@ -410,7 +410,7 @@ const BranchesPage = () => {
               {/* Form */}
               <div className="p-6 space-y-6">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Branch Name</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Branch Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     name="name"
@@ -444,7 +444,7 @@ const BranchesPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number <span className="text-red-500">*</span></label>
                   <input
                     type="tel"
                     name="phoneNumber"
@@ -452,10 +452,11 @@ const BranchesPage = () => {
                     onChange={handleInputChange}
                     placeholder="Enter phone number..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Address <span className="text-red-500">*</span></label>
                   <textarea
                     name="address"
                     value={formData.address}
@@ -463,6 +464,7 @@ const BranchesPage = () => {
                     placeholder="Enter address..."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                    required
                   />
                 </div>
                 <div>
@@ -561,7 +563,7 @@ const BranchesPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Phone Number <span className="text-red-500">*</span></label>
                   <input
                     type="tel"
                     name="phoneNumber"
@@ -569,10 +571,11 @@ const BranchesPage = () => {
                     onChange={handleInputChange}
                     placeholder="Enter phone number..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-sm"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Address <span className="text-red-500">*</span></label>
                   <textarea
                     name="address"
                     value={formData.address}
@@ -580,6 +583,7 @@ const BranchesPage = () => {
                     placeholder="Enter address..."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none text-sm"
+                    required
                   />
                 </div>
                 <div>

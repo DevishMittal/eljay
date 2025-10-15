@@ -379,7 +379,7 @@ const HospitalsPage = () => {
                 {/* Hospital Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Hospital Name
+                    Hospital Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -395,7 +395,7 @@ const HospitalsPage = () => {
                 {/* Primary Contact */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Primary Contact
+                    Primary Contact <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -411,7 +411,7 @@ const HospitalsPage = () => {
                 {/* Address */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Address
+                    Address <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="address"
@@ -427,7 +427,7 @@ const HospitalsPage = () => {
                 {/* Phone Number */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -483,7 +483,7 @@ const HospitalsPage = () => {
                 {/* Hospital Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Hospital Name
+                    Hospital Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -499,7 +499,7 @@ const HospitalsPage = () => {
                 {/* Primary Contact */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Primary Contact
+                    Primary Contact <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -515,7 +515,7 @@ const HospitalsPage = () => {
                 {/* Address */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Address
+                    Address <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="address"
@@ -531,7 +531,7 @@ const HospitalsPage = () => {
                 {/* Phone Number */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"

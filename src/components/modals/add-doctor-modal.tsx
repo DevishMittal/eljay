@@ -400,7 +400,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* BDM Contact */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  BDM Contact
+                  BDM Contact (optional)
                 </label>
                 <input
                   type="tel"
@@ -423,7 +423,7 @@ export default function AddDoctorModal({ isOpen, onClose, onSubmit }: AddDoctorM
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#101828' }}>
-                  Doctor Notes
+                  Doctor Notes (optional)
                 </label>
                 <textarea
                   placeholder="Enter any notes about this doctor (optional)"

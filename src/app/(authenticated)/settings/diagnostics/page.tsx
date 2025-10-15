@@ -404,7 +404,7 @@ const DiagnosticsPage = () => {
                 {/* Diagnostic Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Diagnostic Name
+                    Diagnostic Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -419,7 +419,7 @@ const DiagnosticsPage = () => {
                                  {/* Category */}
                  <div>
                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                     Category
+                     Category <span className="text-red-500">*</span>
                    </label>
                    <CustomDropdown
                      options={categoryOptions}
@@ -433,7 +433,7 @@ const DiagnosticsPage = () => {
                 {/* Price */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Price (₹)
+                    Price (₹) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -510,7 +510,7 @@ const DiagnosticsPage = () => {
                 {/* Diagnostic Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Diagnostic Name
+                    Diagnostic Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -539,7 +539,7 @@ const DiagnosticsPage = () => {
                 {/* Price */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Price (₹)
+                    Price (₹) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
