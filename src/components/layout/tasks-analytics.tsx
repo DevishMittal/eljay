@@ -260,9 +260,13 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
               </svg>
               <span className="text-xs font-medium text-foreground">Task View</span>
             </div>
-            <span className="text-xs text-black px-2 py-1 border rounded">
+            <button 
+              onClick={() => setSelectedDate(0)}
+              className="text-xs text-black px-2 py-1 border rounded hover:bg-gray-100 transition-colors"
+              aria-label="Go to today's tasks"
+            >
               Today
-            </span>
+            </button>
           </div>
         </div>
 
