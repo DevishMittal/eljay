@@ -177,7 +177,7 @@ class PatientService {
     }
   }
 
-  // Get individual user/patient by user ID
+  // Get individual user/patient by user ID (cross-branch access)
   async getPatientById(userId: string, token?: string): Promise<PatientResponse> {
     try {
       const headers: Record<string, string> = {
@@ -189,7 +189,8 @@ class PatientService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/users/${userId}`, {
+      // Use the new cross-branch patient endpoint
+      const response = await fetch(`${BASE_URL}/api/v1/patient-transfers/patients/${userId}`, {
         method: 'GET',
         headers,
       });
@@ -218,7 +219,10 @@ class PatientService {
         alternative_number: user.alternateNumber,
         countrycode: user.countrycode,
         hospital_name: user.hospitalName,
-        opipNumber: user.opipNumber // OP/IP number for B2B patients
+        opipNumber: user.opipNumber, // OP/IP number for B2B patients
+        // Include cross-branch access data if available
+        branch: (user as any).branch || null,
+        transfersMade: (user as any).transfersMade || []
       };
 
       return {

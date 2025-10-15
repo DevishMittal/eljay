@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useTask } from '@/contexts/TaskContext';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import CustomCalendar from '@/components/ui/custom-calendar';
+import { CreateTaskInput } from '@/types/task.types';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -12,14 +13,14 @@ interface AddTaskModalProps {
 }
 
 export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
-  const { addTask } = useTask();
+  const { addTask, loading } = useTask();
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'Medium' as 'Low' | 'Medium' | 'High',
+    priority: 'medium' as 'low' | 'medium' | 'high',
     dueDate: new Date().toISOString().split('T')[0],
-    taskType: 'General' as 'General' | 'Patient Care' | 'Administrative' | 'Equipment' | 'Training',
+    type: 'general' as 'general' | 'follow_up' | 'equipment_maintenance' | 'review_results' | 'schedule_appointment',
     setReminder: false,
     reminderTime: '15 minutes before' as '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before' | 'custom',
     customReminderTime: '',
@@ -51,28 +52,60 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    addTask({
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      priority: formData.priority,
-      dueDate: new Date(formData.dueDate),
-      taskType: formData.taskType,
-      completed: false,
-      setReminder: formData.setReminder,
-      reminderTime: formData.reminderTime,
-      customReminderTime: formData.customReminderTime,
-    });
+    try {
+      const taskData: CreateTaskInput = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || undefined,
+        priority: formData.priority,
+        dueDate: formData.dueDate,
+        type: formData.type,
+        status: 'pending',
+      };
 
+      // Add reminder if set
+      if (formData.setReminder) {
+        if (formData.reminderTime === 'custom' && formData.customReminderTime) {
+          taskData.reminder = formData.customReminderTime;
+        } else {
+          // Calculate reminder time based on due date and reminder setting
+          const dueDate = new Date(formData.dueDate);
+          const reminderTime = calculateReminderTime(dueDate, formData.reminderTime);
+          taskData.reminder = reminderTime?.toISOString() || null;
+        }
+      }
+
+      await addTask(taskData);
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        dueDate: new Date().toISOString().split('T')[0],
+        type: 'general',
+        setReminder: false,
+        reminderTime: '15 minutes before',
+        customReminderTime: '',
+      });
+      setErrors({});
+      onClose();
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      // Error handling is done in the context
+    }
+  };
+
+  const handleCancel = () => {
     // Reset form
     setFormData({
       title: '',
       description: '',
-      priority: 'Medium',
+      priority: 'medium',
       dueDate: new Date().toISOString().split('T')[0],
-      taskType: 'General',
+      type: 'general',
       setReminder: false,
       reminderTime: '15 minutes before',
       customReminderTime: '',
@@ -81,20 +114,34 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
     onClose();
   };
 
-  const handleCancel = () => {
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'Medium',
-      dueDate: new Date().toISOString().split('T')[0],
-      taskType: 'General',
-      setReminder: false,
-      reminderTime: '15 minutes before',
-      customReminderTime: '',
-    });
-    setErrors({});
-    onClose();
+  // Helper function to calculate reminder time
+  const calculateReminderTime = (dueDate: Date, reminderTime: string): Date | null => {
+    const reminderDate = new Date(dueDate);
+    
+    switch (reminderTime) {
+      case '5 minutes before':
+        reminderDate.setMinutes(reminderDate.getMinutes() - 5);
+        break;
+      case '15 minutes before':
+        reminderDate.setMinutes(reminderDate.getMinutes() - 15);
+        break;
+      case '30 minutes before':
+        reminderDate.setMinutes(reminderDate.getMinutes() - 30);
+        break;
+      case '1 hour before':
+        reminderDate.setHours(reminderDate.getHours() - 1);
+        break;
+      case '2 hours before':
+        reminderDate.setHours(reminderDate.getHours() - 2);
+        break;
+      case '1 day before':
+        reminderDate.setDate(reminderDate.getDate() - 1);
+        break;
+      default:
+        reminderDate.setMinutes(reminderDate.getMinutes() - 15); // Default to 15 minutes
+    }
+    
+    return reminderDate;
   };
 
   const handleDateChange = (date: Date) => {
@@ -252,12 +299,12 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
               </label>
               <CustomDropdown
                 options={[
-                  { value: 'Low', label: 'Low' },
-                  { value: 'Medium', label: 'Medium' },
-                  { value: 'High', label: 'High' }
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' }
                 ]}
                 value={formData.priority}
-                onChange={(value) => handleInputChange('priority', value as 'Low' | 'Medium' | 'High')}
+                onChange={(value) => handleInputChange('priority', value as 'low' | 'medium' | 'high')}
                 placeholder="Select priority"
                 aria-label="Select task priority"
               />
@@ -271,14 +318,14 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
             </label>
             <CustomDropdown
               options={[
-                { value: 'General', label: 'General' },
-                { value: 'Patient Care', label: 'Patient Care' },
-                { value: 'Administrative', label: 'Administrative' },
-                { value: 'Equipment', label: 'Equipment' },
-                { value: 'Training', label: 'Training' }
+                { value: 'general', label: 'General' },
+                { value: 'follow_up', label: 'Follow-up' },
+                { value: 'equipment_maintenance', label: 'Equipment Maintenance' },
+                { value: 'review_results', label: 'Review Results' },
+                { value: 'schedule_appointment', label: 'Schedule Appointment' }
               ]}
-              value={formData.taskType}
-              onChange={(value) => handleInputChange('taskType', value)}
+              value={formData.type}
+              onChange={(value) => handleInputChange('type', value as 'general' | 'follow_up' | 'equipment_maintenance' | 'review_results' | 'schedule_appointment')}
               placeholder="Select task type"
               aria-label="Select task type"
             />
@@ -362,9 +409,10 @@ export default function AddTaskModal({ isOpen, onClose }: AddTaskModalProps) {
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            disabled={loading}
+            className="px-4 py-2 text-xs font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Task
+            {loading ? 'Adding...' : 'Add Task'}
           </button>
         </div>
       </div>

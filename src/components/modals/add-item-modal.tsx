@@ -185,6 +185,12 @@ export default function AddItemModal({
         return;
       }
 
+      // Validate minimum stock is not greater than current stock
+      if (parseInt(formData.minimumStock) > parseInt(formData.currentStock)) {
+        setError("Minimum stock cannot be greater than current stock");
+        return;
+      }
+
       const payload = {
         ...formData,
         mrp: parseFloat(formData.mrp),

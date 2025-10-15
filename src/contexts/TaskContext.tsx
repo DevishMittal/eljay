@@ -2,28 +2,17 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNotification } from './NotificationContext';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'Low' | 'Medium' | 'High';
-  dueDate: Date;
-  taskType: 'General' | 'Patient Care' | 'Administrative' | 'Equipment' | 'Training';
-  completed: boolean;
-  setReminder: boolean;
-  reminderTime?: '5 minutes before' | '15 minutes before' | '30 minutes before' | '1 hour before' | '2 hours before' | '1 day before' | 'custom';
-  customReminderTime?: string;
-  createdAt: Date;
-  completedAt?: Date;
-}
+import { taskService } from '@/services/taskService';
+import { Task, CreateTaskInput, UpdateTaskInput, LegacyTask, convertNewToLegacyTask, convertLegacyToNewTask } from '@/types/task.types';
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  toggleTaskCompletion: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addTask: (task: CreateTaskInput) => Promise<void>;
+  updateTask: (id: string, updates: UpdateTaskInput) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  toggleTaskCompletion: (id: string) => Promise<void>;
   getTodayTasks: () => Task[];
   getTomorrowTasks: () => Task[];
   getOverdueTasks: () => Task[];
@@ -38,38 +27,46 @@ interface TaskContextType {
     overdue: number;
     upcoming: number;
   };
+  refreshTasks: () => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-// Helper functions
-const isToday = (date: Date): boolean => {
+// Helper functions for date comparison with ISO strings
+const isToday = (dateString: string | null): boolean => {
+  if (!dateString) return false;
   const today = new Date();
-  return date.toDateString() === today.toDateString();
+  const taskDate = new Date(dateString);
+  return taskDate.toDateString() === today.toDateString();
 };
 
-const isTomorrow = (date: Date): boolean => {
+const isTomorrow = (dateString: string | null): boolean => {
+  if (!dateString) return false;
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return date.toDateString() === tomorrow.toDateString();
+  const taskDate = new Date(dateString);
+  return taskDate.toDateString() === tomorrow.toDateString();
 };
 
-const isOverdue = (date: Date): boolean => {
+const isOverdue = (dateString: string | null): boolean => {
+  if (!dateString) return false;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const taskDate = new Date(date);
+  const taskDate = new Date(dateString);
   taskDate.setHours(0, 0, 0, 0);
   return taskDate < today;
 };
 
-const isUpcoming = (date: Date): boolean => {
+const isUpcoming = (dateString: string | null): boolean => {
+  if (!dateString) return false;
   const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const nextWeek = new Date();
   nextWeek.setDate(nextWeek.getDate() + 7);
+  const taskDate = new Date(dateString);
   
-  return date > tomorrow && date <= nextWeek;
+  return taskDate > tomorrow && taskDate <= nextWeek;
 };
 
 // Helper function to calculate reminder time
@@ -108,94 +105,40 @@ const calculateReminderTime = (dueDate: Date, reminderTime: string, customTime?:
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const { addNotification } = useNotification();
-  const [tasks, setTasks] = useState<Task[]>([
-    // Sample tasks
-    {
-      id: '1',
-      title: 'Review patient records',
-      description: 'Review and update patient records for today\'s appointments',
-      priority: 'High',
-      dueDate: new Date(), // Today
-      taskType: 'Patient Care',
-      completed: false,
-      setReminder: true,
-      reminderTime: '15 minutes before',
-      createdAt: new Date(Date.now() - 86400000), // Yesterday
-    },
-    {
-      id: '2',
-      title: 'Equipment maintenance',
-      description: 'Perform routine maintenance on audiometry equipment',
-      priority: 'Medium',
-      dueDate: new Date(), // Today
-      taskType: 'Equipment',
-      completed: true,
-      setReminder: false,
-      createdAt: new Date(Date.now() - 172800000), // 2 days ago
-      completedAt: new Date(),
-    },
-    {
-      id: '3',
-      title: 'Staff training session',
-      description: 'Conduct training on new hearing aid technology',
-      priority: 'Medium',
-      dueDate: new Date(Date.now() + 86400000), // Tomorrow
-      taskType: 'Training',
-      completed: false,
-      setReminder: true,
-      reminderTime: '1 hour before',
-      createdAt: new Date(),
-    },
-    {
-      id: '4',
-      title: 'Inventory check',
-      description: 'Check and update inventory levels',
-      priority: 'Low',
-      dueDate: new Date(Date.now() - 86400000), // Yesterday (overdue)
-      taskType: 'Administrative',
-      completed: false,
-      setReminder: false,
-      createdAt: new Date(Date.now() - 259200000), // 3 days ago
-    },
-    {
-      id: '5',
-      title: 'Follow up with patients',
-      description: 'Call patients for hearing aid adjustment feedback',
-      priority: 'High',
-      dueDate: new Date(Date.now() + 172800000), // Day after tomorrow
-      taskType: 'Patient Care',
-      completed: false,
-      setReminder: true,
-      reminderTime: '30 minutes before',
-      createdAt: new Date(),
-    },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load tasks from localStorage on mount
+  // Load tasks from API on mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem('eljay-tasks');
-    if (savedTasks) {
-      try {
-        const parsedTasks = JSON.parse(savedTasks);
-        // Convert date strings back to Date objects
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tasksWithDates = parsedTasks.map((task: any) => ({
-          ...task,
-          dueDate: new Date(task.dueDate),
-          createdAt: new Date(task.createdAt),
-          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
-        }));
-        setTasks(tasksWithDates);
-      } catch (error) {
-        console.error('Failed to load tasks from localStorage:', error);
-      }
-    }
+    loadTasks();
   }, []);
 
-  // Save tasks to localStorage whenever tasks change
-  useEffect(() => {
-    localStorage.setItem('eljay-tasks', JSON.stringify(tasks));
-  }, [tasks]);
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await taskService.getTasks({ limit: 100 }); // Get all tasks
+      if (response.status === 'success') {
+        setTasks(response.data.tasks);
+      } else {
+        throw new Error(response.message || 'Failed to load tasks');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load tasks';
+      setError(errorMessage);
+      console.error('Failed to load tasks:', err);
+      addNotification({
+        type: 'error',
+        priority: 'high',
+        title: 'Error Loading Tasks',
+        message: errorMessage,
+        isActionRequired: false,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Check for task reminders and create notifications
   useEffect(() => {
@@ -203,16 +146,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       const now = new Date();
       
       tasks.forEach(task => {
-        if (task.setReminder && task.reminderTime && !task.completed) {
-          const reminderTime = calculateReminderTime(task.dueDate, task.reminderTime, task.customReminderTime);
+        if (task.reminderAt && task.status !== 'completed') {
+          const reminderTime = new Date(task.reminderAt);
           
           // Check if reminder time has passed and we haven't created a notification yet
           if (now >= reminderTime && now <= new Date(reminderTime.getTime() + 60000)) { // Within 1 minute window
             addNotification({
               type: 'task_reminder',
-              priority: task.priority.toLowerCase() as 'low' | 'medium' | 'high',
+              priority: task.priority,
               title: 'Task Reminder',
-              message: `Task "${task.title}" is due ${task.reminderTime === 'custom' ? 'at the scheduled time' : task.reminderTime}`,
+              message: `Task "${task.title}" is due soon`,
               isActionRequired: true,
               relatedEntityId: task.id,
               relatedEntityType: 'task',
@@ -221,7 +164,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
                 taskTitle: task.title,
                 taskDescription: task.description,
                 dueDate: task.dueDate,
-                reminderTime: task.reminderTime
               }
             });
           }
@@ -238,35 +180,121 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [tasks, addNotification]);
 
-  const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    setTasks(prev => [...prev, newTask]);
+  const addTask = async (taskData: CreateTaskInput) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await taskService.createTask(taskData);
+      if (response.status === 'success') {
+        setTasks(prev => [...prev, response.data]);
+        addNotification({
+          type: 'success',
+          priority: 'medium',
+          title: 'Task Created',
+          message: `Task "${taskData.title}" has been created successfully`,
+          isActionRequired: false,
+        });
+      } else {
+        throw new Error(response.message || 'Failed to create task');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create task';
+      setError(errorMessage);
+      console.error('Failed to create task:', err);
+      addNotification({
+        type: 'error',
+        priority: 'high',
+        title: 'Error Creating Task',
+        message: errorMessage,
+        isActionRequired: false,
+      });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task => 
-      task.id === id ? { ...task, ...updates } : task
-    ));
+  const updateTask = async (id: string, updates: UpdateTaskInput) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await taskService.updateTask(id, updates);
+      if (response.status === 'success') {
+        setTasks(prev => prev.map(task => 
+          task.id === id ? response.data : task
+        ));
+        addNotification({
+          type: 'success',
+          priority: 'medium',
+          title: 'Task Updated',
+          message: `Task has been updated successfully`,
+          isActionRequired: false,
+        });
+      } else {
+        throw new Error(response.message || 'Failed to update task');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update task';
+      setError(errorMessage);
+      console.error('Failed to update task:', err);
+      addNotification({
+        type: 'error',
+        priority: 'high',
+        title: 'Error Updating Task',
+        message: errorMessage,
+        isActionRequired: false,
+      });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  const deleteTask = async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await taskService.deleteTask(id);
+      if (response.status === 'success') {
+        setTasks(prev => prev.filter(task => task.id !== id));
+        addNotification({
+          type: 'success',
+          priority: 'medium',
+          title: 'Task Deleted',
+          message: 'Task has been deleted successfully',
+          isActionRequired: false,
+        });
+      } else {
+        throw new Error(response.message || 'Failed to delete task');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete task';
+      setError(errorMessage);
+      console.error('Failed to delete task:', err);
+      addNotification({
+        type: 'error',
+        priority: 'high',
+        title: 'Error Deleting Task',
+        message: errorMessage,
+        isActionRequired: false,
+      });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleTaskCompletion = (id: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === id 
-        ? { 
-            ...task, 
-            completed: !task.completed,
-            completedAt: !task.completed ? new Date() : undefined
-          }
-        : task
-    ));
+  const toggleTaskCompletion = async (id: string) => {
+    try {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      await updateTask(id, { status: newStatus });
+    } catch (err) {
+      console.error('Failed to toggle task completion:', err);
+      // Error handling is done in updateTask
+    }
   };
 
   const getTodayTasks = () => {
@@ -278,7 +306,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getOverdueTasks = () => {
-    return tasks.filter(task => isOverdue(task.dueDate) && !task.completed);
+    return tasks.filter(task => isOverdue(task.dueDate) && task.status !== 'completed');
   };
 
   const getUpcomingTasks = () => {
@@ -286,11 +314,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getPendingTasks = () => {
-    return tasks.filter(task => !task.completed && !isOverdue(task.dueDate) && !isToday(task.dueDate));
+    return tasks.filter(task => task.status === 'pending' && !isOverdue(task.dueDate) && !isToday(task.dueDate));
   };
 
   const getDoneTasks = () => {
-    return tasks.filter(task => task.completed);
+    return tasks.filter(task => task.status === 'completed');
+  };
+
+  const refreshTasks = async () => {
+    await loadTasks();
   };
 
   const getTaskStats = () => {
@@ -301,7 +333,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     return {
       total: tasks.length,
-      completed: tasks.filter(task => task.completed).length,
+      completed: tasks.filter(task => task.status === 'completed').length,
       today: todayTasks.length,
       tomorrow: tomorrowTasks.length,
       overdue: overdueTasks.length,
@@ -311,6 +343,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const value: TaskContextType = {
     tasks,
+    loading,
+    error,
     addTask,
     updateTask,
     deleteTask,
@@ -322,6 +356,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     getPendingTasks,
     getDoneTasks,
     getTaskStats,
+    refreshTasks,
   };
 
   return (

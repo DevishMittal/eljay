@@ -1215,6 +1215,18 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           {PatientService.isProfileComplete(patient) ? 'Complete Profile' : 'Incomplete Profile'}
                         </span>
                       )}
+                      {/* Branch Information */}
+                      {patient.branch && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                          Branch: {patient.branch.name}
+                        </span>
+                      )}
+                      {/* Transfer History Indicator */}
+                      {patient.transfersMade && patient.transfersMade.length > 0 && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                          Transferred {patient.transfersMade.length} time{patient.transfersMade.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
 

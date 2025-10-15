@@ -181,6 +181,33 @@ export interface Patient {
   created_at: string;
   updated_at?: string;
   deleted_date?: string;
+  // Cross-branch access fields
+  branch?: {
+    id: string;
+    name: string;
+    address: string;
+  } | null;
+  transfersMade?: PatientTransfer[];
+}
+
+// Patient Transfer types
+export interface PatientTransfer {
+  id: string;
+  transferredAt: string;
+  reason?: string;
+  fromBranch?: {
+    id: string;
+    name: string;
+  } | null;
+  toBranch?: {
+    id: string;
+    name: string;
+  } | null;
+  transferredByUser?: {
+    id: string;
+    fullname: string;
+    email: string;
+  } | null;
 }
 
 export interface CreatePatientData {

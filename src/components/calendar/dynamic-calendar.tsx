@@ -395,7 +395,7 @@ export default function DynamicCalendar({
 
     return (
       <div
-        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-3 max-w-xs"
+        className="fixed z-50 bg-white rounded-md shadow-xl border border-gray-200 p-3 max-w-xs"
         style={{
           left: tooltipPosition.x,
           top: tooltipPosition.y,
@@ -420,7 +420,7 @@ export default function DynamicCalendar({
               />
             </div>
             <div>
-              <div className="font-semibold text-sm text-gray-900">{appointment.patient}</div>
+              <div className="font-semibold text-sm text-gray-900 !mr-10">{appointment.patient}</div>
               <div className="text-xs text-gray-500">Patient</div>
             </div>
           </div>

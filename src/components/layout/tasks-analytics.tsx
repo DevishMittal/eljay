@@ -7,7 +7,8 @@ import AddTaskModal from '@/components/modals/add-task-modal';
 import EditTaskModal from '@/components/modals/edit-task-modal';
 import DeleteConfirmationModal from '@/components/modals/delete-confirmation-modal';
 import AudiologistOverview from '@/components/layout/audiologist-overview';
-import { useTask, Task } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TaskContext';
+import { Task } from '@/types/task.types';
 
 interface NewAppointment {
   id: string;
@@ -38,6 +39,8 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
   
   const { 
     tasks,
+    loading,
+    error,
     getOverdueTasks, 
     getPendingTasks, 
     getDoneTasks,
@@ -58,9 +61,9 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
       if (!selectedDateData) return [];
       
       const selectedDateTasks = tasks.filter(task => {
+        if (!task.dueDate) return false;
         const taskDate = new Date(task.dueDate);
-        const selectedDate = new Date(selectedDateData.date);
-        return taskDate.toDateString() === selectedDate.toDateString();
+        return taskDate.toDateString() === selectedDateData.date.toDateString();
       });
       
       // Combine all relevant tasks and remove duplicates by ID
@@ -89,18 +92,20 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High':
+      case 'high':
         return 'bg-red-100 text-red-800';
-      case 'Medium':
+      case 'medium':
         return 'bg-yellow-100 text-yellow-800';
-      case 'Low':
+      case 'low':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'No date';
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric' 
@@ -137,8 +142,12 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
 
 
 
-  const handleTaskToggle = (taskId: string) => {
-    toggleTaskCompletion(taskId);
+  const handleTaskToggle = async (taskId: string) => {
+    try {
+      await toggleTaskCompletion(taskId);
+    } catch (error) {
+      console.error('Failed to toggle task completion:', error);
+    }
   };
 
   const handleEditTask = (task: Task) => {
@@ -151,11 +160,15 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
     setIsDeleteTaskModalOpen(true);
   };
 
-  const confirmDeleteTask = () => {
+  const confirmDeleteTask = async () => {
     if (selectedTask) {
-      deleteTask(selectedTask.id);
-      setIsDeleteTaskModalOpen(false);
-      setSelectedTask(null);
+      try {
+        await deleteTask(selectedTask.id);
+        setIsDeleteTaskModalOpen(false);
+        setSelectedTask(null);
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+      }
     }
   };
 
@@ -170,7 +183,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
   };
 
   const currentTasks = getCurrentTasks();
-  const completedCurrentTasks = currentTasks.filter(task => task.completed).length;
+  const completedCurrentTasks = currentTasks.filter(task => task.status === 'completed').length;
 
   return (
     <div className={cn('bg-white border-l border-border flex flex-col h-full transition-all duration-300', 
@@ -390,13 +403,13 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                   <div className="flex items-start space-x-2">
                     <input 
                       type="checkbox" 
-                      checked={task.completed}
+                      checked={task.status === 'completed'}
                       onChange={() => handleTaskToggle(task.id)}
                       className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-2 border-gray-300 rounded-full appearance-none checked:bg-green-600 checked:border-green-600 relative cursor-pointer" 
                       id={`task-${task.id}`}
-                      aria-label={`Mark ${task.title} as ${task.completed ? 'incomplete' : 'complete'}`}
+                      aria-label={`Mark ${task.title} as ${task.status === 'completed' ? 'incomplete' : 'complete'}`}
                       style={{
-                        backgroundImage: task.completed ? 'url("data:image/svg+xml,%3csvg viewBox=\'0 0 16 16\' fill=\'white\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z\'/%3e%3c/svg%3e")' : 'none',
+                        backgroundImage: task.status === 'completed' ? 'url("data:image/svg+xml,%3csvg viewBox=\'0 0 16 16\' fill=\'white\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z\'/%3e%3c/svg%3e")' : 'none',
                         backgroundSize: '12px',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat',
@@ -433,7 +446,7 @@ const TasksAnalytics: React.FC<TasksAnalyticsProps> = ({ className, onAppointmen
                       </div>
                       <h4 className={cn(
                         "text-xs font-medium",
-                        task.completed ? 'text-muted-foreground line-through' : 'text-foreground'
+                        task.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'
                       )}>
                         {task.title}
                       </h4>
