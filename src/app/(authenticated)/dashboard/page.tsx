@@ -2,22 +2,48 @@
 
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { DashboardService, DashboardAppointmentsData, DashboardDoctorReferralData, DashboardDiagnosticsData, DashboardBillingsData, DashboardInventoryData } from '@/services/dashboardService';
+import { SuperAdminDashboardService, SuperAdminDashboardData } from '@/services/superAdminDashboardService';
+// Remove Switch import - we'll create a segmented control instead
+import RevenueAnalytics from '@/components/dashboard/superadmin/RevenueAnalytics';
+import PerformanceMetrics from '@/components/dashboard/superadmin/PerformanceMetrics';
+import Operations from '@/components/dashboard/superadmin/Operations';
+import BusinessIntelligence from '@/components/dashboard/superadmin/BusinessIntelligence';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('appointments');
+  const [activeSuperAdminTab, setActiveSuperAdminTab] = useState('revenue-analytics');
   const [timeFilter, setTimeFilter] = useState('Last 30 Days');
+  const [isSuperAdminView, setIsSuperAdminView] = useState(false);
   const [appointmentsData, setAppointmentsData] = useState<DashboardAppointmentsData | null>(null);
   const [doctorReferralData, setDoctorReferralData] = useState<DashboardDoctorReferralData | null>(null);
   const [diagnosticsData, setDiagnosticsData] = useState<DashboardDiagnosticsData | null>(null);
   const [billingsData, setBillingsData] = useState<DashboardBillingsData | null>(null);
   const [inventoryData, setInventoryData] = useState<DashboardInventoryData | null>(null);
+  const [superAdminData, setSuperAdminData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Time filter options for the dropdown
+  const timeFilterOptions = [
+    { value: 'Last 7 Days', label: 'Last 7 Days' },
+    { value: 'Last 30 Days', label: 'Last 30 Days' },
+    { value: 'Last 90 Days', label: 'Last 90 Days' },
+    { value: 'This Year', label: 'This Year' }
+  ];
+
+  // SuperAdmin tabs configuration
+  const superAdminTabs = [
+    { id: 'revenue-analytics', label: 'Revenue Analytics' },
+    { id: 'performance-metrics', label: 'Performance Metrics' },
+    { id: 'operations', label: 'Operations' },
+    { id: 'business-intelligence', label: 'Business Intelligence' }
+  ];
 
   // Get date range based on time filter
   const getDateRange = () => {
@@ -147,20 +173,60 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch SuperAdmin dashboard data
+  const fetchSuperAdminData = async () => {
+    if (!isSuperAdminView) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getDateRange();
+      console.log('Fetching SuperAdmin data for:', { startDate, endDate, timeFilter });
+      
+      // Fetch all sections individually and combine the data
+      const [revenueData, performanceData, operationsData, businessIntelligenceData] = await Promise.all([
+        SuperAdminDashboardService.getSuperAdminDashboard(['revenueAnalytics'], startDate, endDate),
+        SuperAdminDashboardService.getSuperAdminDashboard(['performanceMetrics'], startDate, endDate),
+        SuperAdminDashboardService.getSuperAdminDashboard(['operations'], startDate, endDate),
+        SuperAdminDashboardService.getSuperAdminDashboard(['businessIntelligence'], startDate, endDate)
+      ]);
+      
+      // Combine the data
+      const combinedData = {
+        revenueAnalytics: revenueData.revenueAnalytics,
+        performanceMetrics: performanceData.performanceMetrics,
+        operations: operationsData.operations,
+        businessIntelligence: businessIntelligenceData.businessIntelligence,
+      };
+      
+      console.log('SuperAdmin data received:', combinedData);
+      setSuperAdminData(combinedData);
+    } catch (error) {
+      console.error('Error fetching SuperAdmin data:', error);
+      setError('Failed to fetch SuperAdmin dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch data when tab changes or time filter changes
   useEffect(() => {
-    if (activeTab === 'appointments') {
-      fetchAppointmentsData();
-    } else if (activeTab === 'doctor-referral') {
-      fetchDoctorReferralData();
-    } else if (activeTab === 'diagnostics') {
-      fetchDiagnosticsData();
-    } else if (activeTab === 'billings') {
-      fetchBillingsData();
-    } else if (activeTab === 'inventory') {
-      fetchInventoryData();
+    if (isSuperAdminView) {
+      fetchSuperAdminData();
+    } else {
+      if (activeTab === 'appointments') {
+        fetchAppointmentsData();
+      } else if (activeTab === 'doctor-referral') {
+        fetchDoctorReferralData();
+      } else if (activeTab === 'diagnostics') {
+        fetchDiagnosticsData();
+      } else if (activeTab === 'billings') {
+        fetchBillingsData();
+      } else if (activeTab === 'inventory') {
+        fetchInventoryData();
+      }
     }
-  }, [activeTab, timeFilter]);
+  }, [activeTab, timeFilter, isSuperAdminView]);
 
   // Debug logging
   useEffect(() => {
@@ -491,54 +557,194 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold" style={{ color: '#101828' }}>Dashboard</h1>
-                         <p className="text-sm mt-1" style={{ color: '#717182' }}>
-               Welcome back! Here&apos;s what&apos;s happening at your clinic.
-             </p>
+            <p className="text-sm mt-1" style={{ color: '#717182' }}>
+              {isSuperAdminView 
+                ? "Welcome back! Here's your SuperAdmin analytics overview."
+                : "Welcome back! Here's what's happening at Main Branch."
+              }
+            </p>
           </div>
-          <div className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white relative">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <select 
-              value={timeFilter} 
-              onChange={(e) => setTimeFilter(e.target.value)}
-              className="text-sm border-none outline-none bg-transparent appearance-none pr-8 cursor-pointer custom-select-no-arrow"
-              style={{ color: '#101828' }}
-              aria-label="Select time period"
-            >
-              <option>Last 30 Days</option>
-              <option>Last 7 Days</option>
-              <option>Last 90 Days</option>
-              <option>This Year</option>
-            </select>
-            {/* <svg className="w-4 h-4 absolute right-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" stroke-linejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg> */}
+          <div className="flex items-center space-x-4">
+            {/* Branch/Super Admin Toggle */}
+            <div className="bg-gray-100 rounded-lg p-1 flex">
+              <button
+                onClick={() => setIsSuperAdminView(false)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  !isSuperAdminView
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Branch
+              </button>
+              <button
+                onClick={() => setIsSuperAdminView(true)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  isSuperAdminView
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Super Admin
+              </button>
+            </div>
+            
+            {/* Date Filter */}
+            <div className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white relative">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <CustomDropdown
+                options={timeFilterOptions}
+                value={timeFilter}
+                onChange={setTimeFilter}
+                placeholder="Select time period"
+                className="text-sm border-none outline-none bg-transparent"
+                aria-label="Select time period"
+              />
+            </div>
+            
+            {/* Filters Button */}
+            <button className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span className="text-sm font-medium text-gray-700">Filters</span>
+            </button>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
-          <div className="flex">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center ${
-                  activeTab === tab.id
-                    ? 'text-[#0A0A0A] bg-white shadow-sm'
-                    : 'text-[#0A0A0A] hover:bg-white/50'
-                }`}
-                style={{ fontFamily: 'Segoe UI' }}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
+        {/* Navigation Tabs - Only show in normal view */}
+        {!isSuperAdminView && (
+          <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
+            <div className="flex">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center ${
+                    activeTab === tab.id
+                      ? 'text-[#0A0A0A] bg-white shadow-sm'
+                      : 'text-[#0A0A0A] hover:bg-white/50'
+                  }`}
+                  style={{ fontFamily: 'Segoe UI' }}
+                >
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* SuperAdmin Navigation Tabs - Only show in SuperAdmin view */}
+        {isSuperAdminView && (
+          <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
+            <div className="flex">
+              {superAdminTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveSuperAdminTab(tab.id)}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-full flex-1 justify-center ${
+                    activeSuperAdminTab === tab.id
+                      ? 'text-[#0A0A0A] bg-white shadow-sm'
+                      : 'text-[#0A0A0A] hover:bg-white/50'
+                  }`}
+                  style={{ fontFamily: 'Segoe UI' }}
+                >
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SuperAdmin Dashboard Content */}
+        {isSuperAdminView && (
+          <div className="space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-600">{error}</p>
+              </div>
+            ) : superAdminData ? (
+              <>
+                {/* Revenue Analytics Tab */}
+                {activeSuperAdminTab === 'revenue-analytics' && superAdminData.revenueAnalytics && (
+                  <RevenueAnalytics data={{
+                    hearingAidRevenueByCentre: superAdminData.revenueAnalytics.hearingAidRevenueByCentre,
+                    diagnosticsRevenueByCentre: superAdminData.revenueAnalytics.diagnosticsRevenueByCentre,
+                    branchPerformanceStats: superAdminData.revenueAnalytics.branchPerformanceStats,
+                    hearingAidVolumeByBranch: superAdminData.revenueAnalytics.hearingAidVolumeByBranch,
+                    hearingAidRevenueByBranch: superAdminData.revenueAnalytics.hearingAidRevenueByBranch,
+                  }} />
+                )}
+
+                {/* Performance Metrics Tab */}
+                {activeSuperAdminTab === 'performance-metrics' && (
+                  superAdminData.performanceMetrics ? (
+                    <PerformanceMetrics data={superAdminData.performanceMetrics} />
+                  ) : (
+                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Performance Metrics
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        No performance metrics data available for the selected time period.
+                      </p>
+                    </div>
+                  )
+                )}
+                
+                      {/* Operations Tab */}
+                      {activeSuperAdminTab === 'operations' && (
+                        superAdminData.operations ? (
+                          <Operations data={superAdminData.operations} />
+                        ) : (
+                          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              Operations
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              No operations data available for the selected time period.
+                            </p>
+                          </div>
+                        )
+                      )}
+                
+                {/* Business Intelligence Tab */}
+                {activeSuperAdminTab === 'business-intelligence' && (
+                  superAdminData.businessIntelligence ? (
+                    <BusinessIntelligence data={superAdminData.businessIntelligence} />
+                  ) : (
+                    <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Business Intelligence
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        No business intelligence data available for the selected time period.
+                      </p>
+                    </div>
+                  )
+                )}
+              </>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  SuperAdmin Dashboard
+                </h3>
+                <p className="text-sm text-gray-600">
+                  No data available for the selected time period.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Dashboard Content */}
-        {activeTab === 'appointments' && (
+        {!isSuperAdminView && activeTab === 'appointments' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -891,7 +1097,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {activeTab === 'doctor-referral' && (
+        {!isSuperAdminView && activeTab === 'doctor-referral' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -1370,7 +1576,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {activeTab === 'diagnostics' && (
+        {!isSuperAdminView && activeTab === 'diagnostics' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -1660,7 +1866,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {activeTab === 'hearing-aid' && (
+        {!isSuperAdminView && activeTab === 'hearing-aid' && (
           <div className="space-y-6">
             {/* Key Metrics Row */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -2031,7 +2237,7 @@ export default function DashboardPage() {
           </div>
                  )}
 
-        {activeTab === 'billings' && (
+        {!isSuperAdminView && activeTab === 'billings' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -2507,7 +2713,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {activeTab === 'inventory' && (
+        {!isSuperAdminView && activeTab === 'inventory' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -2925,7 +3131,7 @@ export default function DashboardPage() {
         )}
 
          {/* Placeholder for other tabs */}
-         {activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && activeTab !== 'inventory' && (
+         {!isSuperAdminView && activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && activeTab !== 'inventory' && (
           <div className="bg-white rounded-lg border border-border p-12 text-center">
             <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>
               {tabs.find(tab => tab.id === activeTab)?.label} Dashboard
