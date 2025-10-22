@@ -935,7 +935,10 @@ export default function DoctorReferralsPage() {
                     </div>
                     <div className="relative">
                       <button 
-                        onClick={() => setShowDoctorDropdown(!showDoctorDropdown)}
+                        onClick={() => {
+                          setShowDoctorDropdown(!showDoctorDropdown);
+                          setShowDateDropdown(false); // Close date dropdown when opening doctor dropdown
+                        }}
                         className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm"
                       >
                         <Filter className="w-4 h-4 mr-2"/>
@@ -982,7 +985,10 @@ export default function DoctorReferralsPage() {
                     </div>
                     <div className="relative">
                       <button 
-                        onClick={() => setShowDateDropdown(!showDateDropdown)}
+                        onClick={() => {
+                          setShowDateDropdown(!showDateDropdown);
+                          setShowDoctorDropdown(false); // Close doctor dropdown when opening date dropdown
+                        }}
                         className="bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background h-9 px-3 py-2 text-sm"
                       >
                         <Filter className="w-4 h-4 mr-2"/>
