@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNotification } from './NotificationContext';
+import { useAuth } from './AuthContext';
 import { taskService } from '@/services/taskService';
-import { Task, CreateTaskInput, UpdateTaskInput, LegacyTask, convertNewToLegacyTask, convertLegacyToNewTask } from '@/types/task.types';
+import { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task.types';
 
 interface TaskContextType {
   tasks: Task[];
@@ -59,7 +60,6 @@ const isOverdue = (dateString: string | null): boolean => {
 
 const isUpcoming = (dateString: string | null): boolean => {
   if (!dateString) return false;
-  const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const nextWeek = new Date();
@@ -69,52 +69,15 @@ const isUpcoming = (dateString: string | null): boolean => {
   return taskDate > tomorrow && taskDate <= nextWeek;
 };
 
-// Helper function to calculate reminder time
-const calculateReminderTime = (dueDate: Date, reminderTime: string, customTime?: string): Date => {
-  if (reminderTime === 'custom' && customTime) {
-    return new Date(customTime);
-  }
-  
-  const reminderDate = new Date(dueDate);
-  
-  switch (reminderTime) {
-    case '5 minutes before':
-      reminderDate.setMinutes(reminderDate.getMinutes() - 5);
-      break;
-    case '15 minutes before':
-      reminderDate.setMinutes(reminderDate.getMinutes() - 15);
-      break;
-    case '30 minutes before':
-      reminderDate.setMinutes(reminderDate.getMinutes() - 30);
-      break;
-    case '1 hour before':
-      reminderDate.setHours(reminderDate.getHours() - 1);
-      break;
-    case '2 hours before':
-      reminderDate.setHours(reminderDate.getHours() - 2);
-      break;
-    case '1 day before':
-      reminderDate.setDate(reminderDate.getDate() - 1);
-      break;
-    default:
-      reminderDate.setMinutes(reminderDate.getMinutes() - 15); // Default to 15 minutes
-  }
-  
-  return reminderDate;
-};
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const { addNotification } = useNotification();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load tasks from API on mount
-  useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -138,7 +101,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addNotification]);
+
+  // Load tasks from API only when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      loadTasks();
+    } else if (!isAuthenticated && !authLoading) {
+      // Clear tasks when user logs out
+      setTasks([]);
+      setError(null);
+    }
+  }, [isAuthenticated, authLoading, loadTasks]);
 
   // Check for task reminders and create notifications
   useEffect(() => {
@@ -321,9 +295,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return tasks.filter(task => task.status === 'completed');
   };
 
-  const refreshTasks = async () => {
+  const refreshTasks = useCallback(async () => {
     await loadTasks();
-  };
+  }, [loadTasks]);
 
   const getTaskStats = () => {
     const todayTasks = getTodayTasks();

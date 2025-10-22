@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/main-layout';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
+import { useAuth } from '@/contexts/AuthContext';
+import { OrganizationRole } from '@/types';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { DashboardService, DashboardAppointmentsData, DashboardDoctorReferralData, DashboardDiagnosticsData, DashboardBillingsData, DashboardInventoryData } from '@/services/dashboardService';
-import { SuperAdminDashboardService, SuperAdminDashboardData } from '@/services/superAdminDashboardService';
+import { DashboardService, DashboardAppointmentsData, DashboardDoctorReferralData, DashboardDiagnosticsData, DashboardBillingsData, DashboardInventoryData, DashboardHearingAidData } from '@/services/dashboardService';
+import { RoleBasedDashboardService } from '@/services/roleBasedDashboardService';
+import { SuperAdminDashboardData } from '@/services/superAdminDashboardService';
+import { useBranch } from '@/contexts/BranchContext';
+import { AuthService } from '@/services/authService';
 // Remove Switch import - we'll create a segmented control instead
 import RevenueAnalytics from '@/components/dashboard/superadmin/RevenueAnalytics';
 import PerformanceMetrics from '@/components/dashboard/superadmin/PerformanceMetrics';
@@ -16,15 +21,28 @@ import Operations from '@/components/dashboard/superadmin/Operations';
 import BusinessIntelligence from '@/components/dashboard/superadmin/BusinessIntelligence';
 
 export default function DashboardPage() {
+  const { organization, hasRole } = useAuth();
+  const { selectedBranch } = useBranch();
   const [activeTab, setActiveTab] = useState('appointments');
   const [activeSuperAdminTab, setActiveSuperAdminTab] = useState('revenue-analytics');
   const [timeFilter, setTimeFilter] = useState('Last 30 Days');
+  
+  // Role-based view logic
+  const isSuperAdmin = hasRole(OrganizationRole.SuperAdmin);
   const [isSuperAdminView, setIsSuperAdminView] = useState(false);
+
+  // Ensure non-SuperAdmin users can't access SuperAdmin view
+  useEffect(() => {
+    if (!isSuperAdmin && isSuperAdminView) {
+      setIsSuperAdminView(false);
+    }
+  }, [isSuperAdmin, isSuperAdminView]);
   const [appointmentsData, setAppointmentsData] = useState<DashboardAppointmentsData | null>(null);
   const [doctorReferralData, setDoctorReferralData] = useState<DashboardDoctorReferralData | null>(null);
   const [diagnosticsData, setDiagnosticsData] = useState<DashboardDiagnosticsData | null>(null);
   const [billingsData, setBillingsData] = useState<DashboardBillingsData | null>(null);
   const [inventoryData, setInventoryData] = useState<DashboardInventoryData | null>(null);
+  const [hearingAidData, setHearingAidData] = useState<DashboardHearingAidData | null>(null);
   const [superAdminData, setSuperAdminData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +54,41 @@ export default function DashboardPage() {
     { value: 'Last 90 Days', label: 'Last 90 Days' },
     { value: 'This Year', label: 'This Year' }
   ];
+
+  // Role-based tabs configuration
+  const getAvailableTabs = () => {
+    const allTabs = [
+      { id: 'appointments', label: 'Appointments' },
+      { id: 'doctor-referral', label: 'Doctor Referral' },
+      { id: 'diagnostics', label: 'Diagnostics' },
+      // { id: 'hearing-aid', label: 'Hearing Aid' },
+      { id: 'billings', label: 'Billings' },
+      { id: 'inventory', label: 'Inventory' }
+    ];
+
+    // Role-based tab filtering
+    if (hasRole(OrganizationRole.SuperAdmin)) {
+      return allTabs; // SuperAdmin can see all tabs
+    } else if (hasRole(OrganizationRole.Admin)) {
+      return allTabs; // Admin can see all tabs
+    } else if (hasRole([OrganizationRole.Receptionist, OrganizationRole.AdministrativeStaff])) {
+      return allTabs.filter(tab => 
+        ['appointments', 'doctor-referral', 'billings'].includes(tab.id)
+      );
+    } else if (hasRole(OrganizationRole.Audiologist)) {
+      return allTabs.filter(tab => 
+        ['appointments', 'diagnostics', 'hearing-aid'].includes(tab.id)
+      );
+    } else if (hasRole(OrganizationRole.Technician)) {
+      return allTabs.filter(tab => 
+        ['inventory', 'diagnostics'].includes(tab.id)
+      );
+    }
+    
+    return []; // Default fallback
+  };
+
+  const tabs = getAvailableTabs();
 
   // SuperAdmin tabs configuration
   const superAdminTabs = [
@@ -82,7 +135,7 @@ export default function DashboardPage() {
     try {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching appointments data for:', { startDate, endDate, timeFilter });
-      const data = await DashboardService.getAppointmentsData(startDate, endDate);
+      const data = await DashboardService.getAppointmentsData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
       console.log('Appointments data received:', data);
       setAppointmentsData(data);
     } catch (error) {
@@ -102,7 +155,7 @@ export default function DashboardPage() {
     try {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching doctor referral data for:', { startDate, endDate, timeFilter });
-      const data = await DashboardService.getDoctorReferralData(startDate, endDate);
+      const data = await DashboardService.getDoctorReferralData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
       console.log('Doctor referral data received:', data);
       setDoctorReferralData(data);
     } catch (error) {
@@ -122,7 +175,7 @@ export default function DashboardPage() {
     try {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching diagnostics data for:', { startDate, endDate, timeFilter });
-      const data = await DashboardService.getDiagnosticsData(startDate, endDate);
+      const data = await DashboardService.getDiagnosticsData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
       console.log('Diagnostics data received:', data);
       setDiagnosticsData(data);
     } catch (error) {
@@ -142,7 +195,7 @@ export default function DashboardPage() {
     try {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching billings data for:', { startDate, endDate, timeFilter });
-      const data = await DashboardService.getBillingsData(startDate, endDate);
+      const data = await DashboardService.getBillingsData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
       console.log('Billings data received:', data);
       setBillingsData(data);
     } catch (error) {
@@ -162,12 +215,32 @@ export default function DashboardPage() {
     try {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching inventory data for:', { startDate, endDate, timeFilter });
-      const data = await DashboardService.getInventoryData(startDate, endDate);
+      const data = await DashboardService.getInventoryData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
       console.log('Inventory data received:', data);
       setInventoryData(data);
     } catch (error) {
       console.error('Error fetching inventory data:', error);
       setError('Failed to fetch inventory data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch hearing aid data
+  const fetchHearingAidData = async () => {
+    if (activeTab !== 'hearing-aid') return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getDateRange();
+      console.log('Fetching hearing aid data for:', { startDate, endDate, timeFilter });
+      const data = await DashboardService.getHearingAidData(startDate, endDate, isSuperAdmin ? selectedBranch?.id : null);
+      console.log('Hearing aid data received:', data);
+      setHearingAidData(data);
+    } catch (error) {
+      console.error('Error fetching hearing aid data:', error);
+      setError('Failed to fetch hearing aid data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -183,20 +256,25 @@ export default function DashboardPage() {
       const { startDate, endDate } = getDateRange();
       console.log('Fetching SuperAdmin data for:', { startDate, endDate, timeFilter });
       
+      const { token } = AuthService.getAuthData();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       // Fetch all sections individually and combine the data
       const [revenueData, performanceData, operationsData, businessIntelligenceData] = await Promise.all([
-        SuperAdminDashboardService.getSuperAdminDashboard(['revenueAnalytics'], startDate, endDate),
-        SuperAdminDashboardService.getSuperAdminDashboard(['performanceMetrics'], startDate, endDate),
-        SuperAdminDashboardService.getSuperAdminDashboard(['operations'], startDate, endDate),
-        SuperAdminDashboardService.getSuperAdminDashboard(['businessIntelligence'], startDate, endDate)
+        RoleBasedDashboardService.getSuperAdminDashboard(token, ['revenueAnalytics'], startDate, endDate),
+        RoleBasedDashboardService.getSuperAdminDashboard(token, ['performanceMetrics'], startDate, endDate),
+        RoleBasedDashboardService.getSuperAdminDashboard(token, ['operations'], startDate, endDate),
+        RoleBasedDashboardService.getSuperAdminDashboard(token, ['businessIntelligence'], startDate, endDate)
       ]);
       
       // Combine the data
       const combinedData = {
-        revenueAnalytics: revenueData.revenueAnalytics,
-        performanceMetrics: performanceData.performanceMetrics,
-        operations: operationsData.operations,
-        businessIntelligence: businessIntelligenceData.businessIntelligence,
+        revenueAnalytics: revenueData.data?.revenueAnalytics,
+        performanceMetrics: performanceData.data?.performanceMetrics,
+        operations: operationsData.data?.operations,
+        businessIntelligence: businessIntelligenceData.data?.businessIntelligence,
       };
       
       console.log('SuperAdmin data received:', combinedData);
@@ -224,6 +302,8 @@ export default function DashboardPage() {
         fetchBillingsData();
       } else if (activeTab === 'inventory') {
         fetchInventoryData();
+      } else if (activeTab === 'hearing-aid') {
+        fetchHearingAidData();
       }
     }
   }, [activeTab, timeFilter, isSuperAdminView]);
@@ -412,71 +492,7 @@ export default function DashboardPage() {
   };
 
 
-  // Hearing Aid Data
-  const revenueDistributionData = [
-    { name: 'Direct Sales', value: 45, color: '#3B82F6' },
-    { name: 'Referral Sales', value: 35, color: '#10B981' },
-    { name: 'Online Sales', value: 20, color: '#F59E0B' }
-  ];
-
-  const monthlySalesTrendData = [
-    { month: 'Jan', units: 100 },
-    { month: 'Feb', units: 115 },
-    { month: 'Mar', units: 125 },
-    { month: 'Apr', units: 140 },
-    { month: 'May', units: 130 },
-    { month: 'Jun', units: 142 }
-  ];
-
-  const clinicPerformanceData = [
-    { name: 'Bangalore Central', sales: 4.5 },
-    { name: 'Mumbai Andheri', sales: 3.5 },
-    { name: 'Delhi CP', sales: 2.5 },
-    { name: 'Chennai T.Nagar', sales: 2.0 },
-    { name: 'Pune FC Road', sales: 1.0 }
-  ];
-
-  const hearingAidAudiologistData = [
-    { name: 'Dr. Sneha Reddy', units: 30 },
-    { name: 'Dr. Rahul Mehta', units: 28 },
-    { name: 'Dr. Kavita Singh', units: 26 },
-    { name: 'Dr. Arjun Nair', units: 20 },
-    { name: 'Dr. Meera Gupta', units: 23 }
-  ];
-
-  const hatDistributionData = [
-    { name: 'HAT (Technology)', value: 42.5, units: 64, revenue: 2.5, color: '#3B82F6' },
-    { name: 'HAA (Accessories)', value: 36.5, units: 56, revenue: 1.7, color: '#10B981' },
-    { name: 'HAF (Fitting)', value: 21, units: 22, revenue: 0.9, color: '#F59E0B' }
-  ];
-
-  const binauralDistributionData = [
-    { name: 'Binaural', value: 68, units: 97, color: '#3B82F6' },
-    { name: 'Monaural', value: 32, units: 45, color: '#F59E0B' }
-  ];
-
-  const binauralModelsData = [
-    { name: 'Phonak Audéo Paradise', units: 34 },
-    { name: 'Oticon More 1', units: 28 },
-    { name: 'Widex EVOKE 440', units: 22 },
-    { name: 'Signia Pure Charge&Go X', units: 13 }
-  ];
-
-  const monauralModelsData = [
-    { name: 'Phonak Audéo Liffe', units: 18 },
-    { name: 'Oticon Ruby 2', units: 12 },
-    { name: 'Widex MOMENT 220', units: 9 },
-    { name: 'Signia Pure 312 3X', units: 6 }
-  ];
-
-  const tabs = [
-    { id: 'appointments', label: 'Appointments' },
-    { id: 'doctor-referral', label: 'Doctor Referral' },
-    { id: 'diagnostics', label: 'Diagnostics' },
-    { id: 'hearing-aid', label: 'Hearing Aid' },
-    { id: 'billings', label: 'Billings' },
-    { id: 'inventory', label: 'Inventory' }
-  ];
+  // Hearing Aid Data - will be fetched from API
 
   // Billings Data
   const revenueBreakdownData = [
@@ -558,42 +574,44 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-semibold" style={{ color: '#101828' }}>Dashboard</h1>
             <p className="text-sm mt-1" style={{ color: '#717182' }}>
-              {isSuperAdminView 
+              {isSuperAdmin && isSuperAdminView 
                 ? "Welcome back! Here's your SuperAdmin analytics overview."
-                : "Welcome back! Here's what's happening at Main Branch."
+                : `Welcome back, ${organization?.name || 'User'}! Here's what's happening at ${organization?.branchName || 'your branch'}.`
               }
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Branch/Super Admin Toggle */}
-            <div className="bg-gray-100 rounded-lg p-1 flex">
-              <button
-                onClick={() => setIsSuperAdminView(false)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  !isSuperAdminView
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Branch
-              </button>
-              <button
-                onClick={() => setIsSuperAdminView(true)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  isSuperAdminView
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Super Admin
-              </button>
-            </div>
+            {/* Branch/Super Admin Toggle - Only visible to SuperAdmin */}
+            {isSuperAdmin && (
+              <div className="bg-gray-100 rounded-lg p-1 flex">
+                <button
+                  onClick={() => setIsSuperAdminView(false)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    !isSuperAdminView
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Branch
+                </button>
+                <button
+                  onClick={() => setIsSuperAdminView(true)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    isSuperAdminView
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Super Admin
+                </button>
+              </div>
+            )}
             
             {/* Date Filter */}
-            <div className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white relative">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center space-x-2 px-4 py-3  rounded-lg bg-white relative">
+              {/* <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              </svg> */}
               <CustomDropdown
                 options={timeFilterOptions}
                 value={timeFilter}
@@ -605,17 +623,17 @@ export default function DashboardPage() {
             </div>
             
             {/* Filters Button */}
-            <button className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+            {/* <button className="flex items-center space-x-2 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               <span className="text-sm font-medium text-gray-700">Filters</span>
-            </button>
+            </button> */}
           </div>
         </div>
 
-        {/* Navigation Tabs - Only show in normal view */}
-        {!isSuperAdminView && (
+        {/* Navigation Tabs - Only show in normal view or for non-SuperAdmin users */}
+        {(!isSuperAdmin || !isSuperAdminView) && (
           <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
             <div className="flex">
               {tabs.map((tab) => (
@@ -636,8 +654,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* SuperAdmin Navigation Tabs - Only show in SuperAdmin view */}
-        {isSuperAdminView && (
+        {/* SuperAdmin Navigation Tabs - Only show in SuperAdmin view and for SuperAdmin users */}
+        {isSuperAdmin && isSuperAdminView && (
           <div className="bg-[#ECECF0] rounded-full p-1 mb-6">
             <div className="flex">
               {superAdminTabs.map((tab) => (
@@ -658,8 +676,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* SuperAdmin Dashboard Content */}
-        {isSuperAdminView && (
+        {/* SuperAdmin Dashboard Content - Only accessible to SuperAdmin users */}
+        {isSuperAdmin && isSuperAdminView && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center h-64">
@@ -743,8 +761,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Dashboard Content */}
-        {!isSuperAdminView && activeTab === 'appointments' && (
+        {/* Dashboard Content - Show for non-SuperAdmin users or when not in SuperAdmin view */}
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'appointments' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -1097,7 +1115,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!isSuperAdminView && activeTab === 'doctor-referral' && (
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'doctor-referral' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -1576,7 +1594,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!isSuperAdminView && activeTab === 'diagnostics' && (
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'diagnostics' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -1866,266 +1884,307 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!isSuperAdminView && activeTab === 'hearing-aid' && (
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'hearing-aid' && (
           <div className="space-y-6">
-            {/* Key Metrics Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                             {/* Hearing Aids Sold */}
-               <div className="bg-white rounded-lg border border-border p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Hearing Aids Sold</h3>
-                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
-                 </div>
-                 <div className="mb-4">
-                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>142</div>
-                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total hearing aids sold this month.</div>
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 18% vs last month</span>
-                     <div className="flex items-center text-sm text-green-600">
-                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                       </svg>
-                       Trending up
-                     </div>
-                   </div>
-                   <div className="w-full bg-gray-200 rounded-full h-2">
-                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '87.3%' }}></div>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-green-600">125</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>ON TIME DELIVERY</div>
-                   </div>
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-red-600">17</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>LATE DELIVERY</div>
-                   </div>
-                 </div>
-               </div>
-
-               {/* Sales Revenue */}
-               <div className="bg-white rounded-lg border border-border p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Sales Revenue</h3>
-                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
-                 </div>
-                 <div className="mb-4">
-                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹18,52,500</div>
-                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Total revenue from hearing aid sales.</div>
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 22% vs last month</span>
-                     <div className="flex items-center text-sm text-green-600">
-                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                       </svg>
-                       Strong growth
-                     </div>
-                   </div>
-                   <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-green-600">₹17,50,000</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
-                   </div>
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-blue-600">₹1,02,500</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
-                   </div>
-                 </div>
-               </div>
-
-                             {/* Average ASP */}
-               <div className="bg-white rounded-lg border border-border p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Average ASP</h3>
-                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
-                 </div>
-                 <div className="mb-4">
-                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>₹13,046</div>
-                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Average selling price per hearing aid.</div>
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 3% vs last month</span>
-                     <div className="flex items-center text-sm text-green-600">
-                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                       </svg>
-                       Price increase
-                     </div>
-                   </div>
-                   <div className="w-full bg-gray-200 rounded-full h-2">
-                     <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-green-600">₹12,650</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>LAST MONTH</div>
-                   </div>
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-blue-600">₹396</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>INCREASE</div>
-                   </div>
-                 </div>
-               </div>
-
-               {/* Binaural Ratio */}
-               <div className="bg-white rounded-lg border border-border p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Binaural Ratio</h3>
-                   <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
-                 </div>
-                 <div className="mb-4">
-                   <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>68%</div>
-                   <div className="text-sm mb-2" style={{ color: '#717182' }}>Percentage of binaural fittings.</div>
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-sm font-medium" style={{ color: '#101828' }}>97 binaural vs 45 monaural</span>
-                     <div className="flex items-center text-sm text-green-600">
-                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                       </svg>
-                       Target: 70%
-                     </div>
-                   </div>
-                   <div className="w-full bg-gray-200 rounded-full h-2">
-                     <div className="bg-blue-500 h-2 rounded-full" style={{ width: '68%' }}></div>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-green-600">97</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>BINAURAL</div>
-                   </div>
-                   <div className="text-center">
-                     <div className="text-lg font-bold text-orange-600">45</div>
-                     <div className="text-xs" style={{ color: '#717182' }}>MONAURAL</div>
-                   </div>
-                 </div>
-               </div>
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Hearing Aid Sales Trends */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Sales Trends</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly sales performance</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={monthlySalesTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="units" stroke="#3B82F6" strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
+            {loading && (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Loading hearing aid data...</span>
               </div>
-
-              {/* Hearing Aid Distribution */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Distribution</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of hearing aid types</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={hatDistributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {hatDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+            )}
+            
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Error loading hearing aid data</h3>
+                    <div className="mt-2 text-sm text-red-700">{error}</div>
+                  </div>
+                </div>
               </div>
+            )}
 
-              {/* Binaural vs Monaural Distribution */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural vs Monaural Distribution</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural vs monaural hearing aids</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={binauralDistributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {binauralDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            {!loading && !error && hearingAidData && (
+              <>
+                {/* Key Metrics Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Hearing Aids Sold */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Hearing Aids Sold</h3>
+                      <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                        {hearingAidData.overview?.totalSold || 0}
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#717182' }}>Total hearing aids sold this month.</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 18% vs last month</span>
+                        <div className="flex items-center text-sm text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                          Trending up
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '87.3%' }}></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">
+                          {hearingAidData.overview?.onTimeDelivery || 0}
+                        </div>
+                        <div className="text-xs" style={{ color: '#717182' }}>ON TIME DELIVERY</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-red-600">
+                          {hearingAidData.overview?.lateDelivery || 0}
+                        </div>
+                        <div className="text-xs" style={{ color: '#717182' }}>LATE DELIVERY</div>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Middle Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Binaural Models Distribution */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural Models Distribution</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural hearing aid models</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={binauralModelsData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="units"
-                    >
-                      {binauralModelsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                  {/* Sales Revenue */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Sales Revenue</h3>
+                      <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                        ₹{hearingAidData.overview?.totalRevenue?.toLocaleString() || '0'}
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#717182' }}>Total revenue from hearing aid sales.</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 22% vs last month</span>
+                        <div className="flex items-center text-sm text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                          Strong growth
+                        </div>
+                      </div>
+                      <div className="w-full bg-orange-500 h-2 rounded-full" style={{ width: '87.5%' }}></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">
+                          ₹{hearingAidData.overview?.collectedAmount?.toLocaleString() || '0'}
+                        </div>
+                        <div className="text-xs" style={{ color: '#717182' }}>COLLECTED</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-blue-600">
+                          ₹{hearingAidData.overview?.pendingAmount?.toLocaleString() || '0'}
+                        </div>
+                        <div className="text-xs" style={{ color: '#717182' }}>PENDING</div>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Monaural Models Distribution */}
-              <div className="bg-white rounded-lg border border-border p-6">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Monaural Models Distribution</h3>
-                <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of monaural hearing aid models</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={monauralModelsData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="units"
-                    >
-                      {monauralModelsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                  {/* Average ASP */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Average ASP</h3>
+                      <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                        ₹{hearingAidData.overview?.averageSellingPrice?.toLocaleString() || '0'}
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#717182' }}>Average selling price per hearing aid.</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium" style={{ color: '#101828' }}>↑ 3% vs last month</span>
+                        <div className="flex items-center text-sm text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                          Price increase
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">₹12,650</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>LAST MONTH</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-blue-600">₹396</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>INCREASE</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Binaural Ratio */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold" style={{ color: '#101828' }}>Binaural Ratio</h3>
+                      <span className="text-sm" style={{ color: '#717182' }}>This Month</span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold mb-2" style={{ color: '#101828' }}>
+                        {hearingAidData.overview?.binauralRatio || 0}%
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#717182' }}>Percentage of binaural fittings.</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium" style={{ color: '#101828' }}>97 binaural vs 45 monaural</span>
+                        <div className="flex items-center text-sm text-green-600">
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                          </svg>
+                          Target: 70%
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${hearingAidData.overview?.binauralRatio || 0}%` }}></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-600">97</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>BINAURAL</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-orange-600">45</div>
+                        <div className="text-xs" style={{ color: '#717182' }}>MONAURAL</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Hearing Aid Sales Trends */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Sales Trends</h3>
+                    <p className="text-sm mb-4" style={{ color: '#717182' }}>Monthly sales performance</p>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={hearingAidData.charts?.salesTrend || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="units" stroke="#3B82F6" strokeDasharray="5 5" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Hearing Aid Distribution */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Hearing Aid Distribution</h3>
+                    <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of hearing aid types</p>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={hearingAidData.charts?.distributionByType || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {(hearingAidData.charts?.distributionByType || []).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Binaural vs Monaural Distribution */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural vs Monaural Distribution</h3>
+                    <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural vs monaural hearing aids</p>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={hearingAidData.charts?.binauralDistribution || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {(hearingAidData.charts?.binauralDistribution || []).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Middle Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Binaural Models Distribution */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Binaural Models Distribution</h3>
+                    <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of binaural hearing aid models</p>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={hearingAidData.charts?.binauralModels || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="units"
+                        >
+                          {(hearingAidData.charts?.binauralModels || []).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Monaural Models Distribution */}
+                  <div className="bg-white rounded-lg border border-border p-6">
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>Monaural Models Distribution</h3>
+                    <p className="text-sm mb-4" style={{ color: '#717182' }}>Breakdown of monaural hearing aid models</p>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={hearingAidData.charts?.monauralModels || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="units"
+                        >
+                          {(hearingAidData.charts?.monauralModels || []).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
 
             {/* Bottom Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2233,11 +2292,13 @@ export default function DashboardPage() {
                   <div className="text-xs text-purple-600">Target: +10% monthly</div>
                 </div>
               </div>
-            </div>
+                </div>
+              </>
+            )}
           </div>
-                 )}
+        )}
 
-        {!isSuperAdminView && activeTab === 'billings' && (
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'billings' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -2713,7 +2774,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!isSuperAdminView && activeTab === 'inventory' && (
+        {(!isSuperAdmin || !isSuperAdminView) && activeTab === 'inventory' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
@@ -3131,7 +3192,7 @@ export default function DashboardPage() {
         )}
 
          {/* Placeholder for other tabs */}
-         {!isSuperAdminView && activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && activeTab !== 'inventory' && (
+         {(!isSuperAdmin || !isSuperAdminView) && activeTab !== 'appointments' && activeTab !== 'doctor-referral' && activeTab !== 'diagnostics' && activeTab !== 'hearing-aid' && activeTab !== 'billings' && activeTab !== 'inventory' && (
           <div className="bg-white rounded-lg border border-border p-12 text-center">
             <h3 className="text-lg font-semibold mb-2" style={{ color: '#101828' }}>
               {tabs.find(tab => tab.id === activeTab)?.label} Dashboard

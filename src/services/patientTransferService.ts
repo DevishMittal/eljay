@@ -15,11 +15,21 @@ export type BranchOption = {
 };
 
 class PatientTransferService {
-  async getAllPatients(token?: string): Promise<{ users: any[] }>{
+  async getAllPatients(token?: string, branchId?: string | null): Promise<{ users: any[] }>{
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BASE_URL}/api/v1/patient-transfers/patients`, {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (branchId) {
+      queryParams.append('branchId', branchId);
+    }
+
+    const url = queryParams.toString() 
+      ? `${BASE_URL}/api/v1/patient-transfers/patients?${queryParams.toString()}`
+      : `${BASE_URL}/api/v1/patient-transfers/patients`;
+
+    const res = await fetch(url, {
       method: 'GET',
       headers,
     });

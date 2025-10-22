@@ -132,26 +132,29 @@ export interface BusinessIntelligenceData {
     hearing: number;
     pediatric: number;
     vertigo: number;
+    total: number;
   }>;
   testRevenueByBranch: Array<{
     branch: string;
     hearing: number;
     pediatric: number;
     vertigo: number;
+    total: number;
   }>;
   branchPerformance: Array<{
     branch: string;
-    hearingVol: number;
-    pediatricVol: number;
-    vertigoVol: number;
-    hearingRev: number;
-    pediatricRev: number;
-    vertigoRev: number;
+    hearingVolume: number;
+    pediatricVolume: number;
+    vertigoVolume: number;
+    hearingRevenue: number;
+    pediatricRevenue: number;
+    vertigoRevenue: number;
     totalRevenue: number;
   }>;
   diagnosticServices: Array<{
     service: string;
     revenue: number;
+    category: string;
   }>;
   serviceAnalysis: {
     serviceName: string;
@@ -160,6 +163,7 @@ export interface BusinessIntelligenceData {
     branchDistribution: Array<{
       branch: string;
       revenue: number;
+      percentage: number;
     }>;
   };
   businessMetrics: {

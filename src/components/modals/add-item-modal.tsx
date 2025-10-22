@@ -525,7 +525,7 @@ export default function AddItemModal({
                   className="block text-xs font-medium text-[#101828] mb-2"
                   style={{ fontFamily: "Segoe UI" }}
                 >
-                  Expiry Date
+                  Expiry Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <button

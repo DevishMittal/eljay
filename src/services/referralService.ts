@@ -4,7 +4,7 @@ const BASE_URL = 'https://eljay-api.vizdale.com';
 
 class ReferralService {
   // Get all referral sources
-  async getReferrals(token?: string): Promise<ReferralSourceResponse> {
+  async getReferrals(token?: string, branchId?: string | null): Promise<ReferralSourceResponse> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -15,7 +15,17 @@ class ReferralService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/referrals`, {
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const url = queryParams.toString() 
+        ? `${BASE_URL}/api/v1/referrals?${queryParams.toString()}`
+        : `${BASE_URL}/api/v1/referrals`;
+
+      const response = await fetch(url, {
         method: 'GET',
         headers,
       });

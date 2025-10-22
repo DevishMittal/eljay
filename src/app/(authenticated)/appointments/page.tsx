@@ -7,8 +7,9 @@ import DynamicCalendar from '@/components/calendar/dynamic-calendar';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { Appointment as CalendarAppointment, CalendarView } from '@/utils/calendar';
 import { Appointment } from '@/types';
-import { appointmentService } from '@/services/appointmentService';
+import appointmentServiceWithBranch from '@/services/appointmentServiceWithBranch';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 
 // Define the type for new appointments from modal
 interface NewAppointment {
@@ -27,6 +28,7 @@ interface NewAppointment {
 
 export default function AppointmentsPage() {
   const { token } = useAuth();
+  const { branchId } = useBranchFilter();
   // State for walk-in appointment modal
   const [isWalkInModalOpen, setIsWalkInModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -42,13 +44,13 @@ export default function AppointmentsPage() {
   // Fetch appointments from API
   useEffect(() => {
     fetchAppointments();
-  }, [currentPage, token]);
+  }, [currentPage, token, branchId]);
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await appointmentService.getAppointments(currentPage, 50, token || undefined); // Get more appointments for calendar
+      const response = await appointmentServiceWithBranch.getAppointments(currentPage, 50, token || undefined, branchId); // Get more appointments for calendar
       setApiAppointments(response.data.appointments);
       
       // Convert API appointments to calendar format

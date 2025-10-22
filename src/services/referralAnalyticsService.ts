@@ -1,7 +1,5 @@
-import { ReferralSource, Appointment, Invoice } from '@/types';
-import { appointmentService } from './appointmentService';
-import InvoiceService from './invoiceService';
-import { calculateCommission, calculateTotalCommission, formatCurrency } from '@/utils/commissionUtils';
+import { ReferralSource, Appointment } from '@/types';
+import { calculateCommission } from '@/utils/commissionUtils';
 
 export interface ReferralAnalytics {
   referralId: string;
@@ -56,10 +54,23 @@ class ReferralAnalyticsService {
   /**
    * Get comprehensive referral analytics for all doctor referrals
    */
-  async getReferralAnalytics(token?: string): Promise<ReferralAnalytics[]> {
+  async getReferralAnalytics(token?: string, branchId?: string | null): Promise<ReferralAnalytics[]> {
     try {
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const url = queryParams.toString() 
+        ? `${this.BASE_URL}/api/v1/referrals?${queryParams.toString()}`
+        : `${this.BASE_URL}/api/v1/referrals`;
+
+      console.log('ReferralAnalyticsService - Fetching referrals from URL:', url);
+      console.log('ReferralAnalyticsService - BranchId:', branchId);
+
       // Get all referrals
-      const referralsResponse = await fetch(`${this.BASE_URL}/api/v1/referrals`, {
+      const referralsResponse = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -72,6 +83,13 @@ class ReferralAnalyticsService {
       }
 
       const referralsData = await referralsResponse.json();
+      
+      // Check if the response has the expected structure
+      if (!referralsData || !referralsData.data || !Array.isArray(referralsData.data)) {
+        console.warn('Unexpected referrals API response structure:', referralsData);
+        return [];
+      }
+      
       const doctorReferrals = referralsData.data.filter((ref: ReferralSource) => ref.type === 'doctor');
 
       // Get appointments for each doctor referral
@@ -107,19 +125,29 @@ class ReferralAnalyticsService {
       let appointments: Appointment[] = [];
       if (appointmentsResponse.ok) {
         const appointmentsData = await appointmentsResponse.json();
-        appointments = appointmentsData.data?.appointments || [];
+        
+        // Handle different possible response structures
+        if (appointmentsData && appointmentsData.data) {
+          if (Array.isArray(appointmentsData.data)) {
+            appointments = appointmentsData.data;
+          } else if (appointmentsData.data.appointments && Array.isArray(appointmentsData.data.appointments)) {
+            appointments = appointmentsData.data.appointments;
+          }
+        } else if (Array.isArray(appointmentsData)) {
+          appointments = appointmentsData;
+        }
       }
 
       // Calculate financial metrics
       const referralAppointments: ReferralAppointment[] = appointments.map(appointment => {
-        const procedures = appointment.procedures.split(',').map(p => p.trim());
+        const procedures = appointment.procedures ? appointment.procedures.split(',').map(p => p.trim()) : [];
         const totalAmount = this.calculateAppointmentAmount(procedures);
         const commission = calculateCommission(totalAmount).commissionAmount;
 
         return {
           id: appointment.id,
           date: appointment.appointmentDate,
-          patientName: appointment.user.fullname,
+          patientName: appointment.user?.fullname || 'Unknown Patient',
           procedures,
           amount: totalAmount,
           commission,
@@ -179,9 +207,9 @@ class ReferralAnalyticsService {
   /**
    * Get referral trends for charts
    */
-  async getReferralTrends(token?: string): Promise<ReferralTrends[]> {
+  async getReferralTrends(token?: string, branchId?: string | null): Promise<ReferralTrends[]> {
     try {
-      const analytics = await this.getReferralAnalytics(token);
+      const analytics = await this.getReferralAnalytics(token, branchId);
       
       // Group by month
       const monthlyData: { [key: string]: { referrals: number; revenue: number; commission: number } } = {};
@@ -217,9 +245,9 @@ class ReferralAnalyticsService {
   /**
    * Get top performing doctors
    */
-  async getTopPerformingDoctors(token?: string, limit: number = 5): Promise<TopPerformingDoctor[]> {
+  async getTopPerformingDoctors(token?: string, branchId?: string | null, limit: number = 5): Promise<TopPerformingDoctor[]> {
     try {
-      const analytics = await this.getReferralAnalytics(token);
+      const analytics = await this.getReferralAnalytics(token, branchId);
       
       const doctorPerformance = analytics.map(analyticsItem => ({
         doctorId: analyticsItem.referralId,
@@ -242,9 +270,9 @@ class ReferralAnalyticsService {
   /**
    * Generate commission statements
    */
-  async generateCommissionStatements(token?: string): Promise<CommissionStatement[]> {
+  async generateCommissionStatements(token?: string, branchId?: string | null): Promise<CommissionStatement[]> {
     try {
-      const analytics = await this.getReferralAnalytics(token);
+      const analytics = await this.getReferralAnalytics(token, branchId);
       const currentDate = new Date();
       const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       
@@ -269,7 +297,7 @@ class ReferralAnalyticsService {
   /**
    * Get summary statistics
    */
-  async getSummaryStats(token?: string): Promise<{
+  async getSummaryStats(token?: string, branchId?: string | null): Promise<{
     totalReferrals: number;
     totalDoctorReferrals: number;
     totalRevenue: number;
@@ -278,8 +306,18 @@ class ReferralAnalyticsService {
     paidThisMonth: number;
   }> {
     try {
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const url = queryParams.toString() 
+        ? `${this.BASE_URL}/api/v1/referrals?${queryParams.toString()}`
+        : `${this.BASE_URL}/api/v1/referrals`;
+
       // Get actual referral count from API
-      const referralsResponse = await fetch(`${this.BASE_URL}/api/v1/referrals`, {
+      const referralsResponse = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -292,13 +330,19 @@ class ReferralAnalyticsService {
 
       if (referralsResponse.ok) {
         const referralsData = await referralsResponse.json();
-        const referrals = referralsData.data || [];
-        totalReferrals = referrals.length;
-        totalDoctorReferrals = referrals.filter((ref: ReferralSource) => ref.type === 'doctor').length;
+        
+        // Check if the response has the expected structure
+        if (referralsData && referralsData.data && Array.isArray(referralsData.data)) {
+          const referrals = referralsData.data;
+          totalReferrals = referrals.length;
+          totalDoctorReferrals = referrals.filter((ref: ReferralSource) => ref.type === 'doctor').length;
+        } else {
+          console.warn('Unexpected referrals API response structure in getSummaryStats:', referralsData);
+        }
       }
 
       // Get analytics for financial calculations
-      const analytics = await this.getReferralAnalytics(token);
+      const analytics = await this.getReferralAnalytics(token, branchId);
       const totalRevenue = analytics.reduce((sum, a) => sum + a.totalRevenue, 0);
       const totalCommission = analytics.reduce((sum, a) => sum + a.totalCommission, 0);
       

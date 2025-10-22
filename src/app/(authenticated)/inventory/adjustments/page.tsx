@@ -34,17 +34,14 @@ export default function InventoryAdjustmentsPage() {
       setError(null);
       const response = await InventoryService.getInventoryTransactions(page, limit);
       
-      console.log('API Response:', response); // Debug log
       
       // The API returns { data: { transactions: [], pagination: {} } }
       // The service extracts data.data, so response should have transactions and pagination
       if (response && 'transactions' in response && Array.isArray(response.transactions)) {
-        console.log('Using transactions structure:', response.transactions.length, 'items');
         setTransactions(response.transactions as InventoryTransaction[]);
         setPagination(response.pagination);
       } else if (response && 'items' in response && Array.isArray(response.items)) {
         // Fallback to items structure if needed
-        console.log('Using items structure:', response.items.length, 'items');
         setTransactions(response.items as InventoryTransaction[]);
         setPagination(response.pagination);
       } else {

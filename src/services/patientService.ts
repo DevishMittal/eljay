@@ -119,7 +119,7 @@ class PatientService {
   }
 
   // Get all users as patients
-  async getPatients(page: number = 1, limit: number = 10, token?: string): Promise<PatientsResponse> {
+  async getPatients(page: number = 1, limit: number = 10, token?: string, branchId?: string | null): Promise<PatientsResponse> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -130,7 +130,18 @@ class PatientService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/users?page=${page}&limit=${limit}`, {
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      // Add branchId if provided
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/users?${queryParams.toString()}`, {
         method: 'GET',
         headers,
       });
@@ -158,7 +169,9 @@ class PatientService {
         alternative_number: user.alternateNumber,
         countrycode: user.countrycode,
         hospital_name: user.hospitalName,
-        opipNumber: user.opipNumber // OP/IP number for B2B patients
+        opipNumber: user.opipNumber, // OP/IP number for B2B patients
+        branchId: user.branchId,
+        branchName: user.branch?.name
       }));
 
       return {

@@ -7,6 +7,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationDropdown from '@/components/ui/notification-dropdown';
 import SearchResults from '@/components/ui/search-results';
+import BranchDropdown from '@/components/ui/branch-dropdown';
 import { searchService, SearchResult } from '@/services/searchService';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -143,8 +144,10 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
           </div>
         </div>
 
-        {/* Right Side - Notifications and Profile */}
+        {/* Right Side - Branch Dropdown, Notifications and Profile */}
         <div className="flex items-center space-x-4">
+          {/* Branch Dropdown - Only visible for SuperAdmin and Admin */}
+          <BranchDropdown />
           {/* Bell Icon with Notification Badge */}
           <div className="relative">
             <button 

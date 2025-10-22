@@ -8,9 +8,9 @@ import Image from 'next/image';
 import MainLayout from '@/components/layout/main-layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrganizationService } from '@/services/organizationService';
+import { Organization } from '@/types';
 
-interface Organization {
-  id: string;
+interface FormData {
   name: string;
   email: string;
   phoneNumber: string;
@@ -18,7 +18,7 @@ interface Organization {
   website: string;
   gstNumber: string;
   address: string;
-  logo: string;
+  password: string;
 }
 
 const SettingsPage = () => {
@@ -38,7 +38,7 @@ const SettingsPage = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     phoneNumber: '',
@@ -78,8 +78,8 @@ const SettingsPage = () => {
           email: response.data.email,
           phoneNumber: response.data.phoneNumber,
           countrycode: response.data.countrycode,
-          website: response.data.website,
-          gstNumber: response.data.gstNumber,
+          website: response.data.website || '',
+          gstNumber: response.data.gstNumber || '',
           address: response.data.address,
           password: '' // Don't populate password from response
         });
@@ -161,8 +161,8 @@ const SettingsPage = () => {
           email: response.data.email,
           phoneNumber: response.data.phoneNumber,
           countrycode: response.data.countrycode,
-          website: response.data.website,
-          gstNumber: response.data.gstNumber,
+          website: response.data.website || '',
+          gstNumber: response.data.gstNumber || '',
           address: response.data.address,
           password: '' // Clear password after successful save
         });
@@ -193,8 +193,8 @@ const SettingsPage = () => {
         email: organization.email,
         phoneNumber: organization.phoneNumber,
         countrycode: organization.countrycode,
-        website: organization.website,
-        gstNumber: organization.gstNumber,
+        website: organization.website || '',
+        gstNumber: organization.gstNumber || '',
         address: organization.address,
         password: '' // Clear password on cancel
       });
@@ -481,7 +481,7 @@ const SettingsPage = () => {
                   {(logoPreview || (organization.logo && organization.logo !== 'https://example.com/logo.png')) && !imageError ? (
                     <div className="w-24 h-24 bg-[#f97316] rounded-full flex items-center justify-center relative overflow-hidden">
                       <Image
-                        src={logoPreview || organization.logo}
+                        src={logoPreview || organization.logo || ''}
                         alt="Organization Logo"
                         width={96}
                         height={96}

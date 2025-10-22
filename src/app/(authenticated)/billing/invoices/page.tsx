@@ -7,6 +7,7 @@ import { cn } from "@/utils";
 import InvoiceService from "@/services/invoiceService";
 import { Invoice } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { useRouter } from "next/navigation";
 import { FileText, AlertCircle, CheckCircle, PlusIcon } from "lucide-react";
 import CustomDropdown from "@/components/ui/custom-dropdown";
@@ -14,6 +15,7 @@ import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport
 
 export default function InvoicesPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const { branchId } = useBranchFilter();
   const router = useRouter();
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,7 +47,7 @@ export default function InvoicesPage() {
 
     try {
       setLoading(true);
-      const response = await InvoiceService.getInvoices();
+      const response = await InvoiceService.getInvoices(1, 100, branchId);
       setInvoices(response.data.invoices);
       setSummary(response.data.summary);
       setError(null);
@@ -81,7 +83,7 @@ export default function InvoicesPage() {
     if (token) {
       fetchInvoices();
     }
-  }, [token, fetchInvoices, isAuthenticated, router, authLoading]);
+  }, [token, fetchInvoices, isAuthenticated, router, authLoading, branchId]);
 
   const handleSelectAll = () => {
     if (selectedInvoices.length === invoices.length) {

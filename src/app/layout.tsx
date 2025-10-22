@@ -3,6 +3,7 @@ import "./globals.css";
 import { TaskProvider } from '@/contexts/TaskContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { BranchProvider } from '@/contexts/BranchContext';
 
 
 export const metadata: Metadata = {
@@ -61,11 +62,13 @@ export default function RootLayout({
         className="antialiased min-h-screen bg-background text-foreground"
       >
         <AuthProvider>
-          <NotificationProvider>
-            <TaskProvider>
-              {children}
-            </TaskProvider>
-          </NotificationProvider>
+          <BranchProvider>
+            <NotificationProvider>
+              <TaskProvider>
+                {children}
+              </TaskProvider>
+            </NotificationProvider>
+          </BranchProvider>
         </AuthProvider>
       </body>
     </html>

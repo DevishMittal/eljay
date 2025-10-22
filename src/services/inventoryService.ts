@@ -12,9 +12,20 @@ export class InventoryService {
   }
 
   // Get all inventory items with pagination
-  static async getInventoryItems(page: number = 1, limit: number = 10): Promise<PaginatedResponse<InventoryItem>> {
+  static async getInventoryItems(page: number = 1, limit: number = 10, branchId?: string | null): Promise<PaginatedResponse<InventoryItem>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/inventory?page=${page}&limit=${limit}`, {
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      // Add branchId if provided
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/inventory?${queryParams.toString()}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -163,7 +174,6 @@ export class InventoryService {
       }
 
       const data = await response.json();
-      console.log('Raw API response:', data); // Debug log
       
       // Return the data directly since the API structure is different from PaginatedResponse
       return data.data;

@@ -21,7 +21,7 @@ class PaymentService {
     };
   }
 
-  static async getPayments(page: number = 1, limit: number = 10): Promise<PaymentsResponse> {
+  static async getPayments(page: number = 1, limit: number = 10, branchId?: string | null): Promise<PaymentsResponse> {
     try {
       const token = localStorage.getItem('auth_token');
       
@@ -29,7 +29,18 @@ class PaymentService {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/payments?page=${page}&limit=${limit}`, {
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      // Add branchId if provided
+      if (branchId) {
+        queryParams.append('branchId', branchId);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/payments?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

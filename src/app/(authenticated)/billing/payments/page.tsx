@@ -6,6 +6,7 @@ import { cn } from '@/utils';
 import PaymentService from '@/services/paymentService';
 import { Payment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 import CustomDropdown from '@/components/ui/custom-dropdown';
@@ -13,6 +14,7 @@ import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport
 
 export default function PaymentsPage() {
   const { token, isAuthenticated, loading: authLoading } = useAuth();
+  const { branchId } = useBranchFilter();
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function PaymentsPage() {
 
     try {
       setLoading(true);
-      const response = await PaymentService.getPayments(1, 10);
+      const response = await PaymentService.getPayments(1, 10, branchId);
       setPayments(response.data.payments);
       setTotalAmount(response.data.summary.totalAmount);
       setError(null);
@@ -76,7 +78,7 @@ export default function PaymentsPage() {
     if (token) {
       fetchPayments();
     }
-  }, [token, fetchPayments, isAuthenticated, router, authLoading]);
+  }, [token, fetchPayments, isAuthenticated, router, authLoading, branchId]);
 
   // Calculate summary data from payments
   const completedPayments = payments.filter(p => p.status === 'Completed');

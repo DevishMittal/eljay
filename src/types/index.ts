@@ -275,6 +275,12 @@ export interface User {
     id: string;
     name: string;
   };
+  branchId?: string | null;
+  branch?: {
+    id: string;
+    name: string;
+    address: string;
+  };
   appointments?: UserAppointment[];
 }
 
@@ -767,6 +773,36 @@ export interface ResponsiveValue<T> {
   '2xl'?: T;
 }
 
+// Role-based system types
+export enum OrganizationRole {
+  Admin = 'Admin',
+  SuperAdmin = 'SuperAdmin',
+  Receptionist = 'Receptionist',
+  AdministrativeStaff = 'AdministrativeStaff',
+  Audiologist = 'Audiologist',
+  Technician = 'Technician'
+}
+
+// Role-based dashboard data types
+export interface RoleBasedDashboardData {
+  role?: string;
+  summary?: Record<string, any>;
+  recentActivities?: any[];
+  upcomingTasks?: any[];
+  metrics?: Record<string, any>;
+  quickActions?: string[];
+  // SuperAdmin dashboard sections
+  revenueAnalytics?: any;
+  performanceMetrics?: any;
+  operations?: any;
+  businessIntelligence?: any;
+}
+
+export interface RoleBasedDashboardResponse {
+  status: string;
+  data: RoleBasedDashboardData;
+}
+
 // Authentication types
 export interface LoginCredentials {
   email: string;
@@ -779,10 +815,13 @@ export interface Organization {
   email: string;
   phoneNumber: string;
   countrycode: string;
-  website: string;
-  gstNumber: string;
+  website: string | null;
+  gstNumber: string | null;
   address: string;
-  logo: string;
+  logo: string | null;
+  role: OrganizationRole;
+  branchId?: string | null;
+  branchName?: string | null;
 }
 
 export interface AuthResponse {

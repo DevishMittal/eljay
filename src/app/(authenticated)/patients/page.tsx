@@ -10,19 +10,21 @@ import { patientTransferService } from '@/services/patientTransferService';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import WalkInAppointmentModal from '@/components/modals/walk-in-appointment-modal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { exportPatientsToCSV } from '@/utils/patientExportUtils';
 
 
 export default function PatientsPage() {
   const router = useRouter();
   const { token } = useAuth();
+  const { branchId } = useBranchFilter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalPatients, setTotalPatients] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   
   // Filter, Sort, and View state
   const [classification, setClassification] = useState('');
@@ -48,7 +50,7 @@ export default function PatientsPage() {
       setError(null);
       // Prefer branch-aware list (returns users with branch info). Fallback to existing service if needed.
       try {
-        const { users } = await patientTransferService.getAllPatients(token || undefined);
+        const { users } = await patientTransferService.getAllPatients(token || undefined, branchId);
         const transformed = users.map((u: any) => ({
           id: u.id,
           patient_id: u.id,
@@ -70,14 +72,12 @@ export default function PatientsPage() {
           branchName: u.branch?.name,
         }));
         setPatients(transformed);
-        // No server-side pagination in this endpoint; approximate
-        setTotalPages(1);
-        setTotalPatients(transformed.length);
-      } catch (_e) {
-        const response = await patientService.getPatients(currentPage, 10, token || undefined);
+        // No server-side pagination in this endpoint - let client-side pagination handle it
+      } catch {
+        // Fallback to get all patients for client-side pagination
+        const response = await patientService.getPatients(1, 1000, token || undefined);
         setPatients(response.patients);
-        setTotalPages(response.pagination.totalPages);
-        setTotalPatients(response.pagination.total);
+        // Let client-side pagination handle total pages calculation
       }
     } catch (err) {
       setError('Failed to fetch patients. Please try again.');
@@ -85,7 +85,7 @@ export default function PatientsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, token]);
+  }, [token, branchId]);
 
   // Fetch patients on component mount and when page changes
   useEffect(() => {
@@ -110,6 +110,9 @@ export default function PatientsPage() {
 
 
   const getInitials = (name: string) => {
+    if (!name || typeof name !== 'string') {
+      return 'N/A';
+    }
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -131,9 +134,6 @@ export default function PatientsPage() {
     router.push('/patients/add');
   };
 
-  const handleBookAppointment = () => {
-    setShowAppointmentModal(true);
-  };
 
   const handleCloseAppointmentModal = () => {
     setShowAppointmentModal(false);
@@ -169,6 +169,11 @@ export default function PatientsPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   // Filter and sort functions
@@ -226,6 +231,14 @@ export default function PatientsPage() {
     }
 
     return filteredPatients;
+  };
+
+  // Get paginated patients for current page
+  const getPaginatedPatients = () => {
+    const filteredPatients = getFilteredAndSortedPatients();
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredPatients.slice(startIndex, endIndex);
   };
 
   const handleSortChange = (field: string) => {
@@ -333,7 +346,29 @@ export default function PatientsPage() {
     setShowDeleteWarning(false);
   };
 
-  const displayedPatients = getFilteredAndSortedPatients();
+  const displayedPatients = getPaginatedPatients();
+  const allFilteredPatients = getFilteredAndSortedPatients();
+
+  // Update total pages when filtered patients or page size changes
+  useEffect(() => {
+    const filteredCount = allFilteredPatients.length;
+    const newTotalPages = Math.ceil(filteredCount / pageSize);
+    setTotalPages(newTotalPages);
+    
+    // Reset to page 1 if current page is beyond the new total pages
+    if (currentPage > newTotalPages && newTotalPages > 0) {
+      setCurrentPage(1);
+    }
+    
+    // Debug logging
+    console.log('Pagination Debug:', {
+      filteredCount,
+      pageSize,
+      newTotalPages,
+      currentPage,
+      displayedCount: displayedPatients.length
+    });
+  }, [allFilteredPatients.length, pageSize, currentPage, displayedPatients.length]);
 
   // Update select all state when selection changes
   useEffect(() => {
@@ -678,7 +713,7 @@ export default function PatientsPage() {
 
         {/* Patients Display */}
         <div className="bg-white rounded-lg overflow-hidden !p-0">
-          {displayedPatients.length === 0 && patients.length > 0 ? (
+          {displayedPatients.length === 0 && allFilteredPatients.length > 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -696,7 +731,7 @@ export default function PatientsPage() {
                 Clear Filters
               </button>
             </div>
-          ) : displayedPatients.length === 0 ? (
+          ) : allFilteredPatients.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -753,7 +788,7 @@ export default function PatientsPage() {
                         type="checkbox" 
                         className="rounded border-gray-300" 
                         aria-label={`Select ${patient.full_name}`}
-                        id={`select-${patient.id}`}
+                        id={`select-${patient.patient_id}`}
                         checked={selectedPatients.has(patient.patient_id)}
                         onChange={(e) => handleSelectPatient(patient.patient_id, e.target.checked)}
                       />
@@ -938,7 +973,7 @@ export default function PatientsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="text-xs" style={{ color: '#717182' }}>
-                Showing {displayedPatients.length} of {patients.length} patients
+                Showing {Math.min((currentPage - 1) * pageSize + 1, allFilteredPatients.length)}-{Math.min(currentPage * pageSize, allFilteredPatients.length)} of {allFilteredPatients.length} patients
                 {(classification || gender || patientStatus) && ' (filtered)'}
                 {selectedPatients.size > 0 && ` • ${selectedPatients.size} selected`}
               </span>
@@ -947,6 +982,8 @@ export default function PatientsPage() {
                 style={{ backgroundColor: '#F3F3F5', color: '#717182' }}
                 aria-label="Items per page"
                 id="items-per-page"
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               >
                 <option value="10">10</option>
                 <option value="25">25</option>
@@ -957,7 +994,7 @@ export default function PatientsPage() {
             <div className="flex items-center space-x-2">
               <button 
                 onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || totalPages === 0}
                 className="px-3 py-1 text-xs border border-border rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
                 style={{ color: 'black', backgroundColor: 'white' }}
               >
@@ -986,7 +1023,7 @@ export default function PatientsPage() {
               
               <button 
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalPages === 0}
                 className="px-3 py-1 text-xs border border-border rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
                 style={{ color: 'black', backgroundColor: 'white' }}
               >

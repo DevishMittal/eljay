@@ -9,6 +9,7 @@ import { referralAnalyticsService } from '@/services/referralAnalyticsService';
 import { DashboardService, DashboardDoctorReferralData } from '@/services/dashboardService';
 import { doctorService } from '@/services/doctorService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { ReferralSource, CreateDoctorData } from '@/types';
 import { formatCurrency } from '@/utils/commissionUtils';
 import {
@@ -21,6 +22,7 @@ import { convertToCSV, downloadCSV, formatDateTimeForExport } from '@/utils/expo
 
 export default function DoctorReferralsPage() {
   const router = useRouter();
+  const { branchId } = useBranchFilter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
   const [referrals, setReferrals] = useState<ReferralSource[]>([]);
@@ -57,7 +59,7 @@ export default function DoctorReferralsPage() {
     revenue: number;
     commission: number;
   }>>([]);
-  const [topDoctors, setTopDoctors] = useState<Array<{
+  const [, setTopDoctors] = useState<Array<{
     doctorId: string;
     doctorName: string;
     specialization: string;
@@ -131,28 +133,33 @@ export default function DoctorReferralsPage() {
         setDoctorReferralData(doctorReferralResponse);
         
         // Fetch basic referrals
-        const referralsResponse = await referralService.getReferrals(token || undefined);
-        if (referralsResponse.status === 'success') {
+        console.log('Doctor Referrals - Fetching referrals with branchId:', branchId);
+        const referralsResponse = await referralService.getReferrals(token || undefined, branchId);
+        console.log('Doctor Referrals - Referrals response:', referralsResponse);
+        if (referralsResponse.status === 'success' && Array.isArray(referralsResponse.data)) {
           setReferrals(referralsResponse.data);
+          console.log('Doctor Referrals - Set referrals count:', referralsResponse.data.length);
+        } else {
+          console.warn('Unexpected referrals response structure:', referralsResponse);
+          setReferrals([]); // Ensure referrals is always an array
         }
 
-        // Fetch analytics data
-        const [analyticsData, summaryData, trendsData, topDoctorsData, statementsData] = await Promise.all([
-          referralAnalyticsService.getReferralAnalytics(token || undefined),
-          referralAnalyticsService.getSummaryStats(token || undefined),
-          referralAnalyticsService.getReferralTrends(token || undefined),
-          referralAnalyticsService.getTopPerformingDoctors(token || undefined),
-          referralAnalyticsService.generateCommissionStatements(token || undefined),
+        // Fetch analytics data with error handling
+        const [analyticsData, summaryData, trendsData, topDoctorsData, statementsData] = await Promise.allSettled([
+          referralAnalyticsService.getReferralAnalytics(token || undefined, branchId),
+          referralAnalyticsService.getSummaryStats(token || undefined, branchId),
+          referralAnalyticsService.getReferralTrends(token || undefined, branchId),
+          referralAnalyticsService.getTopPerformingDoctors(token || undefined, branchId),
+          referralAnalyticsService.generateCommissionStatements(token || undefined, branchId),
         ]);
 
-        setAnalytics(analyticsData);
-        setSummaryStats(summaryData);
-        setReferralTrends(trendsData);
-        setTopDoctors(topDoctorsData);
-        setCommissionStatements(statementsData);
+        // Extract data from settled promises, providing fallbacks for failed requests
+        setAnalytics(analyticsData.status === 'fulfilled' ? analyticsData.value : []);
+        setSummaryStats(summaryData.status === 'fulfilled' ? summaryData.value : null);
+        setReferralTrends(trendsData.status === 'fulfilled' ? trendsData.value : []);
+        setTopDoctors(topDoctorsData.status === 'fulfilled' ? topDoctorsData.value : []);
+        setCommissionStatements(statementsData.status === 'fulfilled' ? statementsData.value : []);
 
-        // Fetch available doctors for filter
-        await fetchAvailableDoctors();
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -162,6 +169,13 @@ export default function DoctorReferralsPage() {
 
     if (token) {
       fetchData();
+    }
+  }, [token, branchId]);
+
+  // Separate useEffect for fetching available doctors
+  useEffect(() => {
+    if (token) {
+      fetchAvailableDoctors();
     }
   }, [token, fetchAvailableDoctors]);
 
@@ -341,9 +355,12 @@ export default function DoctorReferralsPage() {
             setDoctorReferralData(doctorReferralResponse);
             
             // Refresh referrals
-            const referralsResponse = await referralService.getReferrals(token || undefined);
-            if (referralsResponse.status === 'success') {
+            const referralsResponse = await referralService.getReferrals(token || undefined, branchId);
+            if (referralsResponse.status === 'success' && Array.isArray(referralsResponse.data)) {
               setReferrals(referralsResponse.data);
+            } else {
+              console.warn('Unexpected referrals response structure in refresh:', referralsResponse);
+              setReferrals([]); // Ensure referrals is always an array
             }
           } catch (error) {
             console.error('Error refreshing data:', error);
@@ -394,17 +411,18 @@ export default function DoctorReferralsPage() {
     return { startDate, endDate: now };
   };
 
-  // Filter referrals by type
-  const doctorReferrals = referrals.filter(ref => ref.type === 'doctor');
-  const directReferrals = referrals.filter(ref => ref.type === 'direct');
-  const walkInReferrals = referrals.filter(ref => ref.sourceName === 'Walk-in');
+  // Filter referrals by type - with safety checks
+  const safeReferrals = Array.isArray(referrals) ? referrals : [];
+  const doctorReferrals = safeReferrals.filter(ref => ref.type === 'doctor');
+  const directReferrals = safeReferrals.filter(ref => ref.type === 'direct');
+  const walkInReferrals = safeReferrals.filter(ref => ref.sourceName === 'Walk-in');
 
   // Use real data from dashboard API for doctor referrals specifically
   const totalDoctorReferrals = doctorReferralData?.overview?.referrals ?? doctorReferrals.length;
   const totalActiveDoctors = doctorReferralData?.overview?.activeDoctors ?? doctorReferrals.length;
   
   // For total referrals, we want to show all types but the dashboard focuses on doctor referrals
-  const totalReferrals = referrals.length; // All referrals (direct, walk-in, doctor)
+  const totalReferrals = safeReferrals.length; // All referrals (direct, walk-in, doctor)
   
   const totalRevenue = formatCurrency(doctorReferralData?.financialImpact?.revenueGenerated ?? summaryStats?.totalRevenue ?? 0);
   const totalCommissions = formatCurrency(doctorReferralData?.financialImpact?.commission ?? summaryStats?.totalCommission ?? 0);
@@ -515,7 +533,7 @@ export default function DoctorReferralsPage() {
   ];
 
   // Generate referral data from the referrals API with proper categorization
-  const referralData = referrals.map((referral, index) => {
+  const referralData = safeReferrals.map((referral, index) => {
     const createdDate = new Date(referral.createdAt || new Date());
     return {
       id: referral.id || `referral-${index}`,

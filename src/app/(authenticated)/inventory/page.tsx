@@ -10,6 +10,7 @@ import DeleteConfirmationModal from "@/components/modals/delete-confirmation-mod
 import { InventoryService } from "@/services/inventoryService";
 import branchService from "@/services/branchService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { InventoryItem as InventoryItemType } from "@/types";
 import CustomDropdown from "@/components/ui/custom-dropdown";
 import { TrendingUp, TrendingDown, Filter, Eye, Edit, MoreVertical, Building2, Network, Trash2 } from "lucide-react";
@@ -59,6 +60,7 @@ const getExpiryColor = (expiryInfo: string) => {
 
 export default function InventoryPage() {
   const { token } = useAuth();
+  const { branchId } = useBranchFilter();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -107,12 +109,18 @@ export default function InventoryPage() {
         branchFilter = selectedBranch;
       }
       
-      const response = await InventoryService.getInventoryItemsWithView(
-        currentView, 
-        page, 
-        limit, 
-        branchFilter
-      );
+      // Use branchId from hook for SuperAdmin filtering, otherwise use the existing logic
+      let response;
+      if (branchId) {
+        response = await InventoryService.getInventoryItems(page, limit, branchId);
+      } else {
+        response = await InventoryService.getInventoryItemsWithView(
+          currentView, 
+          page, 
+          limit, 
+          branchFilter
+        );
+      }
       setInventoryItems(response.items);
       setPagination(response.pagination);
       
@@ -156,7 +164,7 @@ export default function InventoryPage() {
   // Load inventory on component mount and when view or branch selection changes
   useEffect(() => {
     fetchInventoryItems();
-  }, [currentView, selectedBranch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentView, selectedBranch, branchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown when clicking outside
   useEffect(() => {
