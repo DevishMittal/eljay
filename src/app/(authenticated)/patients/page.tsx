@@ -68,8 +68,8 @@ export default function PatientsPage() {
           countrycode: u.countrycode,
           hospital_name: u.hospitalName,
           opipNumber: u.opipNumber,
-          branchId: u.branch?.id,
-          branchName: u.branch?.name,
+          branchId: u.branchId || u.branch?.id,
+          branchName: u.branch?.name || 'Unknown',
         }));
         setPatients(transformed);
         // No server-side pagination in this endpoint - let client-side pagination handle it

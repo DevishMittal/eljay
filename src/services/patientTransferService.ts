@@ -19,15 +19,15 @@ class PatientTransferService {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // Build query parameters
+    // Use the users endpoint with branchId parameter for proper filtering
     const queryParams = new URLSearchParams();
     if (branchId) {
       queryParams.append('branchId', branchId);
     }
 
     const url = queryParams.toString() 
-      ? `${BASE_URL}/api/v1/patient-transfers/patients?${queryParams.toString()}`
-      : `${BASE_URL}/api/v1/patient-transfers/patients`;
+      ? `${BASE_URL}/api/v1/users?${queryParams.toString()}`
+      : `${BASE_URL}/api/v1/users`;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -38,7 +38,7 @@ class PatientTransferService {
       throw new Error(`Failed to load patients: ${res.status} ${res.statusText} ${text}`);
     }
     const data = await res.json();
-    return { users: data?.data ?? [] };
+    return { users: data?.data?.users ?? [] };
   }
 
   async getAvailableBranches(patientId: string, token?: string): Promise<BranchOption[]> {
