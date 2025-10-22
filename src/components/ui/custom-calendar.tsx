@@ -206,7 +206,21 @@ const CustomCalendar: React.FC<CustomCalendarProps> = ({
   };
 
   return (
-    <div className={cn("bg-white border border-gray-200 rounded-lg shadow-sm p-3", className)}>
+    <div className={cn(
+      "bg-white border border-gray-200 rounded-lg shadow-sm p-3",
+      context === 'dob' && "max-w-sm mx-auto",
+      className
+    )}>
+      {/* DOB Context Indicator */}
+      {context === 'dob' && (
+        <div className="">
+    
+          <p className="text-xs text-red-700 ml-1">
+            * Scroll down for additional dates
+          </p>
+        </div>
+      )}
+
       {/* Header with navigation */}
       <div className="flex items-center justify-between mb-2">
         {/* Left side - Previous month */}

@@ -171,7 +171,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
       {/* Custom Calendar Dropdown */}
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50">
+        <div className={cn(
+          "absolute mt-1 z-[9999]",
+          context === 'dob' 
+            ? "top-full left-0 right-0 transform -translate-y-2" 
+            : "top-full left-0 right-0"
+        )}>
           <CustomCalendar
             value={getDateValue()}
             onChange={handleCalendarChange}
@@ -179,7 +184,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             maxDate={maxDate}
             disabledDates={disabledDates}
             context={context}
-            className="shadow-lg border-2 border-gray-200"
+            className="shadow-xl border-2 border-gray-200 bg-white"
           />
         </div>
       )}

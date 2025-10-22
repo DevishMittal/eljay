@@ -919,14 +919,18 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
            <label className="block text-xs font-medium mb-1.5" style={{ color: '#0A0A0A' }}>
              Date of Birth {existingUser && <span className="text-green-600 text-xs">(Auto-filled)</span>}
            </label>
-           <DatePicker
-             value={formData.dateOfBirth}
-             onChange={(date) => handleInputChange('dateOfBirth', date)}
-             placeholder="Select date of birth"
-             context="dob"
-             className={existingUser ? 'border-green-200 bg-green-50' : ''}
-             aria-label="Date of birth"
-           />
+           <div className="relative">
+             <DatePicker
+               value={formData.dateOfBirth}
+               onChange={(date) => handleInputChange('dateOfBirth', date)}
+               placeholder="Select date of birth"
+               context="dob"
+               className={existingUser ? 'border-green-200 bg-green-50' : ''}
+               aria-label="Date of birth"
+             />
+             {/* Scroll indicator for DOB */}
+        
+           </div>
          </div>
 
                  <div>
@@ -1677,7 +1681,7 @@ const WalkInAppointmentModal: React.FC<WalkInAppointmentModalProps> = ({
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto scrollbar-hide border-2 shadow-lg">
+      <div className="bg-white rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto scrollbar-hide border-2 shadow-lg relative">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
