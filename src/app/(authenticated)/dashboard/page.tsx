@@ -692,11 +692,19 @@ export default function DashboardPage() {
                 {/* Revenue Analytics Tab */}
                 {activeSuperAdminTab === 'revenue-analytics' && superAdminData.revenueAnalytics && (
                   <RevenueAnalytics data={{
-                    hearingAidRevenueByCentre: superAdminData.revenueAnalytics.hearingAidRevenueByCentre,
-                    diagnosticsRevenueByCentre: superAdminData.revenueAnalytics.diagnosticsRevenueByCentre,
-                    branchPerformanceStats: superAdminData.revenueAnalytics.branchPerformanceStats,
-                    hearingAidVolumeByBranch: superAdminData.revenueAnalytics.hearingAidVolumeByBranch,
-                    hearingAidRevenueByBranch: superAdminData.revenueAnalytics.hearingAidRevenueByBranch,
+                    hearingAidRevenueByCentre: superAdminData.revenueAnalytics.hearingAidRevenueByCentre || [],
+                    diagnosticsRevenueByCentre: superAdminData.revenueAnalytics.diagnosticsRevenueByCentre || [],
+                    branchPerformanceStats: superAdminData.revenueAnalytics.branchPerformanceStats || {
+                      totalUnitsSold: 0,
+                      totalRevenue: 0,
+                      avgUnitPrice: 0
+                    },
+                    hearingAidVolumeByBranch: superAdminData.revenueAnalytics.hearingAidVolumeByBranch || [],
+                    hearingAidRevenueByBranch: superAdminData.revenueAnalytics.hearingAidRevenueByBranch || [],
+                    audiologistPerformance: superAdminData.revenueAnalytics.audiologistPerformance || [],
+                    marketShare: superAdminData.revenueAnalytics.marketShare || [],
+                    profitabilityAnalysis: superAdminData.revenueAnalytics.profitabilityAnalysis || [],
+                    branchPreferencesByBrand: superAdminData.revenueAnalytics.branchPreferencesByBrand || [],
                   }} />
                 )}
 

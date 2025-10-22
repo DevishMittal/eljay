@@ -41,41 +41,231 @@ const formatPercentage = (value: number) => {
 };
 
 export default function Operations({ data }: OperationsProps) {
-  // Transform referral volume data for charts
-  const referralVolumeData = data.referralVolumeByBranch.length > 0
-    ? data.referralVolumeByBranch
-    : [
-        { branch: 'Main Branch', diagnostics: 0, hearingAid: 0 },
-        { branch: 'North Side', diagnostics: 0, hearingAid: 0 },
-        { branch: 'South Side', diagnostics: 0, hearingAid: 0 },
-        { branch: 'East Wing', diagnostics: 0, hearingAid: 0 },
-        { branch: 'Central Plaza', diagnostics: 0, hearingAid: 0 }
-      ];
-
-  // Transform referral revenue data for charts
-  const referralRevenueData = data.referralRevenueByBranch.length > 0
-    ? data.referralRevenueByBranch
-    : [
-        { branch: 'Main Branch', diagnostics: 0, hearingAid: 0, total: 0 },
-        { branch: 'North Side', diagnostics: 0, hearingAid: 0, total: 0 },
-        { branch: 'South Side', diagnostics: 0, hearingAid: 0, total: 0 },
-        { branch: 'East Wing', diagnostics: 0, hearingAid: 0, total: 0 },
-        { branch: 'Central Plaza', diagnostics: 0, hearingAid: 0, total: 0 }
-      ];
-
-  // Transform BDM performance data
-  const bdmPerformanceData = data.bdmPortfolio.revenuePerformanceVsTargets.length > 0
-    ? data.bdmPortfolio.revenuePerformanceVsTargets
-    : [
-        { name: 'Rajesh Kumar', actual: 0, target: 0 },
-        { name: 'Sneha Patel', actual: 0, target: 0 },
-        { name: 'Amit Singh', actual: 0, target: 0 },
-        { name: 'Priya Mehta', actual: 0, target: 0 },
-        { name: 'Vikram Shah', actual: 0, target: 0 }
-      ];
+  // Use actual data from API response
+  const referralVolumeData = data.referralVolumeByBranch || [];
+  const referralRevenueData = data.referralRevenueByBranch || [];
+  const bdmPerformanceData = data.bdmPortfolio.revenuePerformanceVsTargets || [];
+  const branchEfficiencyData = data.branchEfficiencyComparison || [];
+  const keyEfficiencyInsights = data.keyEfficiencyInsights || [];
 
   return (
     <div className="space-y-6">
+      {/* Top Header Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Revenue Performance */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Revenue Performance</h3>
+              <p className="text-sm text-gray-600">Monthly growth and revenue breakdown</p>
+            </div>
+            <div className="text-2xl">₹</div>
+          </div>
+          <div className="text-3xl font-bold text-blue-600 mb-2">
+            {formatCurrency(data.headerCards.revenuePerformance.amount)}
+          </div>
+          <div className="text-sm text-green-600 mb-1">
+            +{formatPercentage(data.headerCards.revenuePerformance.monthlyGrowthPct)} monthly growth
+          </div>
+          <div className="text-sm text-gray-600">
+            Hearing Aid Sales ({formatPercentage(data.headerCards.revenuePerformance.haSharePct)} of total revenue)
+          </div>
+        </div>
+
+        {/* Total Active Patients */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Total Active Patients</h3>
+              <p className="text-sm text-gray-600">Patients with visits in a period</p>
+            </div>
+            <div className="text-2xl">👥</div>
+          </div>
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            {formatNumber(data.headerCards.totalActivePatients.count)}
+          </div>
+          <div className="text-sm text-green-600 mb-1">
+            +{formatPercentage(data.headerCards.totalActivePatients.growthPct)} this month
+          </div>
+          <div className="text-sm text-gray-600">
+            Patients with visits in a period
+          </div>
+        </div>
+
+        {/* Invoice Collection Rate */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Invoice Collection Rate</h3>
+              <p className="text-sm text-gray-600">Paid invoices vs total invoices</p>
+            </div>
+            <div className="text-2xl">🔄</div>
+          </div>
+          <div className="text-3xl font-bold text-purple-600 mb-2">
+            {formatPercentage(data.headerCards.invoiceCollectionRate.ratePct)}
+          </div>
+          <div className="text-sm text-green-600 mb-1">
+            +{formatPercentage(data.headerCards.invoiceCollectionRate.improvementPct)} improvement
+          </div>
+          <div className="text-sm text-gray-600">
+            Paid invoices vs total invoices
+          </div>
+        </div>
+      </div>
+
+      {/* Resource Utilization Heatmap - Only show if data is available */}
+      {data.resourceUtilization && data.resourceUtilization.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Resource Utilization Heatmap</h3>
+          <p className="text-sm text-gray-600 mb-4">Daily utilization rates across all branches</p>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className="text-left text-sm font-medium text-gray-500 py-2">Branch</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">MON</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">TUE</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">WED</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">THU</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">FRI</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">SAT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.resourceUtilization.map((branch, index) => (
+                  <tr key={index}>
+                    <td className="text-sm font-medium text-gray-900 py-2">{branch.branch}</td>
+                    {['mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((day) => (
+                      <td key={day} className="text-center py-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded ${
+                          branch[day] >= 90 ? 'bg-green-100 text-green-800' :
+                          branch[day] >= 80 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {branch[day]}%
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 flex items-center space-x-4 text-sm">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-100 rounded mr-2"></div>
+              <span>Low</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-100 rounded mr-2"></div>
+              <span>Medium</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-100 rounded mr-2"></div>
+              <span>High</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Performance Ranking Dashboard - Only show if data is available */}
+      {data.branchPerformanceRanking && data.branchPerformanceRanking.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Branch Performance Ranking Dashboard</h3>
+          <p className="text-sm text-gray-600 mb-4">Comprehensive scoring matrix with traffic light system</p>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className="text-left text-sm font-medium text-gray-500 py-2">Branch</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Rev</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Growth</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Util</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Sat</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Score</th>
+                  <th className="text-center text-sm font-medium text-gray-500 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.branchPerformanceRanking.map((item, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <td className="text-sm font-medium text-gray-900 py-2">{item.branch}</td>
+                    <td className="text-center text-sm text-gray-900 py-2">{item.rev}%</td>
+                    <td className="text-center text-sm text-gray-900 py-2">{item.growth}%</td>
+                    <td className="text-center text-sm text-gray-900 py-2">{item.util}%</td>
+                    <td className="text-center text-sm text-gray-900 py-2">{item.sat}%</td>
+                    <td className="text-center text-sm text-gray-900 py-2">{item.score}</td>
+                    <td className="text-center py-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        item.status === 'EXC' ? 'bg-green-100 text-green-800' :
+                        item.status === 'GOOD' ? 'bg-blue-100 text-blue-800' :
+                        item.status === 'AVG' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {item.status} {item.trend}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Efficiency Comparison - Only show if data is available */}
+      {branchEfficiencyData.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Branch Efficiency Comparison</h3>
+          <p className="text-sm text-gray-600 mb-4">Multi-dimensional performance analysis to identify best practices</p>
+          
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={branchEfficiencyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" fontSize={12} />
+                <YAxis domain={[0, 100]} fontSize={12} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Main" fill="#3b82f6" name="Main Branch" />
+                <Bar dataKey="East" fill="#10b981" name="East Wing" />
+                <Bar dataKey="Central" fill="#8b5cf6" name="Central Plaza" />
+                <Bar dataKey="North" fill="#f59e0b" name="North Side" />
+                <Bar dataKey="South" fill="#ef4444" name="South Side" />
+                <Bar dataKey="West" fill="#06b6d4" name="West End" />
+                <Bar dataKey="Tech" fill="#84cc16" name="Tech Park" />
+                <Bar dataKey="Mall" fill="#f97316" name="Mall Branch" />
+                <Bar dataKey="Suburb" fill="#ec4899" name="Suburb Center" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Key Efficiency Insights - Only show if data is available */}
+      {keyEfficiencyInsights.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Efficiency Insights</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {keyEfficiencyInsights.map((insight, index) => (
+              <div key={index} className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900">{insight.branch}</h4>
+                <p className="text-sm text-blue-700 mb-2">
+                  Top Metric: {insight.topMetric} • Score: {formatPercentage(insight.score)}
+                </p>
+                <div className="text-sm text-blue-600">
+                  Focus Area: {insight.focusArea} ⭐ {insight.rating}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Doctor Referral Analysis - Branch Performance */}
       <div className="space-y-6">
         <h3 className="text-xl font-semibold text-gray-900">Doctor Referral Analysis - Branch Performance</h3>

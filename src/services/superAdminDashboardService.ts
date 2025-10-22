@@ -28,6 +28,26 @@ export interface RevenueAnalyticsData {
     branch: string;
     revenue: number;
   }>;
+  audiologistPerformance: Array<{
+    audiologistName: string;
+    branch: string;
+    unitsSold: number;
+    revenueGenerated: number;
+    avgSaleValue: number;
+  }>;
+  marketShare: Array<{
+    brand: string;
+    percentage: number;
+  }>;
+  profitabilityAnalysis: Array<{
+    brand: string;
+    profitability: number;
+  }>;
+  branchPreferencesByBrand: Array<{
+    branch: string;
+    brand: string;
+    count: number;
+  }>;
 }
 
 export interface OperationsData {
@@ -58,6 +78,25 @@ export interface OperationsData {
   };
   branchEfficiencyComparison: any[];
   keyEfficiencyInsights: any[];
+  resourceUtilization?: Array<{
+    branch: string;
+    mon: number;
+    tue: number;
+    wed: number;
+    thu: number;
+    fri: number;
+    sat: number;
+  }>;
+  branchPerformanceRanking?: Array<{
+    branch: string;
+    rev: number;
+    growth: number;
+    util: number;
+    sat: number;
+    score: number;
+    status: string;
+    trend: string;
+  }>;
   referralVolumeByBranch: Array<{
     branch: string;
     diagnostics: number;
@@ -176,9 +215,8 @@ export interface BusinessIntelligenceData {
 
 export interface PerformanceMetricsData {
   diagnosisVsConsultScatter: Array<{
-    date: string;
-    type: string;
-    revenue: number;
+    consultQuantity: number;
+    diagnosisValue: number;
   }>;
   providerOverview: {
     totalConsult: number;
@@ -240,6 +278,47 @@ export interface PerformanceMetricsData {
   stockLevelByCategory: Array<{
     category: string;
     currentStock: number;
+  }>;
+  stockTrends6Months: Array<{
+    month: string;
+    'Hearing Aids': number;
+    'Accessories': number;
+    'Batteries': number;
+    'Instruments': number;
+  }>;
+  stockoutFrequency: {
+    totalEvents: number;
+    lostSalesValue: number;
+    avgDurationDays: number;
+    avgRecoveryDays: number;
+    eventsByBranch: Array<{
+      branch: string;
+      events: number;
+    }>;
+    lostSalesByBranch: Array<{
+      branch: string;
+      lostSales: number;
+    }>;
+  };
+  expiredItemsOverview: {
+    expiredCount: number;
+    expiredValue: number;
+    nearExpiryCount: number;
+    nearExpiryValue: number;
+  };
+  expiredItemsByBranch: Array<{
+    branch: string;
+    expiredItems: number;
+    expiredValue: number;
+    nearExpiryValue: number;
+  }>;
+  expiredItemsTable: Array<{
+    procuredDate: string;
+    branchName: string;
+    modelName: string;
+    color: string;
+    type: string;
+    matTag: string;
   }>;
 }
 
