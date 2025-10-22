@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -17,15 +18,18 @@ DollarSign,
   Bell 
 } from 'lucide-react';
 import { Notification, NotificationStats, CreateNotificationData } from '@/types';
+import { generateRealTimeNotifications, checkNotificationTriggers } from '@/services/notificationService';
 
 interface NotificationContextType {
   notifications: Notification[];
+  isLoading: boolean;
   addNotification: (data: CreateNotificationData) => void;
   updateNotification: (id: string, updates: Partial<Notification>) => void;
   deleteNotification: (id: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearAllNotifications: () => void;
+  refreshNotifications: () => Promise<void>;
   getUnreadNotifications: () => Notification[];
   getActionRequiredNotifications: () => Notification[];
   getNotificationsByType: (type: Notification['type']) => Notification[];
@@ -149,133 +153,63 @@ export const getRelativeTime = (date: Date): string => {
 };
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    // Sample notifications based on the images shown
-    {
-      id: '1',
-      type: 'pending_tasks',
-      priority: 'high',
-      title: 'Pending Tasks',
-      message: 'You have 3 pending tasks requiring attention',
-      isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 300000), // 5 minutes ago
-      actionUrl: '/dashboard',
-      relatedEntityType: 'task',
-      metadata: { taskCount: 3 }
-    },
-    {
-      id: '2',
-      type: 'low_stock',
-      priority: 'medium',
-      title: 'Low Stock Alert',
-      message: '2 inventory items are running low on stock',
-      isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 900000), // 15 minutes ago
-      actionUrl: '/inventory',
-      relatedEntityType: 'inventory',
-      metadata: { itemCount: 2 }
-    },
-    {
-      id: '3',
-      type: 'overdue_payment',
-      priority: 'high',
-      title: 'Overdue Payment',
-      message: 'Invoice INV-001 is overdue for payment',
-      isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-      actionUrl: '/billing/invoices/INV-001',
-      relatedEntityType: 'invoice',
-      relatedEntityId: 'INV-001',
-      metadata: { invoiceNumber: 'INV-001' }
-    },
-    {
-      id: '4',
-      type: 'todays_appointments',
-      priority: 'medium',
-      title: 'Today\'s Appointments',
-      message: 'You have 6 appointments scheduled for today',
-      isRead: false,
-      isActionRequired: false,
-      createdAt: new Date(Date.now() - 7200000), // 2 hours ago
-      actionUrl: '/appointments',
-      relatedEntityType: 'appointment',
-      metadata: { appointmentCount: 6 }
-    },
-    {
-      id: '5',
-      type: 'expired_items',
-      priority: 'high',
-      title: 'Expired Items',
-      message: '1 inventory item has expired warranty',
-      isRead: false,
-      isActionRequired: true,
-      createdAt: new Date(Date.now() - 10800000), // 3 hours ago
-      actionUrl: '/inventory',
-      relatedEntityType: 'inventory',
-      metadata: { expiredCount: 1 }
-    },
-    {
-      id: '6',
-      type: 'new_patient_registration',
-      priority: 'low',
-      title: 'New Patient Registration',
-      message: 'Emily Davis has registered as a new patient',
-      isRead: false,
-      isActionRequired: false,
-      createdAt: new Date(Date.now() - 86400000), // Yesterday
-      actionUrl: '/patients',
-      relatedEntityType: 'patient',
-      metadata: { patientName: 'Emily Davis' }
-    },
-    {
-      id: '7',
-      type: 'schedule_appointment',
-      priority: 'low',
-      title: 'Appointment Completed',
-      message: 'Hearing test completed for Robert Wilson',
-      isRead: false,
-      isActionRequired: false,
-      createdAt: new Date(Date.now() - 86400000), // Yesterday
-      actionUrl: '/patients',
-      relatedEntityType: 'appointment',
-      metadata: { patientName: 'Robert Wilson', testType: 'hearing test' }
-    },
-    {
-      id: '8',
-      type: 'payment_overdue',
-      priority: 'low',
-      title: 'Payment Received',
-      message: 'Payment of ₹2,000 received from Sarah Johnson',
-      isRead: false,
-      isActionRequired: false,
-      createdAt: new Date(Date.now() - 172800000), // 2 days ago
-      actionUrl: '/billing/payments',
-      relatedEntityType: 'payment',
-      metadata: { patientName: 'Sarah Johnson', amount: 2000 }
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load notifications from localStorage on mount
+  // Load real-time notifications on mount and periodically
   useEffect(() => {
-    const savedNotifications = localStorage.getItem('eljay-notifications');
-    if (savedNotifications) {
+    const loadNotifications = async () => {
       try {
-        const parsedNotifications = JSON.parse(savedNotifications);
-        // Convert date strings back to Date objects
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const notificationsWithDates = parsedNotifications.map((notification: any) => ({
-          ...notification,
-          createdAt: new Date(notification.createdAt),
-          readAt: notification.readAt ? new Date(notification.readAt) : undefined,
-        }));
-        setNotifications(notificationsWithDates);
-      } catch (error) {
-        console.error('Failed to load notifications from localStorage:', error);
+        setIsLoading(true);
+        
+        // Load saved notifications from localStorage first
+        const savedNotifications = localStorage.getItem('eljay-notifications');
+        let existingNotifications: Notification[] = [];
+        
+        if (savedNotifications) {
+          try {
+            const parsedNotifications = JSON.parse(savedNotifications);
+            existingNotifications = parsedNotifications.map((notification: any) => ({
+              ...notification,
+              createdAt: new Date(notification.createdAt),
+              readAt: notification.readAt ? new Date(notification.readAt) : undefined,
+            }));
+          } catch (error) {
+            console.error('Failed to load notifications from localStorage:', error);
+          }
+        }
+
+        // Generate real-time notifications from API data
+        const realTimeNotifications = await generateRealTimeNotifications();
+        const triggerNotifications = await checkNotificationTriggers();
+        
+        // Combine existing and new notifications, avoiding duplicates
+        const allNotifications = [...existingNotifications];
+        const existingIds = new Set(existingNotifications.map(n => n.id));
+        
+        [...realTimeNotifications, ...triggerNotifications].forEach(notification => {
+          if (!existingIds.has(notification.id)) {
+            allNotifications.push(notification);
+          }
+        });
+
+        // Sort by creation date (newest first)
+        allNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        
+        setNotifications(allNotifications);
+          } catch {
+            // Silent error handling
+          } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    loadNotifications();
+
+    // Set up periodic refresh every 5 minutes
+    const interval = setInterval(loadNotifications, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Save notifications to localStorage whenever notifications change
@@ -323,6 +257,38 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const clearAllNotifications = () => {
     setNotifications([]);
+  };
+
+  const refreshNotifications = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Generate fresh notifications from API data
+      const realTimeNotifications = await generateRealTimeNotifications();
+      const triggerNotifications = await checkNotificationTriggers();
+      
+      // Get existing notifications that are read (to preserve them)
+      const existingReadNotifications = notifications.filter(n => n.isRead);
+      const existingIds = new Set(existingReadNotifications.map(n => n.id));
+      
+      // Combine existing read notifications with new ones
+      const allNotifications = [...existingReadNotifications];
+      
+      [...realTimeNotifications, ...triggerNotifications].forEach(notification => {
+        if (!existingIds.has(notification.id)) {
+          allNotifications.push(notification);
+        }
+      });
+
+      // Sort by creation date (newest first)
+      allNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      setNotifications(allNotifications);
+    } catch (error) {
+      console.error('Error refreshing notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getUnreadNotifications = () => {
@@ -379,12 +345,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const value: NotificationContextType = {
     notifications,
+    isLoading,
     addNotification,
     updateNotification,
     deleteNotification,
     markAsRead,
     markAllAsRead,
     clearAllNotifications,
+    refreshNotifications,
     getUnreadNotifications,
     getActionRequiredNotifications,
     getNotificationsByType,

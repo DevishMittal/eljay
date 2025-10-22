@@ -6,13 +6,15 @@ import MainLayout from '@/components/layout/main-layout';
 import { useNotification, getNotificationIcon, getRelativeTime } from '@/contexts/NotificationContext';
 import { cn } from '@/utils';
 import { useRouter } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, RefreshCw } from 'lucide-react';
 
 export default function NotificationsPage() {
   const { 
     notifications, 
+    isLoading,
     markAsRead, 
     markAllAsRead, 
+    refreshNotifications,
     getNotificationStats 
   } = useNotification();
   const router = useRouter();
@@ -63,21 +65,39 @@ export default function NotificationsPage() {
               </div>
             </div>
             
-            {stats.unread > 0 && (
+            <div className="flex items-center space-x-2">
               <button
-                onClick={markAllAsRead}
-                className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                onClick={refreshNotifications}
+                disabled={isLoading}
+                className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
               >
-                Mark All Read
+                <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+                <span>Refresh</span>
               </button>
-            )}
+              {stats.unread > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                >
+                  Mark All Read
+                </button>
+              )}
+            </div>
           </div>
 
         </div>
 
         {/* Notifications List */}
         <div className="bg-white rounded-lg border border-gray-200 max-h-[600px] overflow-y-auto">
-          {filteredNotifications.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-400 mb-3 flex justify-center">
+                <RefreshCw size={32} className="animate-spin" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900 mb-1">Loading notifications...</h3>
+              <p className="text-xs text-gray-500">Fetching latest data from the system</p>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-gray-400 mb-3 flex justify-center">
                 <Bell size={48} />
