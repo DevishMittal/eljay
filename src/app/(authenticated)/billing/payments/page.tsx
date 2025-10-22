@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Clock, CheckCircle, TrendingUp } from 'lucide-react';
+import UnifiedFilter from '@/components/ui/unified-filter';
 import CustomDropdown from '@/components/ui/custom-dropdown';
 import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from '@/utils/exportUtils';
 
@@ -477,6 +478,49 @@ export default function PaymentsPage() {
                     </button>
                   </>
                 )}
+                <UnifiedFilter
+                  filters={[
+                    {
+                      id: 'type',
+                      label: 'Payment Type',
+                      options: [
+                        { value: "All Types", label: "All Types" },
+                        { value: "Full", label: "Full Payment" },
+                        { value: "Advance", label: "Advance Payment" }
+                      ],
+                      value: typeFilter,
+                      onChange: setTypeFilter
+                    },
+                    {
+                      id: 'method',
+                      label: 'Payment Method',
+                      options: [
+                        { value: "All Methods", label: "All Methods" },
+                        { value: "Cash", label: "Cash" },
+                        { value: "Card", label: "Card" },
+                        { value: "UPI", label: "UPI" },
+                        { value: "Bank Transfer", label: "Bank Transfer" },
+                        { value: "Cheque", label: "Cheque" }
+                      ],
+                      value: methodFilter,
+                      onChange: setMethodFilter
+                    },
+                    {
+                      id: 'status',
+                      label: 'Payment Status',
+                      options: [
+                        { value: "All Status", label: "All Status" },
+                        { value: "Completed", label: "Completed" },
+                        { value: "Pending", label: "Pending" },
+                        { value: "Failed", label: "Failed" }
+                      ],
+                      value: statusFilter,
+                      onChange: setStatusFilter
+                    }
+                  ]}
+                  placeholder="Filter"
+                  className="h-9"
+                />
                 <div className="relative w-64">
                   <svg
                     className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -499,46 +543,6 @@ export default function PaymentsPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <CustomDropdown
-                  options={[
-                    { value: "All Types", label: "All Types" },
-                    { value: "Full", label: "Full Payment" },
-                    { value: "Advance", label: "Advance Payment" }
-                  ]}
-                  value={typeFilter}
-                  onChange={setTypeFilter}
-                  placeholder="All Types"
-                  className="h-9 text-xs"
-                  aria-label="Filter by payment type"
-                />
-                <CustomDropdown
-                  options={[
-                    { value: "All Methods", label: "All Methods" },
-                    { value: "Cash", label: "Cash" },
-                    { value: "Card", label: "Card" },
-                    { value: "UPI", label: "UPI" },
-                    { value: "Bank Transfer", label: "Bank Transfer" },
-                    { value: "Cheque", label: "Cheque" }
-                  ]}
-                  value={methodFilter}
-                  onChange={setMethodFilter}
-                  placeholder="All Methods"
-                  className="h-9 text-xs"
-                  aria-label="Filter by payment method"
-                />
-                <CustomDropdown
-                  options={[
-                    { value: "All Status", label: "All Status" },
-                    { value: "Completed", label: "Completed" },
-                    { value: "Pending", label: "Pending" },
-                    { value: "Failed", label: "Failed" }
-                  ]}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="All Status"
-                  className="h-9 text-xs"
-                  aria-label="Filter by payment status"
-                />
               </div>
             </div>
 

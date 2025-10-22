@@ -8,7 +8,7 @@ import ExpenseService from '@/services/expenseService';
 import { Expense, ExpensesResponse } from '@/types';
 import { Receipt, Calculator, TrendingDown, PlusIcon } from 'lucide-react';
 import RupeeIcon from '@/components/ui/rupee-icon';
-import CustomDropdown from '@/components/ui/custom-dropdown';
+import UnifiedFilter from '@/components/ui/unified-filter';
 import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from '@/utils/exportUtils';
 
 export default function ExpensesPage() {
@@ -21,12 +21,6 @@ export default function ExpensesPage() {
     totalAmount: 0,
     totalTax: 0,
     count: 0
-  });
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    limit: 10,
-    pages: 0
   });
 
   // Filter states
@@ -48,7 +42,6 @@ export default function ExpensesPage() {
       const response: ExpensesResponse = await ExpenseService.getExpenses(page, 10);
       setExpenses(response.data.expenses);
       setSummary(response.data.summary);
-      setPagination(response.data.pagination);
     } catch (error: any) {
       setError(error.message || 'Failed to fetch expenses');
       console.error('Error fetching expenses:', error);
@@ -446,6 +439,38 @@ export default function ExpensesPage() {
                     </button>
                   </>
                 )}
+                <UnifiedFilter
+                  filters={[
+                    {
+                      id: 'category',
+                      label: 'Expense Category',
+                      options: [
+                        { value: "All Categories", label: "All Categories" },
+                        ...ExpenseService.getExpenseCategories().map(category => ({
+                          value: category,
+                          label: category
+                        }))
+                      ],
+                      value: categoryFilter,
+                      onChange: setCategoryFilter
+                    },
+                    {
+                      id: 'method',
+                      label: 'Payment Method',
+                      options: [
+                        { value: "All Methods", label: "All Methods" },
+                        ...ExpenseService.getPaymentMethods().map(method => ({
+                          value: method,
+                          label: method
+                        }))
+                      ],
+                      value: methodFilter,
+                      onChange: setMethodFilter
+                    }
+                  ]}
+                  placeholder="Filter"
+                  className="h-9"
+                />
                 <div className="relative w-64">
                   <svg
                     className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -468,34 +493,6 @@ export default function ExpensesPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <CustomDropdown
-                  options={[
-                    { value: "All Categories", label: "All Categories" },
-                    ...ExpenseService.getExpenseCategories().map(category => ({
-                      value: category,
-                      label: category
-                    }))
-                  ]}
-                  value={categoryFilter}
-                  onChange={setCategoryFilter}
-                  placeholder="All Categories"
-                  className="h-9 text-xs"
-                  aria-label="Filter by expense category"
-                />
-                <CustomDropdown
-                  options={[
-                    { value: "All Methods", label: "All Methods" },
-                    ...ExpenseService.getPaymentMethods().map(method => ({
-                      value: method,
-                      label: method
-                    }))
-                  ]}
-                  value={methodFilter}
-                  onChange={setMethodFilter}
-                  placeholder="All Methods"
-                  className="h-9 text-xs"
-                  aria-label="Filter by payment method"
-                />
               </div>
             </div>
 

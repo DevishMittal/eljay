@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { useRouter } from "next/navigation";
 import { FileText, AlertCircle, CheckCircle, PlusIcon } from "lucide-react";
-import CustomDropdown from "@/components/ui/custom-dropdown";
+import UnifiedFilter from "@/components/ui/unified-filter";
 import { convertToCSV, downloadCSV, formatCurrencyForExport, formatDateForExport, formatDateTimeForExport } from "@/utils/exportUtils";
 
 export default function InvoicesPage() {
@@ -57,7 +57,7 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, branchId]);
 
   const handleDeleteInvoice = async (id: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.');
@@ -598,6 +598,46 @@ export default function InvoicesPage() {
                     </button>
                   </>
                 )}
+                <UnifiedFilter
+                  filters={[
+                    {
+                      id: 'type',
+                      label: 'Invoice Type',
+                      options: [
+                        { value: "All Types", label: "All Types" },
+                        { value: "B2C", label: "B2C" },
+                        { value: "B2B", label: "B2B" }
+                      ],
+                      value: typeFilter,
+                      onChange: setTypeFilter
+                    },
+                    {
+                      id: 'patientType',
+                      label: 'Patient Type',
+                      options: [
+                        { value: "All Patients", label: "All Patients" },
+                        { value: "Direct", label: "Direct" },
+                        { value: "Organizations", label: "Organizations" }
+                      ],
+                      value: patientTypeFilter,
+                      onChange: setPatientTypeFilter
+                    },
+                    {
+                      id: 'status',
+                      label: 'Payment Status',
+                      options: [
+                        { value: "All Status", label: "All Status" },
+                        { value: "Pending", label: "Pending" },
+                        { value: "Paid", label: "Paid" },
+                        { value: "Cancelled", label: "Cancelled" }
+                      ],
+                      value: statusFilter,
+                      onChange: setStatusFilter
+                    }
+                  ]}
+                  placeholder="Filter"
+                  className="h-9"
+                />
                 <div className="relative w-64">
                   <svg
                     className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -620,43 +660,6 @@ export default function InvoicesPage() {
                     className="pl-10 bg-gray-100 placeholder-[#717182] h-9 w-full rounded-md px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <CustomDropdown
-                  options={[
-                    { value: "All Types", label: "All Types" },
-                    { value: "B2C", label: "B2C" },
-                    { value: "B2B", label: "B2B" }
-                  ]}
-                  value={typeFilter}
-                  onChange={setTypeFilter}
-                  placeholder="All Types"
-                  className="h-9 text-xs"
-                  aria-label="Filter by invoice type"
-                />
-                <CustomDropdown
-                  options={[
-                    { value: "All Patients", label: "All Patients" },
-                    { value: "Direct", label: "Direct" },
-                    { value: "Organizations", label: "Organizations" }
-                  ]}
-                  value={patientTypeFilter}
-                  onChange={setPatientTypeFilter}
-                  placeholder="All Patients"
-                  className="h-9 text-xs"
-                  aria-label="Filter by patient type"
-                />
-                <CustomDropdown
-                  options={[
-                    { value: "All Status", label: "All Status" },
-                    { value: "Pending", label: "Pending" },
-                    { value: "Paid", label: "Paid" },
-                    { value: "Cancelled", label: "Cancelled" }
-                  ]}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="All Status"
-                  className="h-9 text-xs"
-                  aria-label="Filter by invoice status"
-                />
               </div>
             </div>
 
