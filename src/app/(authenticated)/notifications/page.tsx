@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/main-layout';
 import { useNotification, getNotificationIcon, getRelativeTime } from '@/contexts/NotificationContext';
 import { cn } from '@/utils';
 import { useRouter } from 'next/navigation';
+import { Bell } from 'lucide-react';
 
 export default function NotificationsPage() {
   const { 
@@ -49,7 +50,9 @@ export default function NotificationsPage() {
         <div className="mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3">
-              <div className="text-2xl">🔔</div>
+              <div className="text-gray-600">
+                <Bell size={24} />
+              </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Notifications</h1>
                 <div className="flex items-center space-x-2 mt-1">
@@ -76,7 +79,9 @@ export default function NotificationsPage() {
         <div className="bg-white rounded-lg border border-gray-200 max-h-[600px] overflow-y-auto">
           {filteredNotifications.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-gray-400 text-4xl mb-3">🔔</div>
+              <div className="text-gray-400 mb-3 flex justify-center">
+                <Bell size={48} />
+              </div>
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 {activeTab === 'unread' 
                   ? 'No unread notifications' 
@@ -116,7 +121,7 @@ export default function NotificationsPage() {
                         <div className="flex items-start space-x-3">
                           {/* Icon */}
                           <div className="flex-shrink-0 mt-0.5">
-                            <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                            {getNotificationIcon(notification.type, notification.priority)}
                           </div>
 
                           {/* Content */}
@@ -166,7 +171,7 @@ export default function NotificationsPage() {
                         <div className="flex items-start space-x-3">
                           {/* Icon */}
                           <div className="flex-shrink-0 mt-0.5">
-                            <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                            {getNotificationIcon(notification.type, notification.priority)}
                           </div>
 
                           {/* Content */}
@@ -196,18 +201,12 @@ export default function NotificationsPage() {
 
         {/* Footer Actions */}
         {filteredNotifications.length > 0 && (
-          <div className="flex items-center justify-between mt-4 px-2">
+          <div className="flex items-center justify-start mt-4 px-2">
             <button
               onClick={markAllAsRead}
               className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
             >
               Mark All Read
-            </button>
-            <button
-              onClick={() => router.push('/notifications')}
-              className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              View All
             </button>
           </div>
         )}

@@ -1,6 +1,21 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  Settings, 
+  Calendar, 
+DollarSign, 
+  User, 
+  TestTube, 
+  Clock, 
+  AlertTriangle, 
+  Package, 
+  Timer, 
+  CreditCard, 
+  ClipboardList, 
+  AlertCircle, 
+  Bell 
+} from 'lucide-react';
 import { Notification, NotificationStats, CreateNotificationData } from '@/types';
 
 interface NotificationContextType {
@@ -21,34 +36,78 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 // Helper function to generate notification icon based on type
-export const getNotificationIcon = (type: Notification['type']): string => {
+export const getNotificationIcon = (type: Notification['type'], priority?: Notification['priority']) => {
+  const baseSize = 18;
+  
+  // Color mapping based on notification type and priority
+  const getIconColor = (type: Notification['type'], priority?: Notification['priority']) => {
+    // High priority overrides type colors
+    if (priority === 'urgent') return 'text-red-600';
+    if (priority === 'high') return 'text-orange-600';
+    
+    // Type-specific colors
+    switch (type) {
+      case 'equipment_maintenance':
+        return 'text-blue-600';
+      case 'schedule_appointment':
+        return 'text-green-600';
+      case 'payment_overdue':
+        return 'text-red-600';
+      case 'new_patient_registration':
+        return 'text-emerald-600';
+      case 'lab_results_ready':
+        return 'text-purple-600';
+      case 'task_reminder':
+        return 'text-amber-600';
+      case 'system_alert':
+        return 'text-red-600';
+      case 'low_stock':
+        return 'text-yellow-600';
+      case 'pending_tasks':
+        return 'text-indigo-600';
+      case 'overdue_payment':
+        return 'text-red-600';
+      case 'todays_appointments':
+        return 'text-cyan-600';
+      case 'expired_items':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+  
+  const iconProps = { 
+    size: baseSize, 
+    className: getIconColor(type, priority) 
+  };
+  
   switch (type) {
     case 'equipment_maintenance':
-      return '⚙️';
+      return <Settings {...iconProps} />;
     case 'schedule_appointment':
-      return '📅';
+      return <Calendar {...iconProps} />;
     case 'payment_overdue':
-      return '💰';
+      return <DollarSign {...iconProps} />;
     case 'new_patient_registration':
-      return '👤';
+      return <User {...iconProps} />;
     case 'lab_results_ready':
-      return '🔬';
+      return <TestTube {...iconProps} />;
     case 'task_reminder':
-      return '⏰';
+      return <Clock {...iconProps} />;
     case 'system_alert':
-      return '🚨';
+      return <AlertTriangle {...iconProps} />;
     case 'low_stock':
-      return '📦';
+      return <Package {...iconProps} />;
     case 'pending_tasks':
-      return '⏱️';
+      return <Timer {...iconProps} />;
     case 'overdue_payment':
-      return '💸';
+      return <CreditCard {...iconProps} />;
     case 'todays_appointments':
-      return '📋';
+      return <ClipboardList {...iconProps} />;
     case 'expired_items':
-      return '⚠️';
+      return <AlertCircle {...iconProps} />;
     default:
-      return '🔔';
+      return <Bell {...iconProps} />;
   }
 };
 

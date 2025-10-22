@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNotification, getNotificationIcon, getRelativeTime } from '@/contexts/NotificationContext';
 import { cn } from '@/utils';
 import { useRouter } from 'next/navigation';
+import { Bell, X } from 'lucide-react';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <span className="text-lg">🔔</span>
+          <Bell size={18} className="text-gray-600" />
           <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
             {stats.unread} new
@@ -89,9 +90,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           className="text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Close notifications"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X size={16} />
         </button>
       </div>
 
@@ -99,7 +98,9 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       <div className="max-h-80 overflow-y-auto">
         {filteredNotifications.length === 0 ? (
           <div className="p-6 text-center">
-            <div className="text-gray-400 text-3xl mb-2">🔔</div>
+            <div className="text-gray-400 mb-2 flex justify-center">
+              <Bell size={32} />
+            </div>
             <p className="text-xs text-gray-500">No notifications</p>
           </div>
         ) : (
@@ -126,7 +127,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       <div className="flex items-start space-x-3">
                         {/* Icon */}
                         <div className="flex-shrink-0 mt-0.5">
-                          <span className="text-base">{getNotificationIcon(notification.type)}</span>
+                          {getNotificationIcon(notification.type, notification.priority)}
                         </div>
 
                         {/* Content */}
@@ -176,7 +177,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       <div className="flex items-start space-x-3">
                         {/* Icon */}
                         <div className="flex-shrink-0 mt-0.5">
-                          <span className="text-base">{getNotificationIcon(notification.type)}</span>
+                          {getNotificationIcon(notification.type, notification.priority)}
                         </div>
 
                         {/* Content */}
